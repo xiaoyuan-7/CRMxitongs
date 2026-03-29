@@ -1,0 +1,27 @@
+[Unit]
+Description=CRM System - Local Deployment
+Documentation=https://docs.openclaw.ai
+After=network.target
+
+[Service]
+Type=forking
+User=root
+WorkingDirectory=/root/.openclaw/workspace/crm-system/backend
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=HOST=0.0.0.0
+ExecStart=/usr/bin/pm2 start ecosystem.config.js
+ExecReload=/usr/bin/pm2 reload crm-system
+ExecStop=/usr/bin/pm2 stop crm-system
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crm-system
+
+# 安全增强
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

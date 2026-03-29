@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户管理系统 CRM - 完整说明文档</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.8; color: #1a1a1a; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        h1 { font-size: 26px; color: #1a1a1a; margin-bottom: 12px; border-bottom: 3px solid #667eea; padding-bottom: 16px; }
+        h2 { font-size: 20px; color: #333; margin: 32px 0 16px 0; padding-left: 12px; border-left: 4px solid #667eea; }
+        h3 { font-size: 16px; color: #444; margin: 24px 0 12px 0; }
+        p { margin: 16px 0; text-align: justify; }
+        ul, ol { margin: 16px 0; padding-left: 32px; }
+        li { margin: 8px 0; }
+        .meta { color: #666; font-size: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+        .meta strong { color: #333; }
+        code { background: #f6f8fa; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #e83e8c; }
+        pre { background: #f6f8fa; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 16px 0; }
+        pre code { background: none; padding: 0; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f6f8fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f9fafb; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; margin: 2px; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        .section { margin: 32px 0; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #666; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 客户管理系统 CRM - 完整说明文档</h1>
+        <div class="meta">
+            <strong>文档版本：</strong>v1.0 &nbsp;|&nbsp; 
+            <strong>更新日期：</strong>2026 年 3 月 20 日 &nbsp;|&nbsp; 
+            <strong>系统位置：</strong>/root/.openclaw/workspace/crm-system/
+        </div>
+
+        <div class="section">
+            <h2>一、系统概述</h2>
+            <h3>1.1 系统定位</h3>
+            <p>轻量级本地客户管理系统，专为营销团队设计。采用 React + Node.js + SQLite 技术栈，适合轻量级本地部署，无需云端依赖。</p>
+
+            <h3>1.2 核心价值</h3>
+            <ul>
+                <li><strong>轻量部署：</strong>SQLite 数据库，无需单独数据库服务器</li>
+                <li><strong>功能完整：</strong>覆盖客户管理、营销跟进、智能提醒全流程</li>
+                <li><strong>本地安全：</strong>数据存储在本地，无需担心云端泄露</li>
+                <li><strong>易于扩展：</strong>模块化设计，便于二次开发</li>
+            </ul>
+
+            <h3>1.3 技术栈</h3>
+            <table>
+                <tr><th>层级</th><th>技术</th><th>版本</th></tr>
+                <tr><td>前端</td><td>React</td><td>18</td></tr>
+                <tr><td>前端 UI</td><td>Ant Design</td><td>5</td></tr>
+                <tr><td>图表库</td><td>Recharts</td><td>2.x</td></tr>
+                <tr><td>路由</td><td>React Router</td><td>6</td></tr>
+                <tr><td>后端</td><td>Node.js</td><td>14+</td></tr>
+                <tr><td>Web 框架</td><td>Express</td><td>4</td></tr>
+                <tr><td>数据库</td><td>SQLite</td><td>3</td></tr>
+                <tr><td>认证</td><td>JWT + bcrypt</td><td>-</td></tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>二、核心功能模块</h2>
+
+            <h3>2.1 营销任务管理</h3>
+            <p><strong>功能描述：</strong>营销目标设定与进度追踪</p>
+            <ul>
+                <li>任务目标设定：可设置有效户、高质量客户的目标数量</li>
+                <li>进度追踪：实时显示完成进度（圆形进度条可视化）</li>
+                <li>储备客户管理：区分已完成和储备中的客户</li>
+                <li>落地预测：本月落地、三个月落地统计</li>
+            </ul>
+
+            <h3>2.2 企业管理</h3>
+            <p><strong>功能描述：</strong>企业客户信息全生命周期管理</p>
+            <ul>
+                <li>企业列表：展示企业名称、关键人、开户状态、代发状态、有效户、高质量、进度状态</li>
+                <li>企业详情：企业简介、财务信息、行业、上下游信息</li>
+                <li>搜索筛选：支持按名称、状态等多维度搜索</li>
+                <li>数据导出：CSV 格式导出</li>
+            </ul>
+
+            <h3>2.3 关键人管理</h3>
+            <p><strong>功能描述：</strong>企业关键联系人详细信息管理</p>
+            <ul>
+                <li>多关键人支持：每个企业可添加多个关键人</li>
+                <li>详细信息：出生年月、职位、家庭信息、喜好、推荐送礼</li>
+                <li>主要联系人标记：可设置一个主要联系人</li>
+                <li>生日自动计算：年龄、生肖、下次生日提醒</li>
+            </ul>
+
+            <h3>2.4 每周计划</h3>
+            <p><strong>功能描述：</strong>营销任务周计划安排与执行</p>
+            <ul>
+                <li>7 天视图：周一至周日任务安排</li>
+                <li>任务分配：可为每天分配企业跟进任务</li>
+                <li>时间段标记：上午/下午/晚上</li>
+                <li>优先级设置：高/中/低优先级</li>
+                <li>联系频次关联：本周触达、两周触达、本月触达、一月前触达</li>
+            </ul>
+
+            <h3>2.5 智能提醒</h3>
+            <p><strong>功能描述：</strong>自动化提醒生成与管理</p>
+            <ul>
+                <li>生日提醒：自动生成本年生日提醒</li>
+                <li>节假日送礼提醒：自动生成节假日送礼提醒</li>
+                <li>自定义提醒：手动添加提醒</li>
+                <li>今日提醒/即将到期提醒</li>
+            </ul>
+
+            <h3>2.6 数据报表</h3>
+            <p><strong>功能描述：</strong>营销数据可视化分析</p>
+            <ul>
+                <li>转化率分析：开户→代发→有效户→高质量转化漏斗</li>
+                <li>跟进趋势图：30 天跟进记录统计</li>
+                <li>业绩趋势图：6 个月业绩走势</li>
+                <li>进度状态分布：各阶段企业数量分布</li>
+                <li>行业分布：企业行业分类统计</li>
+            </ul>
+
+            <h3>2.7 用户权限</h3>
+            <p><strong>功能描述：</strong>用户认证与权限管理</p>
+            <ul>
+                <li>用户注册/登录：JWT 认证</li>
+                <li>角色管理：管理员/普通用户</li>
+                <li>权限控制：管理员可管理用户角色</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>三、技术架构</h2>
+            <h3>3.1 项目结构</h3>
+            <pre><code>crm-system/
+├── backend/
+│   ├── server.js           # 主服务器
+│   ├── database.js         # 数据库配置
+│   ├── routes/
+│   │   ├── companies.js    # 企业 API
+│   │   ├── contacts.js     # 关键人 API
+│   │   ├── marketing.js    # 营销进度 API
+│   │   ├── reminders.js    # 提醒 API
+│   │   ├── dashboard.js    # 仪表盘 API
+│   │   └── users.js        # 用户 API
+│   └── package.json
+├── frontend/
+│   ├── public/index.html
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── styles/
+│   └── package.json
+└── README.md</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>四、数据库设计</h2>
+            <h3>4.1 表结构总览</h3>
+            <table>
+                <tr><th>表名</th><th>说明</th><th>主要字段</th></tr>
+                <tr><td>companies</td><td>企业表</td><td>id, name, industry, financial_info...</td></tr>
+                <tr><td>contacts</td><td>关键人表</td><td>id, company_id, name, birth_date...</td></tr>
+                <tr><td>marketing_progress</td><td>营销进度表</td><td>id, company_id, follow_up_date...</td></tr>
+                <tr><td>reminders</td><td>提醒表</td><td>id, user_id, reminder_type, reminder_date...</td></tr>
+                <tr><td>users</td><td>用户表</td><td>id, username, password_hash, role</td></tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>五、部署指南</h2>
+            <h3>5.1 环境要求</h3>
+            <table>
+                <tr><th>软件</th><th>最低版本</th><th>推荐版本</th></tr>
+                <tr><td>Node.js</td><td>14.0.0</td><td>18.x LTS</td></tr>
+                <tr><td>npm</td><td>6.0.0</td><td>9.x</td></tr>
+            </table>
+
+            <h3>5.2 开发环境部署</h3>
+            <pre><code># 1. 安装后端依赖
+cd /root/.openclaw/workspace/crm-system/backend
+npm install
+
+# 2. 安装前端依赖
+cd /root/.openclaw/workspace/crm-system/frontend
+npm install
+
+# 3. 启动后端服务
+cd /root/.openclaw/workspace/crm-system/backend
+npm start
+
+# 4. 启动前端开发服务器
+cd /root/.openclaw/workspace/crm-system/frontend
+npm start</code></pre>
+
+            <h3>5.3 生产环境部署</h3>
+            <pre><code># 1. 构建前端
+cd frontend && npm run build
+
+# 2. 启动后端（提供静态文件）
+cd backend && npm start
+
+# 访问 http://localhost:3001</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>六、安全说明</h2>
+            <h3>6.1 已实现的安全措施</h3>
+            <ul>
+                <li><span class="badge badge-green">✅</span> 密码加密：bcrypt 哈希存储</li>
+                <li><span class="badge badge-green">✅</span> JWT 认证：Token 验证登录状态</li>
+                <li><span class="badge badge-green">✅</span> 输入验证：请求参数校验</li>
+                <li><span class="badge badge-green">✅</span> SQL 注入防护：参数化查询</li>
+                <li><span class="badge badge-green">✅</span> CORS 配置：跨域请求控制</li>
+                <li><span class="badge badge-green">✅</span> 权限控制：角色权限分离</li>
+            </ul>
+
+            <h3>6.2 生产环境建议</h3>
+            <ul>
+                <li>⚠️ 修改 <code>JWT_SECRET</code> 为强随机密钥</li>
+                <li>⚠️ 启用 HTTPS</li>
+                <li>⚠️ 配置防火墙规则</li>
+                <li>⚠️ 定期备份数据库文件</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>七、版本历史</h2>
+            <table>
+                <tr><th>版本</th><th>日期</th><th>更新内容</th></tr>
+                <tr><td>v1.0</td><td>2026-03-20</td><td>初始版本，完整功能发布</td></tr>
+                <tr><td>v0.9</td><td>2026-03-18</td><td>联系频次字段重构，数字对齐修复</td></tr>
+                <tr><td>v0.8</td><td>2026-03-15</td><td>智能提醒功能上线</td></tr>
+                <tr><td>v0.7</td><td>2026-03-10</td><td>每周计划功能上线</td></tr>
+                <tr><td>v0.6</td><td>2026-03-05</td><td>数据报表功能上线</td></tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p><strong>文档位置：</strong>/root/.openclaw/workspace/crm-system/系统说明文档.html</p>
+            <p><strong>最后更新：</strong>2026 年 3 月 20 日</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>客户管理系统 CRM（模块化版）</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display:flex;justify-content:space-between;align-items:center;position:relative;">
+                <div>
+                    <h1>📊 客户管理系统</h1>
+                    <p>线索挖掘 · 营销任务 · 企业列表 · 协同融合 · 待办清单 · 每周计划 · 智能提醒</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div id="userInfo"></div>
+                    <div id="weekTaskSummary" style="background:rgba(255,255,255,0.2);padding:12px 16px;border-radius:8px;min-width:200px;cursor:pointer;" onclick="toggleTodoDropdown()"></div>
+                </div>
+                
+                <!-- 待办提醒下拉弹窗 -->
+                <div id="todoDropdown">
+                    <div class="todo-dropdown-header">
+                        <h3>📋 本周待办</h3>
+                        <p id="todoDropdownSummary">0 项未完成</p>
+                    </div>
+                    <div class="todo-dropdown-list" id="todoDropdownList">
+                        <div class="todo-dropdown-empty">暂无待办事项</div>
+                    </div>
+                    <div class="todo-dropdown-footer">
+                        <a onclick="switchTab('weekly'); toggleTodoDropdown(); return false;">查看全部待办 ></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目标完成进度 -->
+        <div class="progress-section">
+            <h3>📈 任务目标进度</h3>
+            <div class="progress-grid">
+                <div class="progress-item">
+                    <div class="label">有效户完成</div>
+                    <div class="circle" id="activeCircle"><div class="circle-inner" id="activePercent">0%</div></div>
+                    <div class="value" id="activeProgress">0</div>
+                </div>
+                <div class="progress-item">
+                    <div class="label">高质量完成</div>
+                    <div class="circle" id="hqCircle"><div class="circle-inner" id="hqPercent">0%</div></div>
+                    <div class="value" id="hqProgress">0</div>
+                </div>
+                <div class="progress-item">
+                    <div class="label">有效户储备</div>
+                    <div class="circle" id="reserveActiveCircle"><div class="circle-inner" id="reserveActivePercent">0%</div></div>
+                    <div class="value" id="reserveActiveProgress">0</div>
+                </div>
+                <div class="progress-item">
+                    <div class="label">高质量储备</div>
+                    <div class="circle" id="reserveHqCircle"><div class="circle-inner" id="reserveHqPercent">0%</div></div>
+                    <div class="value" id="reserveHqProgress">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- pipeline 统计 -->
+        <div class="pipeline-stats">
+            <div class="pipeline-card" style="border-color: #22c55e;">
+                <h4>📅 本月落地</h4>
+                <div class="count" id="monthCount">0</div>
+                <div class="desc">预计本月签约</div>
+            </div>
+            <div class="pipeline-card" style="border-color: #f59e0b;">
+                <h4>📆 三个月落地</h4>
+                <div class="count" id="quarterCount">0</div>
+                <div class="desc">Q2 预计签约</div>
+            </div>
+            <div class="pipeline-card" style="border-color: #667eea;">
+                <h4>📊 本年落地</h4>
+                <div class="count" id="yearCount">0</div>
+                <div class="desc">2026 年预计</div>
+            </div>
+            <div class="pipeline-card" style="border-color: #9ca3af;">
+                <h4>🔄 持续跟进</h4>
+                <div class="count" id="ongoingCount">0</div>
+                <div class="desc">长期跟进中</div>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card clickable" onclick="filterByStat('total')">
+                <h3>企业总数</h3>
+                <div class="value" id="totalCompanies">-</div>
+                <button class="edit-target" onclick="event.stopPropagation(); editTarget('total')">✏️</button>
+            </div>
+            <div class="stat-card clickable" onclick="filterByStat('opened')">
+                <h3>已开户</h3>
+                <div class="value" id="openedAccounts">-</div>
+                <div class="target" id="openedTarget">目标：-</div>
+                <div class="progress-bar"><div class="progress-fill" id="openedProgress" style="width:0%"></div></div>
+                <button class="edit-target" onclick="event.stopPropagation(); editTarget('opened')">✏️</button>
+            </div>
+            <div class="stat-card clickable" onclick="filterByStat('active')">
+                <h3>有效户</h3>
+                <div class="value" id="activeAccounts">-</div>
+                <div class="target" id="activeTarget">目标：-</div>
+                <div class="progress-bar"><div class="progress-fill" id="activeProgressBar" style="width:0%"></div></div>
+                <button class="edit-target" onclick="event.stopPropagation(); editTarget('active')">✏️</button>
+            </div>
+            <div class="stat-card clickable" onclick="filterByStat('hq')">
+                <h3>高质量客户</h3>
+                <div class="value" id="highQuality">-</div>
+                <div class="target" id="hqTarget">目标：-</div>
+                <div class="progress-bar"><div class="progress-fill" id="hqProgress" style="width:0%"></div></div>
+                <button class="edit-target" onclick="event.stopPropagation(); editTarget('hq')">✏️</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('leads')">线索挖掘</button>
+            <button class="tab" onclick="switchTab('tasks')">营销任务</button>
+            <button class="tab" onclick="switchTab('companies')">企业列表</button>
+            <button class="tab" onclick="switchTab('referrals')">协同融合</button>
+            <button class="tab" onclick="switchTab('todo')">待办清单</button>
+            <button class="tab" onclick="switchTab('weekly')">每周计划</button>
+            <button class="tab" onclick="switchTab('reminders')">智能提醒</button>
+        </div>
+
+        <!-- 各模块内容区域 -->
+        <div class="content-card" id="leadsTab" style="display:block;">
+            <div id="leadBoardsList"></div>
+            <div id="leadsContent" style="display:none;"></div>
+        </div>
+        
+        <div class="content-card" id="tasksTab" style="display:none;">
+            <div class="search-box">
+                <button class="btn btn-primary" onclick="createNewTask()" data-permission="task:create">+ 新建营销任务</button>
+            </div>
+            <div id="tasksList"></div>
+        </div>
+        
+        <div class="content-card" id="companiesTab" style="display:none;">
+            <div class="filter-bar" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:12px;color:#666;">🔍 筛选：</span>
+                <select id="taskFilterSelect" onchange="filterByTask()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:140px;">
+                    <option value="">全部企业</option>
+                </select>
+                <select id="xinfutongFilterSelect" onchange="filterCompanies()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:110px;">
+                    <option value="">薪福通</option>
+                    <option value="applicable">✅ 适用</option>
+                    <option value="not_applicable">❌ 不适用</option>
+                </select>
+                <select id="managerFilterSelect" onchange="filterCompanies()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:110px;">
+                    <option value="">客户经理</option>
+                </select>
+                <select id="sortSelect" onchange="sortCompanies()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+                    <option value="default">📅 更新时间</option>
+                    <option value="landing_cycle">🎯 落地周期</option>
+                    <option value="active_count_desc">有效户数 ↓</option>
+                    <option value="active_count_asc">有效户数 ↑</option>
+                    <option value="hq_count_desc">高质量数 ↓</option>
+                    <option value="hq_count_asc">高质量数 ↑</option>
+                    <option value="name_asc">企业名称 A-Z</option>
+                    <option value="manager_asc">客户经理 A-Z</option>
+                </select>
+                <button class="btn btn-sm btn-secondary" onclick="showAllCompanies()" style="padding:5px 10px;font-size:12px;">清除</button>
+            </div>
+            <div class="search-box" style="margin-bottom:8px;position:relative;">
+                <div style="position:relative;flex:1;min-width:200px;">
+                    <input type="text" id="searchInput" placeholder="搜索企业名称、关键人、客户经理..." style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+                    <div id="searchHistoryDropdown"></div>
+                </div>
+                <button class="btn btn-primary" onclick="openAddModal()" data-permission="company:create">+ 新增</button>
+                <button class="btn btn-secondary" onclick="openImportModal()" data-permission="company:create">📥 导入</button>
+                <button class="btn btn-secondary" onclick="openExportModal()" data-permission="company:export">📤 导出</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead id="companiesTableHead"></thead>
+                    <tbody id="companiesTable"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 其他模块占位 -->
+        <div class="content-card" id="referralsTab" style="display:none;">
+            <div id="referralsList"></div>
+        </div>
+        
+        <div class="content-card" id="todoTab" style="display:none;">
+            <div class="todo-list" id="todoList"></div>
+        </div>
+        
+        <div class="content-card" id="weeklyTab" style="display:none;">
+            <div id="weekPlan"></div>
+        </div>
+        
+        <div class="content-card" id="remindersTab" style="display:none;">
+            <div id="remindersList"></div>
+        </div>
+    </div>
+
+    <!-- 全局 Loading -->
+    <div id="globalLoading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">加载中...</div>
+    </div>
+
+    <!-- Modals 占位 -->
+    <div class="modal" id="companyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">企业详情</h2>
+                <button class="close-btn" onclick="closeCompanyModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- 引入模块化 JS -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

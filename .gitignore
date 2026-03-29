@@ -1,0 +1,46 @@
+# 依赖目录
+node_modules/
+package-lock.json
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+data/
+backups/
+
+# 日志文件
+*.log
+logs/
+
+# 环境变量
+.env
+.env.local
+.env.production
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE 配置
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# 构建输出
+dist/
+build/
+
+# 测试覆盖率
+coverage/
+
+# HTML 导出文件（可选，根据需要保留）
+# *.html
