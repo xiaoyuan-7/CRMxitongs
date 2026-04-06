@@ -363,16 +363,16 @@ function initDatabase() {
 // ========== 导出 ==========
 
 module.exports = {
+  // 原始 sqlite3 数据库对象（支持回调方式）
   db,
-  createBackup,
-  checkIntegrity,
-  restoreFromLatestBackup,
-  initializeDatabase,
-  initDatabase,
-  scheduleDailyBackup,
   
-  // 便捷方法
-  run: (sql, params) => {
+  // 直接导出原始方法，供路由文件使用回调方式
+  run: db.run.bind(db),
+  get: db.get.bind(db),
+  all: db.all.bind(db),
+  
+  // Promise 版本（供新代码使用）
+  runAsync: (sql, params) => {
     return new Promise((resolve, reject) => {
       db.run(sql, params, function(err) {
         if (err) reject(err);
@@ -381,7 +381,7 @@ module.exports = {
     });
   },
   
-  get: (sql, params) => {
+  getAsync: (sql, params) => {
     return new Promise((resolve, reject) => {
       db.get(sql, params, (err, row) => {
         if (err) reject(err);
@@ -390,7 +390,7 @@ module.exports = {
     });
   },
   
-  all: (sql, params) => {
+  allAsync: (sql, params) => {
     return new Promise((resolve, reject) => {
       db.all(sql, params, (err, rows) => {
         if (err) reject(err);
@@ -399,12 +399,11 @@ module.exports = {
     });
   },
   
-  close: () => {
-    return new Promise((resolve, reject) => {
-      db.close((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  }
+  // 其他功能
+  createBackup,
+  checkIntegrity,
+  restoreFromLatestBackup,
+  initializeDatabase,
+  initDatabase,
+  scheduleDailyBackup
 };

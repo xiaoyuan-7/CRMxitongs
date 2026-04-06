@@ -59,6 +59,33 @@ router.delete('/boards/:id', (req, res) => {
   });
 });
 
+// 获取所有线索（支持筛选）
+router.get('/', (req, res) => {
+  const { board_id, manager_name, is_visited } = req.query;
+  let query = 'SELECT * FROM leads WHERE 1=1';
+  const params = [];
+  
+  if (board_id) {
+    query += ' AND board_id = ?';
+    params.push(board_id);
+  }
+  if (manager_name) {
+    query += ' AND manager_name = ?';
+    params.push(manager_name);
+  }
+  if (is_visited !== undefined) {
+    query += ' AND is_visited = ?';
+    params.push(is_visited === 'true' ? 1 : 0);
+  }
+  
+  query += ' ORDER BY created_at DESC';
+  
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
 // 获取某板块的所有线索
 router.get('/boards/:boardId/leads', (req, res) => {
   const { boardId } = req.params;
