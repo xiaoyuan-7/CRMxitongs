@@ -67,22 +67,24 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   const { 
     referral_date, from_department, from_person, to_department, to_person,
-    customer_name, business_status, amount, points_rule, remarks 
+    customer_name, business_status, amount, points_rule, points_calculate, remarks 
   } = req.body;
   
-  // 自动计算积分：按转介单数，每落地 1 单积 1 分
+  // 积分计算逻辑：根据是否核算积分决定
   let finalPoints = 0;
-  if (business_status === 'completed') {
-    finalPoints = 1; // 每单固定 1 分
+  if (business_status === 'completed' && points_calculate !== 0) {
+    finalPoints = 1; // 已落地且核算积分，积 1 分
   }
+  // 如果 points_calculate 为 0（不核算积分），则 finalPoints 为 0
   
   db.run(`
     INSERT INTO referrals (referral_date, from_department, from_person, to_department, to_person,
-      customer_name, business_status, amount, points_rule, final_points, remarks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      customer_name, business_status, amount, points_rule, points_calculate, final_points, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     referral_date, from_department, from_person, to_department, to_person,
-    customer_name, business_status || 'pending', amount || 0, points_rule || 'standard', finalPoints, remarks
+    customer_name, business_status || 'pending', amount || 0, points_rule || 'standard', 
+    points_calculate !== undefined ? points_calculate : 1, finalPoints, remarks
   ], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ id: this.lastID, final_points: finalPoints, message: '转介记录已创建' });
@@ -94,14 +96,15 @@ router.put('/:id', (req, res) => {
   const { id } = req.params;
   const { 
     referral_date, from_department, from_person, to_department, to_person,
-    customer_name, business_status, amount, points_rule, remarks 
+    customer_name, business_status, amount, points_rule, points_calculate, remarks 
   } = req.body;
   
-  // 自动计算积分：按转介单数，每落地 1 单积 1 分
+  // 积分计算逻辑：根据是否核算积分决定
   let finalPoints = 0;
-  if (business_status === 'completed') {
-    finalPoints = 1; // 每单固定 1 分
+  if (business_status === 'completed' && points_calculate !== 0) {
+    finalPoints = 1; // 已落地且核算积分，积 1 分
   }
+  // 如果 points_calculate 为 0（不核算积分），则 finalPoints 为 0
   
   db.run(`
     UPDATE referrals SET 
@@ -114,13 +117,15 @@ router.put('/:id', (req, res) => {
       business_status = COALESCE(?, business_status),
       amount = COALESCE(?, amount),
       points_rule = COALESCE(?, points_rule),
+      points_calculate = COALESCE(?, points_calculate),
       final_points = ?,
       remarks = COALESCE(?, remarks),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `, [
     referral_date, from_department, from_person, to_department, to_person,
-    customer_name, business_status, amount, points_rule, finalPoints, remarks, id
+    customer_name, business_status, amount, points_rule, 
+    points_calculate !== undefined ? points_calculate : 1, finalPoints, remarks, id
   ], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: '已更新', final_points: finalPoints });
