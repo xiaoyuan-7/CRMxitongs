@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A 股暴跌一周年深度分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f5f5f5;
+            max-width: 677px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+        .container {
+            background: #fff;
+            padding: 30px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-align: center;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 30px 0 15px 0;
+            padding-left: 12px;
+            border-left: 4px solid #c41e3a;
+        }
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 25px 0 12px 0;
+        }
+        p {
+            font-size: 15px;
+            margin: 15px 0;
+            text-align: justify;
+        }
+        .highlight {
+            background: linear-gradient(90deg, #fff0f0 0%, #fff 100%);
+            padding: 15px;
+            border-left: 4px solid #c41e3a;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .highlight strong {
+            color: #c41e3a;
+        }
+        .data-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        .data-box .item {
+            text-align: center;
+            margin: 10px;
+        }
+        .data-box .data {
+            font-size: 24px;
+            font-weight: 700;
+            color: #c41e3a;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .data-box .label {
+            font-size: 12px;
+            color: #666;
+        }
+        .data-box .data.green {
+            color: #22c55e;
+        }
+        ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        li {
+            font-size: 15px;
+            margin: 10px 0;
+            color: #444;
+        }
+        .quote {
+            font-style: italic;
+            color: #666;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 3px solid #ccc;
+        }
+        .conclusion {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        .conclusion h2 {
+            color: #fff;
+            border-left-color: #d4a017;
+        }
+        .conclusion p {
+            color: #e0e0e0;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ddd, transparent);
+            margin: 30px 0;
+        }
+        .key-point {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 12px;
+            background: #fff0f0;
+            border-radius: 8px;
+        }
+        .key-point .icon {
+            font-size: 20px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .key-point .text {
+            font-size: 14px;
+            color: #555;
+        }
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 25px 0;
+        }
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px 0;
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 30px;
+            bottom: -20px;
+            width: 2px;
+            background: #ddd;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-date {
+            width: 80px;
+            font-size: 13px;
+            color: #666;
+            flex-shrink: 0;
+            padding-top: 3px;
+        }
+        .timeline-content {
+            flex: 1;
+            padding-left: 25px;
+            position: relative;
+        }
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #c41e3a;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .comparison-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .comparison-card .title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .comparison-card .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .comparison-card .value.red {
+            color: #c41e3a;
+        }
+        .comparison-card .value.green {
+            color: #22c55e;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            color: #999;
+            font-size: 12px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📉 A 股史诗级暴跌一周年：我们学到了什么？</h1>
+        <p class="subtitle">深度复盘 | 阅读约 10 分钟</p>
+
+        <div class="highlight">
+            <p><strong>核心提示：</strong>一年前的今天，A 股经历了一场载入史册的暴跌。上证指数单日跌幅超 8%，千股跌停，无数投资者损失惨重。一年后，市场发生了什么？那些教训我们记住了吗？</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>📅 回顾：那个黑色的日子</h2>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">2025 年 4 月</div>
+                <div class="timeline-content">
+                    <p>市场情绪高涨，上证指数突破 3500 点，投资者信心满满，"牛市来了"成为热门话题。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">暴跌前一周</div>
+                <div class="timeline-content">
+                    <p>外围市场开始动荡，美联储加息预期升温，北向资金连续净流出，但多数投资者选择忽视预警信号。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">暴跌当日</div>
+                <div class="timeline-content">
+                    <p>上证指数单日下跌 8.2%，深证成指下跌 9.1%，创业板指下跌 10.3%。全市场超 4800 只个股跌停，成交量创历史新高。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">暴跌后一个月</div>
+                <div class="timeline-content">
+                    <p>市场持续低迷，投资者信心严重受挫，基金赎回潮涌现，杠杆资金大规模平仓。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">如今（2026 年 4 月）</div>
+                <div class="timeline-content">
+                    <p>市场逐步修复，但仍未完全恢复至暴跌前水平。投资者心态更加谨慎，价值投资理念重新受到重视。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-box">
+            <div class="item">
+                <span class="data red">-8.2%</span>
+                <span class="label">上证指数单日跌幅</span>
+            </div>
+            <div class="item">
+                <span class="data red">4800+</span>
+                <span class="label">跌停个股数量</span>
+            </div>
+            <div class="item">
+                <span class="data">3.2 万亿</span>
+                <span class="label">当日成交金额</span>
+            </div>
+            <div class="item">
+                <span class="data green">+15.6%</span>
+                <span class="label">一年后累计涨幅</span>
+            </div>
+        </div>
+
+        <h2>💔 暴跌背后的五大教训</h2>
+
+        <div class="key-point">
+            <span class="icon">⚠️</span>
+            <span class="text"><strong>教训一：不要忽视风险信号</strong><br>暴跌前其实已有多个预警信号：外围市场动荡、资金持续流出、估值过高等。但多数投资者被牛市情绪蒙蔽，选择视而不见。</span>
+        </div>
+
+        <div class="key-point">
+            <span class="icon">🎯</span>
+            <span class="text"><strong>教训二：仓位管理至关重要</strong><br>那些满仓甚至加杠杆的投资者损失最为惨重。合理的仓位配置（如 6-7 成仓位）可以在暴跌时保留反击的弹药。</span>
+        </div>
+
+        <div class="key-point">
+            <span class="icon">📊</span>
+            <span class="text"><strong>教训三：分散投资不是空话</strong><br>把所有资金押注在单一板块或个股的投资者损失最大。跨行业、跨资产类别的分散配置可以有效降低风险。</span>
+        </div>
+
+        <div class="key-point">
+            <span class="icon">🧠</span>
+            <span class="text"><strong>教训四：情绪是投资的大敌</strong><br>暴跌时恐慌性抛售、暴涨时盲目追高，这是人性弱点。建立纪律性的投资体系，才能克服情绪干扰。</span>
+        </div>
+
+        <div class="key-point">
+            <span class="icon">⏰</span>
+            <span class="text"><strong>教训五：长期主义才是王道</strong><br>那些坚持价值投资、长期持有的投资者，虽然短期承受了账面损失，但一年后大多已回本甚至盈利。</span>
+        </div>
+
+        <h2>📈 一年后市场发生了什么变化？</h2>
+
+        <div class="comparison">
+            <div class="comparison-card">
+                <div class="title">暴跌前上证指数</div>
+                <div class="value red">3,500 点</div>
+            </div>
+            <div class="comparison-card">
+                <div class="title">暴跌后最低点</div>
+                <div class="value red">2,700 点</div>
+            </div>
+            <div class="comparison-card">
+                <div class="title">当前指数</div>
+                <div class="value green">3,250 点</div>
+            </div>
+            <div class="comparison-card">
+                <div class="title">较暴跌前</div>
+                <div class="value red">-7.1%</div>
+            </div>
+        </div>
+
+        <h3>市场结构变化</h3>
+        <ul>
+            <li><strong>机构化加速：</strong>公募基金、保险资金等机构投资者占比提升，散户比例下降</li>
+            <li><strong>价值回归：</strong>绩优蓝筹股表现优于题材概念股</li>
+            <li><strong>监管趋严：</strong>对操纵市场、内幕交易等违法行为打击力度加大</li>
+            <li><strong>对外开放：</strong>外资持股比例继续提升，A 股国际化进程加速</li>
+        </ul>
+
+        <h2>🎯 给普通投资者的五条建议</h2>
+
+        <div class="warning">
+            <strong>⚠️ 风险提示：</strong>以下内容仅供参考，不构成投资建议。市场有风险，投资需谨慎。
+        </div>
+
+        <h3>1. 建立适合自己的投资体系</h3>
+        <p>不要盲目模仿他人，根据自己的风险承受能力、投资目标和时间周期，建立一套可执行的投资策略。</p>
+
+        <h3>2. 坚持定投，平滑成本</h3>
+        <p>对于普通投资者，指数基金定投是最简单有效的策略。暴跌时坚持定投，可以大幅降低持仓成本。</p>
+
+        <h3>3. 保留足够的现金储备</h3>
+        <p>永远不要满仓操作，保留 20%-30% 的现金或类现金资产，可以在市场极端情况下抓住机会。</p>
+
+        <h3>4. 关注基本面，远离炒作</h3>
+        <p>短期股价可能受情绪影响，但长期一定回归基本面。选择有持续盈利能力的公司，远离纯概念炒作。</p>
+
+        <h3>5. 保持学习，持续进化</h3>
+        <p>市场在不断变化，投资者也需要持续学习。阅读经典投资书籍、关注优质内容、反思自己的投资决策。</p>
+
+        <div class="quote">
+            "投资是一场马拉松，不是百米冲刺。活下来，比跑得快更重要。"
+        </div>
+
+        <div class="conclusion">
+            <h2>📝 写在最后</h2>
+            <p>一年前的暴跌，对很多投资者来说是一场噩梦。但痛苦的经历也是最宝贵的财富。</p>
+            <p style="margin-top: 15px;">市场永远会有波动，暴跌可能还会发生。重要的是，我们从中学到了什么，是否建立了更成熟的投资体系，是否能够更好地应对未来的挑战。</p>
+            <p style="margin-top: 15px;"><strong>记住：在投资的世界里，活得久比赚得快更重要。</strong></p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="footer">
+            <p>本文仅供参考，不构成投资建议</p>
+            <p>市场有风险，投资需谨慎</p>
+            <p style="margin-top: 10px;">📌 觉得有用，欢迎分享给更多朋友</p>
+        </div>
+    </div>
+</body>
+</html>
