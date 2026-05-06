@@ -312,20 +312,7 @@ function initDatabase() {
         )
       `);
 
-      // 潜在线索表
-      db.run(`
-        CREATE TABLE IF NOT EXISTS leads (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          company_name TEXT NOT NULL,
-          contact_name TEXT,
-          contact_phone TEXT,
-          source TEXT,
-          status TEXT DEFAULT '待跟进',
-          notes TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+      // 注意：leads 表结构已迁移至 routes/leads.js 中统一管理
 
       // 推荐人表
       db.run(`
