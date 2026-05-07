@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户管理系统 CRM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card h3 { font-size: 14px; color: #666; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #333; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: white; padding: 8px; border-radius: 12px; }
+        .tab { padding: 12px 24px; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-size: 14px; }
+        .tab.active { background: #667eea; color: white; }
+        .content-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 14px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 13px; }
+        tr:hover { background: #f9fafb; cursor: pointer; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #e5e7eb; color: #374151; }
+        .search-box { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-box input { flex: 1; min-width: 200px; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10; }
+        .modal-body { padding: 24px; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .info-item { margin-bottom: 16px; }
+        .info-item label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .info-item input, .info-item select, .info-item textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .section-title { font-size: 18px; font-weight: 600; margin: 24px 0 16px; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 8px; }
+        .task-card { padding: 20px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #667eea; }
+        .task-card h3 { font-size: 16px; margin-bottom: 8px; }
+        .task-card p { font-size: 13px; color: #666; }
+        .task-stats { display: flex; gap: 20px; margin-top: 12px; }
+        .task-stat { font-size: 13px; }
+        .task-stat strong { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 客户管理系统</h1>
+            <p>营销任务 · 企业管理 · 关键人跟踪 · 智能提醒</p>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <h3>企业总数</h3>
+                <div class="value" id="totalCompanies">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>已开户</h3>
+                <div class="value" id="openedAccounts">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>有效户</h3>
+                <div class="value" id="activeAccounts">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>高质量客户</h3>
+                <div class="value" id="highQuality">-</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tasks')">营销任务</button>
+            <button class="tab" onclick="switchTab('companies')">企业列表</button>
+            <button class="tab" onclick="switchTab('reminders')">智能提醒</button>
+        </div>
+
+        <!-- 营销任务 Tab -->
+        <div class="content-card" id="tasksTab">
+            <div class="search-box">
+                <button class="btn btn-primary" onclick="createNewTask()">+ 新建营销任务</button>
+            </div>
+            <div id="tasksList"></div>
+        </div>
+
+        <!-- 企业列表 Tab -->
+        <div class="content-card" id="companiesTab" style="display:none;">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索企业名称、关键人..." onkeyup="searchCompanies()">
+                <button class="btn btn-primary" onclick="openAddModal()">+ 新增企业</button>
+                <button class="btn btn-secondary" onclick="openImportModal()">📥 批量导入</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>企业名称</th>
+                        <th>关键人</th>
+                        <th>开户状态</th>
+                        <th>代发状态</th>
+                        <th>有效户</th>
+                        <th>高质量</th>
+                        <th>进度</th>
+                    </tr>
+                </thead>
+                <tbody id="companiesTable">
+                    <tr><td colspan="7" style="text-align:center;color:#999;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 智能提醒 Tab -->
+        <div class="content-card" id="remindersTab" style="display:none;">
+            <h2 style="margin-bottom:20px;">📌 智能提醒</h2>
+            <div id="remindersList"></div>
+        </div>
+    </div>
+
+    <!-- 企业详情弹窗 -->
+    <div class="modal" id="companyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">企业详情</h2>
+                <button class="close-btn" onclick="closeCompanyModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- 新增企业弹窗 -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="addModalTitle">新增企业</h2>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="addModalBody"></div>
+        </div>
+    </div>
+
+    <!-- 批量导入弹窗 -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>批量导入企业</h2>
+                <button class="close-btn" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-item">
+                    <label>CSV 格式说明</label>
+                    <div style="background:#f3f4f6;padding:12px;border-radius:6px;font-size:13px;font-family:monospace;">
+                        企业名称，行业，关键人姓名，年营业额，是否开户 (0/1),是否代发 (0/1)<br>
+                        示例：<br>
+                        XX 科技公司，信息技术，张三，5000 万，1,0<br>
+                        XX 贸易公司，贸易，李四，3000 万，0,0
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>粘贴 CSV 数据</label>
+                    <textarea id="importData" rows="8" placeholder="企业名称，行业，关键人，年营业额，开户，代发&#10;XX 公司，信息技术，张三，5000 万，1,0"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;justify-content:flex-end;">
+                    <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                    <button class="btn btn-primary" onclick="doImport()">开始导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建任务弹窗 -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="taskModalTitle">新建营销任务</h2>
+                <button class="close-btn" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="taskModalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let allCompanies = [];
+        let allTasks = [];
+
+        // 初始化
+        async function init() {
+            await loadTasks();
+            await loadData();
+        }
+
+        // 加载任务
+        async function loadTasks() {
+            try {
+                const res = await fetch(`${API_BASE}/marketing-tasks`);
+                const data = await res.json();
+                allTasks = Array.isArray(data) ? data : [];
+                renderTasks();
+            } catch (e) {
+                allTasks = [];
+                renderTasks();
+            }
+        }
+
+        // 渲染任务列表
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+            if (allTasks.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:#999;">
+                        <p style="font-size:16px;margin-bottom:8px;">暂无营销任务</p>
+                        <p>点击"新建营销任务"创建第一个任务</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = allTasks.map(t => `
+                <div class="task-card" onclick="viewTaskCompanies(${t.id})" style="cursor:pointer;">
+                    <h3>${t.name || '未命名任务'}</h3>
+                    <p>${t.description || '暂无描述'}</p>
+                    <div class="task-stats">
+                        <span class="task-stat">📦 企业数：<strong>${t.company_count || 0}</strong></span>
+                        <span class="task-stat">📅 创建：<strong>${(t.created_at || '').substr(0,10)}</strong></span>
+                        <span class="task-stat">📊 状态：<strong>${t.status || '进行中'}</strong></span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 查看任务企业
+        async function viewTaskCompanies(taskId) {
+            switchTab('companies');
+            document.getElementById('searchInput').value = '';
+            allCompanies = allCompanies.filter(c => c.task_id === taskId);
+            renderCompanies(allCompanies);
+        }
+
+        // 加载企业数据
+        async function loadData() {
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                allCompanies = await res.json();
+                renderCompanies(allCompanies);
+                updateStats(allCompanies);
+            } catch (e) {
+                document.getElementById('companiesTable').innerHTML = 
+                    '<tr><td colspan="7" style="text-align:center;color:#ef4444;">无法连接后端服务</td></tr>';
+            }
+        }
+
+        // 渲染企业列表
+        function renderCompanies(companies) {
+            const tbody = document.getElementById('companiesTable');
+            if (!companies || companies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">暂无数据</td></tr>';
+                return;
+            }
+            tbody.innerHTML = companies.map(c => `
+                <tr onclick="showCompanyDetail('${c.id}')">
+                    <td style="font-weight:500;">${c.name || '-'}</td>
+                    <td>${c.contact_names || c.primary_contact || '-'}</td>
+                    <td><span class="badge ${c.is_account_opened ? 'badge-success' : 'badge-warning'}">${c.is_account_opened ? '已开户' : '未开户'}</span></td>
+                    <td><span class="badge ${c.is_payroll_service ? 'badge-success' : 'badge-warning'}">${c.is_payroll_service ? '已代发' : '未代发'}</span></td>
+                    <td><span class="badge ${c.is_active_customer ? 'badge-success' : 'badge-warning'}">${c.is_active_customer ? '是' : '否'}</span></td>
+                    <td><span class="badge ${c.is_high_quality ? 'badge-purple' : 'badge-warning'}">${c.is_high_quality ? '高质量' : '普通'}</span></td>
+                    <td>${c.progress_status || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新统计
+        function updateStats(companies) {
+            document.getElementById('totalCompanies').textContent = companies.length;
+            document.getElementById('openedAccounts').textContent = companies.filter(c => c.is_account_opened).length;
+            document.getElementById('activeAccounts').textContent = companies.filter(c => c.is_active_customer).length;
+            document.getElementById('highQuality').textContent = companies.filter(c => c.is_high_quality).length;
+        }
+
+        // 搜索
+        function searchCompanies() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allCompanies.filter(c => 
+                (c.name && c.name.toLowerCase().includes(query)) ||
+                (c.contact_names && c.contact_names.toLowerCase().includes(query))
+            );
+            renderCompanies(filtered);
+        }
+
+        // 切换标签
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tasksTab').style.display = tab === 'tasks' ? 'block' : 'none';
+            document.getElementById('companiesTab').style.display = tab === 'companies' ? 'block' : 'none';
+            document.getElementById('remindersTab').style.display = tab === 'reminders' ? 'block' : 'none';
+            if (tab === 'companies') loadData();
+            if (tab === 'reminders') loadReminders();
+        }
+
+        // 显示企业详情
+        async function showCompanyDetail(id) {
+            document.getElementById('companyModal').classList.add('active');
+            document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`);
+                const c = await res.json();
+                
+                document.getElementById('modalTitle').textContent = c.name;
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="info-grid">
+                        <div>
+                            <div class="section-title">基本信息</div>
+                            <div class="info-item"><label>企业简介</label><div class="value">${c.introduction || '-'}</div></div>
+                            <div class="info-item"><label>行业</label><div class="value">${c.industry || '-'}</div></div>
+                            <div class="info-item"><label>年营业额</label><div class="value">${c.financial_info || '-'}</div></div>
+                        </div>
+                        <div>
+                            <div class="section-title">状态</div>
+                            <div class="info-item"><label>开户状态</label><div class="value">${c.is_account_opened ? '✅ 已开户' : '❌ 未开户'}</div></div>
+                            <div class="info-item"><label>代发状态</label><div class="value">${c.is_payroll_service ? '✅ 已代发' : '❌ 未代发'}</div></div>
+                            <div class="info-item"><label>进度</label><div class="value">${c.progress_status || '-'}</div></div>
+                        </div>
+                    </div>
+                    <div class="section-title">关键人信息</div>
+                    <div style="background:#f9fafb;padding:16px;border-radius:8px;">
+                        <p><strong>姓名：</strong>${c.contact_names || '暂无'}</p>
+                        <p style="margin-top:8px;"><button class="btn btn-primary" onclick="addContact(${c.id})">+ 添加/编辑关键人</button></p>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button class="btn btn-secondary" onclick="closeCompanyModal()">关闭</button>
+                        <button class="btn btn-primary" onclick="editCompany(${c.id})">编辑企业</button>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
+            }
+        }
+
+        // 添加关键人
+        function addContact(companyId) {
+            alert('关键人管理功能开发中...\n\n将在企业详情页直接添加关键人表单，支持：\n- 姓名、职位、生日\n- 家庭信息、喜好\n- 送礼建议\n\n敬请期待！');
+        }
+
+        // 编辑企业
+        function editCompany(id) {
+            alert('编辑功能开发中...');
+        }
+
+        // 新建营销任务
+        function createNewTask() {
+            document.getElementById('taskModal').classList.add('active');
+            document.getElementById('taskModalTitle').textContent = '新建营销任务';
+            document.getElementById('taskModalBody').innerHTML = `
+                <form id="taskForm">
+                    <div class="info-item">
+                        <label>任务名称 *</label>
+                        <input type="text" id="taskName" required placeholder="如：2026 年 Q2 深圳企业营销">
+                    </div>
+                    <div class="info-item">
+                        <label>任务描述</label>
+                        <textarea id="taskDesc" rows="3" placeholder="任务目标和说明"></textarea>
+                    </div>
+                    <div class="info-item">
+                        <label>添加企业</label>
+                        <p style="font-size:13px;color:#666;margin-bottom:8px;">创建后可在企业列表中添加企业到此任务</p>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">创建任务</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('taskForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const data = {
+                    name: document.getElementById('taskName').value,
+                    description: document.getElementById('taskDesc').value,
+                    status: '进行中'
+                };
+                try {
+                    const res = await fetch(`${API_BASE}/marketing-tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (res.ok) {
+                        alert('✅ 任务创建成功！');
+                        closeTaskModal();
+                        loadTasks();
+                    } else {
+                        alert('创建失败，请稍后重试');
+                    }
+                } catch (e) {
+                    alert('网络错误：' + e.message);
+                }
+            };
+        }
+
+        // 打开新增企业弹窗
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '新增企业';
+            document.getElementById('addModalBody').innerHTML = `
+                <form id="addCompanyForm">
+                    <div class="info-grid">
+                        <div>
+                            <div class="info-item">
+                                <label>企业名称 *</label>
+                                <input type="text" id="addName" required>
+                            </div>
+                            <div class="info-item">
+                                <label>企业简介</label>
+                                <textarea id="addIntroduction" rows="3"></textarea>
+                            </div>
+                            <div class="info-item">
+                                <label>行业</label>
+                                <input type="text" id="addIndustry">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="info-item">
+                                <label>年营业额</label>
+                                <input type="text" id="addFinancial">
+                            </div>
+                            <div class="info-item">
+                                <label>关键人姓名</label>
+                                <input type="text" id="addContact">
+                            </div>
+                            <div class="info-item">
+                                <label>开户状态</label>
+                                <select id="addIsOpened">
+                                    <option value="0">未开户</option>
+                                    <option value="1">已开户</option>
+                                </select>
+                            </div>
+                            <div class="info-item">
+                                <label>代发状态</label>
+                                <select id="addIsPayroll">
+                                    <option value="0">未代发</option>
+                                    <option value="1">已代发</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('addCompanyForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const data = {
+                    name: document.getElementById('addName').value,
+                    introduction: document.getElementById('addIntroduction').value,
+                    industry: document.getElementById('addIndustry').value,
+                    financial_info: document.getElementById('addFinancial').value,
+                    is_account_opened: parseInt(document.getElementById('addIsOpened').value),
+                    is_payroll_service: parseInt(document.getElementById('addIsPayroll').value),
+                    is_active_customer: 0,
+                    is_high_quality: 0,
+                    progress_status: '初步接触'
+                };
+                try {
+                    const res = await fetch(`${API_BASE}/companies`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await res.json();
+                    if (res.ok) {
+                        alert('✅ 企业添加成功！');
+                        closeAddModal();
+                        loadData();
+                    } else {
+                        alert('添加失败：' + (result.error || '请重试'));
+                    }
+                } catch (e) {
+                    alert('网络错误：' + e.message);
+                }
+            };
+        }
+
+        // 打开导入弹窗
+        function openImportModal() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        // 执行导入
+        async function doImport() {
+            const data = document.getElementById('importData').value.trim();
+            if (!data) {
+                alert('请输入 CSV 数据');
+                return;
+            }
+            const lines = data.split('\n').filter(l => l.trim());
+            let success = 0, failed = 0;
+            for (const line of lines) {
+                const [name, industry, contact, financial, isOpened, isPayroll] = line.split(',').map(s => s.trim());
+                if (!name) continue;
+                try {
+                    await fetch(`${API_BASE}/companies`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name, industry, financial_info: financial || '',
+                            is_account_opened: parseInt(isOpened) || 0,
+                            is_payroll_service: parseInt(isPayroll) || 0,
+                            is_active_customer: 0, is_high_quality: 0, progress_status: '初步接触'
+                        })
+                    });
+                    success++;
+                } catch { failed++; }
+            }
+            alert(`✅ 导入完成！成功：${success}, 失败：${failed}`);
+            closeImportModal();
+            loadData();
+        }
+
+        // 加载提醒
+        async function loadReminders() {
+            const container = document.getElementById('remindersList');
+            try {
+                const res = await fetch(`${API_BASE}/reminders`);
+                const data = await res.json();
+                const reminders = Array.isArray(data) ? data : [];
+                if (reminders.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">暂无提醒</p>';
+                } else {
+                    container.innerHTML = reminders.map(r => `
+                        <div class="task-card" style="background:#fef3c7;border-left-color:#f59e0b;">
+                            <h3>📌 ${r.title || '提醒'}</h3>
+                            <p>${r.description || r.message || ''}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch {
+                container.innerHTML = '<p style="text-align:center;color:#999;">暂无提醒</p>';
+            }
+        }
+
+        // 关闭弹窗
+        function closeCompanyModal() { document.getElementById('companyModal').classList.remove('active'); }
+        function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+        function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+        function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
+
+        // 启动
+        init();
+        setInterval(() => { if (document.getElementById('companiesTab').style.display !== 'none') loadData(); }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户管理系统 CRM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card h3 { font-size: 14px; color: #666; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #333; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: white; padding: 8px; border-radius: 12px; overflow-x: auto; }
+        .tab { padding: 12px 20px; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-size: 14px; white-space: nowrap; }
+        .tab.active { background: #667eea; color: white; }
+        .content-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 13px; }
+        tr:hover { background: #f9fafb; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #e5e7eb; color: #374151; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        .search-box { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-box input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10; }
+        .modal-body { padding: 20px; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .info-item { margin-bottom: 12px; }
+        .info-item label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .info-item input, .info-item select, .info-item textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+        .section-title { font-size: 16px; font-weight: 600; margin: 20px 0 12px; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 6px; }
+        .task-card { padding: 16px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; margin-bottom: 12px; border-left: 4px solid #667eea; cursor: pointer; }
+        .task-card h3 { font-size: 15px; margin-bottom: 6px; }
+        .task-card p { font-size: 12px; color: #666; }
+        .week-plan { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 20px; }
+        .day-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+        .day-card.today { border-color: #667eea; background: #f0f5ff; }
+        .day-card h4 { font-size: 13px; color: #666; margin-bottom: 8px; text-align: center; }
+        .day-card.today h4 { color: #667eea; font-weight: 600; }
+        .day-tasks { min-height: 60px; }
+        .day-task { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 12px; }
+        .day-task .company { font-weight: 500; color: #333; }
+        .day-task .action { color: #666; margin-top: 4px; }
+        .priority { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-top: 4px; }
+        .priority-high { background: #fee2e2; color: #991b1b; }
+        .priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-low { background: #dbeafe; color: #1e40af; }
+        .select-inline { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; cursor: pointer; background: white; }
+        .editable { cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .editable:hover { background: #fef3c7; text-decoration: underline; }
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+        .filter-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+        .reminder-card { padding: 14px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; margin-bottom: 10px; }
+        .reminder-card.urgent { background: #fee2e2; border-left-color: #ef4444; }
+        .reminder-card h4 { font-size: 14px; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 客户管理系统</h1>
+            <p>营销任务 · 企业列表 · 每周计划 · 智能提醒</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card"><h3>企业总数</h3><div class="value" id="totalCompanies">-</div></div>
+            <div class="stat-card"><h3>已开户</h3><div class="value" id="openedAccounts">-</div></div>
+            <div class="stat-card"><h3>有效户</h3><div class="value" id="activeAccounts">-</div></div>
+            <div class="stat-card"><h3>高质量客户</h3><div class="value" id="highQuality">-</div></div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tasks')">营销任务</button>
+            <button class="tab" onclick="switchTab('companies')">企业列表</button>
+            <button class="tab" onclick="switchTab('weekly')">每周计划</button>
+            <button class="tab" onclick="switchTab('reminders')">智能提醒</button>
+        </div>
+        <div class="content-card" id="tasksTab"><div class="search-box"><button class="btn btn-primary" onclick="createNewTask()">+ 新建营销任务</button></div><div id="tasksList"></div></div>
+        <div class="content-card" id="companiesTab" style="display:none;">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索企业名称、关键人..." onkeyup="searchCompanies()">
+                <button class="btn btn-primary" onclick="openAddModal()">+ 新增企业</button>
+                <button class="btn btn-secondary" onclick="openImportModal()">📥 导入 Excel</button>
+                <button class="btn btn-secondary" onclick="exportCompanies()">📤 导出 Excel</button>
+            </div>
+            <table>
+                <thead><tr><th>企业名称</th><th>行业</th><th>年营业额</th><th>关键人</th><th>开户</th><th>代发</th><th>有效户</th><th>高质量</th><th>进度</th><th>操作</th></tr></thead>
+                <tbody id="companiesTable"></tbody>
+            </table>
+        </div>
+        <div class="content-card" id="weeklyTab" style="display:none;">
+            <div class="filter-bar"><h2 style="margin:0;">📅 每周工作安排</h2><select id="weekSelect" onchange="loadWeekPlan()"></select><button class="btn btn-primary" onclick="openAddWeekTask()">+ 添加待办</button><button class="btn btn-secondary" onclick="loadWeekPlan()">🔄 刷新</button></div>
+            <div class="week-plan" id="weekPlan"></div>
+        </div>
+        <div class="content-card" id="remindersTab" style="display:none;">
+            <div class="filter-bar"><h2 style="margin:0;">📌 智能提醒</h2><button class="btn btn-secondary" onclick="loadReminders()">🔄 刷新</button></div>
+            <div id="remindersList"></div>
+        </div>
+    </div>
+    <div class="modal" id="companyModal"><div class="modal-content"><div class="modal-header"><h2 id="modalTitle">企业详情</h2><button class="close-btn" onclick="closeCompanyModal()">&times;</button></div><div class="modal-body" id="modalBody"></div></div></div>
+    <div class="modal" id="addModal"><div class="modal-content"><div class="modal-header"><h2 id="addModalTitle">新增企业</h2><button class="close-btn" onclick="closeAddModal()">&times;</button></div><div class="modal-body" id="addModalBody"></div></div></div>
+    <div class="modal" id="importModal"><div class="modal-content"><div class="modal-header"><h2>导入企业数据</h2><button class="close-btn" onclick="closeImportModal()">&times;</button></div><div class="modal-body" id="importModalBody"></div></div></div>
+    <div class="modal" id="taskModal"><div class="modal-content"><div class="modal-header"><h2 id="taskModalTitle">新建营销任务</h2><button class="close-btn" onclick="closeTaskModal()">&times;</button></div><div class="modal-body" id="taskModalBody"></div></div></div>
+    <div class="modal" id="weekTaskModal"><div class="modal-content"><div class="modal-header"><h2 id="weekTaskModalTitle">添加每周待办</h2><button class="close-btn" onclick="closeWeekTaskModal()">&times;</button></div><div class="modal-body" id="weekTaskModalBody"></div></div></div>
+
+    <script>
+        const API_BASE = '/api';
+        let allCompanies = [];
+        let allTasks = [];
+        let allWeekTasks = [];
+        const weekDays = ['周一','周二','周三','周四','周五','周六','周日'];
+
+        async function init() { await loadTasks(); await loadData(); initWeekSelect(); }
+
+        function initWeekSelect() {
+            const select = document.getElementById('weekSelect');
+            const weeks = [];
+            const today = new Date();
+            for (let i = 0; i < 4; i++) {
+                const week = getWeekInfo(i);
+                weeks.push(week);
+            }
+            select.innerHTML = weeks.map((w,i) => `<option value="${w.start}" ${i===0?'selected':''}>${w.start} 至 ${w.end}</option>`).join('');
+        }
+
+        function getWeekInfo(offset = 0) {
+            const today = new Date();
+            const day = today.getDay() || 7;
+            const start = new Date(today);
+            start.setDate(today.getDate() - day + 1 + (offset * 7));
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0], days: Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d.toISOString().split('T')[0]; }) };
+        }
+
+        function getWeekInfoFromStart(start) {
+            const s = new Date(start);
+            return { start, end: (() => { const e=new Date(s); e.setDate(s.getDate()+6); return e.toISOString().split('T')[0]; })(), days: Array.from({length: 7}, (_, i) => { const d=new Date(s); d.setDate(s.getDate()+i); return d.toISOString().split('T')[0]; }) };
+        }
+
+        async function loadTasks() { try { const res = await fetch(`${API_BASE}/marketing-tasks`); allTasks = await res.json(); renderTasks(); } catch { allTasks = []; renderTasks(); } }
+        function renderTasks() { const c = document.getElementById('tasksList'); if (!allTasks.length) { c.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><p>暂无营销任务</p></div>'; return; } c.innerHTML = allTasks.map(t => `<div class="task-card" onclick="viewTaskCompanies(${t.id})"><h3>${t.name||'未命名'}</h3><p>${t.description||''}</p><div class="task-stats"><span class="task-stat">📦 <strong>${t.company_count||0}</strong></span></div></div>`).join(''); }
+        function viewTaskCompanies(id) { switchTab('companies'); allCompanies = allCompanies.filter(c => c.task_id === id); renderCompanies(allCompanies); }
+
+        async function loadData() { try { const res = await fetch(`${API_BASE}/companies`); allCompanies = await res.json(); renderCompanies(allCompanies); updateStats(allCompanies); } catch { document.getElementById('companiesTable').innerHTML = '<tr><td colspan="10" style="text-align:center;color:#ef4444;">加载失败</td></tr>'; } }
+
+        function renderCompanies(list) {
+            const tb = document.getElementById('companiesTable');
+            if (!list || !list.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;">暂无数据</td></tr>'; return; }
+            tb.innerHTML = list.map(c => `
+                <tr>
+                    <td style="font-weight:600;">${c.name||'-'}</td>
+                    <td><span class="editable" onclick="inlineEdit(${c.id},'industry','${c.industry||''}')" title="点击编辑">${c.industry||'-'}</span></td>
+                    <td><span class="editable" onclick="inlineEdit(${c.id},'financial_info','${(c.financial_info||'').replace(/"/g,'&quot;')}')" title="点击编辑">${c.financial_info||'-'}</span></td>
+                    <td>${c.contact_names||'-'}</td>
+                    <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
+                    <td><button class="badge ${c.is_payroll_service?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_payroll_service')">${c.is_payroll_service?'已代发':'未代发'}</button></td>
+                    <td><button class="badge ${c.is_active_customer?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_active_customer')">${c.is_active_customer?'是':'否'}</button></td>
+                    <td><button class="badge ${c.is_high_quality?'badge-purple':'badge-warning'}" onclick="inlineToggle(${c.id},'is_high_quality')">${c.is_high_quality?'高质量':'普通'}</button></td>
+                    <td><select class="select-inline" onchange="inlineSelect(${c.id},'progress_status',this.value)"><option value="初步接触" ${c.progress_status==='初步接触'?'selected':''}>初步接触</option><option value="方案报价" ${c.progress_status==='方案报价'?'selected':''}>方案报价</option><option value="谈判中" ${c.progress_status==='谈判中'?'selected':''}>谈判中</option><option value="已签约" ${c.progress_status==='已签约'?'selected':''}>已签约</option></select></td>
+                    <td><button class="btn btn-sm btn-secondary" onclick="showCompanyDetail(${c.id})">详情</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function inlineEdit(id, field, value) {
+            const newValue = prompt('请输入新值：', value || '');
+            if (newValue === null || newValue === value) return;
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: newValue }) });
+                if (res.ok) { alert('✅ 已更新'); loadData(); } else { const r = await res.json(); alert('更新失败：' + (r.error||'')); }
+            } catch (e) { alert('网络错误：' + e.message); }
+        }
+
+        async function inlineToggle(id, field) {
+            const c = allCompanies.find(x => x.id === id); if (!c) return;
+            try { await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: c[field] ? 0 : 1 }) }); loadData(); } catch {}
+        }
+
+        async function inlineSelect(id, field, value) { try { await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) }); loadData(); } catch {} }
+
+        function updateStats(list) { document.getElementById('totalCompanies').textContent = list.length; document.getElementById('openedAccounts').textContent = list.filter(c => c.is_account_opened).length; document.getElementById('activeAccounts').textContent = list.filter(c => c.is_active_customer).length; document.getElementById('highQuality').textContent = list.filter(c => c.is_high_quality).length; }
+        function searchCompanies() { const q = document.getElementById('searchInput').value.toLowerCase(); renderCompanies(allCompanies.filter(c => (c.name&&c.name.toLowerCase().includes(q))||(c.contact_names&&c.contact_names.toLowerCase().includes(q)))); }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            ['tasks','companies','weekly','reminders'].forEach(t => { document.getElementById(t+'Tab').style.display = t===tab?'block':'none'; });
+            if (tab==='companies') loadData();
+            if (tab==='weekly') loadWeekPlan();
+            if (tab==='reminders') loadReminders();
+        }
+
+        async function loadWeekPlan() {
+            const weekStart = document.getElementById('weekSelect').value;
+            const week = getWeekInfoFromStart(weekStart);
+            const container = document.getElementById('weekPlan');
+            try { const res = await fetch(`${API_BASE}/week-tasks?week_start=${weekStart}`); allWeekTasks = await res.json(); } catch { allWeekTasks = []; }
+            const today = new Date().toISOString().split('T')[0];
+            container.innerHTML = weekDays.map((day, i) => {
+                const date = week.days[i];
+                const isToday = date === today;
+                const tasks = allWeekTasks.filter(t => t.plan_date === date);
+                return `<div class="day-card ${isToday?'today':''}"><h4>${day} ${date.substr(5)}</h4><div class="day-tasks">${tasks.map(t => `<div class="day-task"><div class="company">${t.company_name||'未知'}</div><div class="action">${t.action||'待办'}</div><span class="priority priority-${t.priority||'medium'}">${t.priority==='high'?'高':t.priority==='low'?'低':'中'}</span><button class="btn btn-sm btn-secondary" style="margin-top:4px;width:100%;" onclick="deleteWeekTask(${t.id})">删除</button></div>`).join('')}</div></div>`;
+            }).join('');
+        }
+
+        function openAddWeekTask() {
+            document.getElementById('weekTaskModal').classList.add('active');
+            document.getElementById('weekTaskModalTitle').textContent = '添加每周待办';
+            const weekStart = document.getElementById('weekSelect').value;
+            const week = getWeekInfoFromStart(weekStart);
+            document.getElementById('weekTaskModalBody').innerHTML = `
+                <form id="weekTaskForm">
+                    <div class="info-item"><label>选择企业 *</label><select id="weekCompany" required><option value="">请选择</option>${allCompanies.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+                    <div class="info-item"><label>选择日期 *</label><select id="weekDate" required>${weekDays.map((d,i) => `<option value="${week.days[i]}">${d} (${week.days[i]})</option>`).join('')}</select></div>
+                    <div class="info-item"><label>待办事项 *</label><input type="text" id="weekAction" required placeholder="如：电话拜访、上门拜访"></div>
+                    <div class="info-item"><label>优先级</label><select id="weekPriority"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeWeekTaskModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div>
+                </form>
+            `;
+            document.getElementById('weekTaskForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const data = { company_id: parseInt(document.getElementById('weekCompany').value), company_name: allCompanies.find(c => c.id === parseInt(document.getElementById('weekCompany').value))?.name, plan_date: document.getElementById('weekDate').value, action: document.getElementById('weekAction').value, priority: document.getElementById('weekPriority').value, week_start: weekStart };
+                try { const res = await fetch(`${API_BASE}/week-tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { alert('✅ 已添加'); closeWeekTaskModal(); loadWeekPlan(); } else { alert('添加失败'); } } catch { alert('网络错误'); }
+            };
+        }
+        async function deleteWeekTask(id) { if (!confirm('确定删除？')) return; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' }); loadWeekPlan(); } catch { alert('删除失败'); } }
+
+        async function showCompanyDetail(id) {
+            document.getElementById('companyModal').classList.add('active');
+            document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+            try { const res = await fetch(`${API_BASE}/companies/${id}`); const c = await res.json(); document.getElementById('modalTitle').textContent = c.name; document.getElementById('modalBody').innerHTML = `<div class="info-grid"><div><div class="section-title">基本信息</div><div class="info-item"><label>简介</label><div>${c.introduction||'-'}</div></div></div><div><div class="section-title">状态</div><div class="info-item"><label>开户</label><div>${c.is_account_opened?'✅':'❌'}</div></div></div></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="closeCompanyModal()">关闭</button></div>`; } catch { document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>'; }
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '新增企业';
+            document.getElementById('addModalBody').innerHTML = `
+                <form id="addCompanyForm">
+                    <div class="info-grid">
+                        <div><div class="info-item"><label>企业名称 *</label><input type="text" id="addName" required></div><div class="info-item"><label>行业</label><input type="text" id="addIndustry"></div></div>
+                        <div><div class="info-item"><label>年营业额</label><input type="text" id="addFinancial"></div><div class="info-item"><label>简介</label><textarea id="addIntro" rows="2"></textarea></div></div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+                </form>
+            `;
+            document.getElementById('addCompanyForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try { const res = await fetch(`${API_BASE}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('addName').value, industry: document.getElementById('addIndustry').value, financial_info: document.getElementById('addFinancial').value, introduction: document.getElementById('addIntro').value, progress_status: '初步接触' }) }); if (res.ok) { alert('✅ 已添加'); closeAddModal(); loadData(); } else { alert('添加失败'); } } catch { alert('网络错误'); }
+            };
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.add('active');
+            document.getElementById('importModalBody').innerHTML = `
+                <div class="info-item"><label>Excel 格式说明</label><div style="background:#f3f4f6;padding:12px;border-radius:6px;font-size:13px;">第一行应为表头，包含：企业名称、行业、年营业额、开户 (已开户/未开户)、代发 (已代发/未代发) 等列</div></div>
+                <div class="info-item"><label>粘贴数据（从 Excel 复制）</label><textarea id="importData" rows="8" placeholder="从 Excel 复制后直接粘贴到这里"></textarea></div>
+                <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button><button type="button" class="btn btn-primary" onclick="doImport()">导入</button></div>
+            `;
+        }
+
+        async function doImport() {
+            const data = document.getElementById('importData').value.trim();
+            if (!data) { alert('请输入数据'); return; }
+            const lines = data.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(/\t|,/).map(h => h.trim().toLowerCase());
+            let s = 0, f = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const vals = lines[i].split(/\t|,/).map(v => v.trim());
+                const row = {};
+                headers.forEach((h, j) => { row[h] = vals[j] || ''; });
+                const name = row['企业名称'] || row['name'] || vals[0];
+                if (!name) continue;
+                try {
+                    await fetch(`${API_BASE}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, industry: row['行业']||row['industry']||'', financial_info: row['年营业额']||row['financial_info']||'', introduction: row['简介']||row['introduction']||'', is_account_opened: (row['开户']||'').includes('已')?1:0, is_payroll_service: (row['代发']||'').includes('已')?1:0, progress_status: '初步接触' }) });
+                    s++;
+                } catch { f++; }
+            }
+            alert(`✅ 导入完成！成功:${s} 失败:${f}`); closeImportModal(); loadData();
+        }
+
+        function exportCompanies() {
+            if (!allCompanies.length) { alert('无数据'); return; }
+            const headers = ['企业名称', '行业', '年营业额', '简介', '关键人', '开户状态', '代发状态', '有效户', '高质量', '进度状态'];
+            const rows = allCompanies.map(c => [c.name, c.industry, c.financial_info, c.introduction, c.contact_names, c.is_account_opened?'已开户':'未开户', c.is_payroll_service?'已代发':'未代发', c.is_active_customer?'是':'否', c.is_high_quality?'高质量':'普通', c.progress_status]);
+            // 生成 TSV 格式（Excel 可直接打开）
+            const tsv = [headers, ...rows].map(row => row.map(cell => `"${cell||''}"`).join('\t')).join('\n');
+            const blob = new Blob(['\ufeff' + tsv], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `企业数据_${new Date().toISOString().split('T')[0]}.xls`;
+            link.click();
+        }
+
+        async function loadReminders() {
+            const c = document.getElementById('remindersList'); c.innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+            const today = new Date(); const month = today.getMonth()+1, date = today.getDate();
+            const bds = [];
+            for (const comp of allCompanies) { try { const res = await fetch(`${API_BASE}/contacts/company/${comp.id}`); const list = await res.json(); list.forEach(ct => { if (ct.birth_date) bds.push({...ct, company_name: comp.name}); }); } catch {} }
+            const todayBd = bds.filter(ct => { const d = new Date(ct.birth_date); return (d.getMonth()+1)===month && d.getDate()===date; });
+            const monthBd = bds.filter(ct => { const d = new Date(ct.birth_date); return (d.getMonth()+1)===month; });
+            let html = '';
+            if (todayBd.length) { html += '<h3 style="margin:16px 0 12px;color:#ef4444;">🎂 今日生日</h3>'; todayBd.forEach(ct => { html += `<div class="reminder-card urgent"><h4>${ct.company_name} - ${ct.name}</h4><p>${ct.position||''}</p></div>`; }); }
+            if (monthBd.length) { html += '<h3 style="margin:16px 0 12px;color:#f59e0b;">📅 本月生日</h3>'; monthBd.forEach(ct => { const d = new Date(ct.birth_date); html += `<div class="reminder-card"><h4>${ct.company_name} - ${ct.name}</h4><p>${today.getFullYear()-d.getFullYear()}岁</p></div>`; }); }
+            c.innerHTML = html || '<p style="text-align:center;color:#999;padding:40px;">暂无提醒</p>';
+        }
+
+        function createNewTask() {
+            document.getElementById('taskModal').classList.add('active');
+            document.getElementById('taskModalTitle').textContent = '新建营销任务';
+            document.getElementById('taskModalBody').innerHTML = `<form id="taskForm"><div class="info-item"><label>任务名称 *</label><input type="text" id="taskName" required></div><div class="info-item"><label>描述</label><textarea id="taskDesc" rows="3"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeTaskModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div></form>`;
+            document.getElementById('taskForm').onsubmit = async function(e) { e.preventDefault(); try { const res = await fetch(`${API_BASE}/marketing-tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('taskName').value, description: document.getElementById('taskDesc').value }) }); if (res.ok) { alert('✅ 已创建'); closeTaskModal(); loadTasks(); } else { alert('创建失败'); } } catch { alert('网络错误'); } };
+        }
+
+        function closeCompanyModal() { document.getElementById('companyModal').classList.remove('active'); }
+        function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+        function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+        function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
+        function closeWeekTaskModal() { document.getElementById('weekTaskModal').classList.remove('active'); }
+
+        init();
+    </script>
+</body>
+</html>
