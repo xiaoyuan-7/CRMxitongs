@@ -1,137 +1,110 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { getDatabase } = require('../database');
 
-// 获取企业的所有关键人
-router.get('/company/:companyId', (req, res) => {
-  const { companyId } = req.params;
-  
-  const query = `
-    SELECT * FROM contacts 
-    WHERE company_id = ? 
-    ORDER BY is_primary DESC, created_at DESC
-  `;
-
-  db.all(query, [companyId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
-
-// 获取单个关键人详情
-router.get('/:id', (req, res) => {
-  const { id } = req.params;
-  
-  const query = `
-    SELECT c.*, co.name as company_name
-    FROM contacts c
-    LEFT JOIN companies co ON c.company_id = co.id
-    WHERE c.id = ?
-  `;
-
-  db.get(query, [id], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (!row) {
-      return res.status(404).json({ error: '关键人不存在' });
-    }
-    res.json(row);
-  });
-});
-
-// 创建关键人
-router.post('/', (req, res) => {
-  const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
-  
-  // 如果设置为 primary，先将同公司的其他关键人设为非 primary
-  if (is_primary) {
-    db.run('UPDATE contacts SET is_primary = 0 WHERE company_id = ?', [company_id]);
+// 获取企业的关键人列表
+router.get('/company/:companyId', async (req, res) => {
+  try {
+    const db = getDatabase();
+    const contacts = await db.all('SELECT * FROM contacts WHERE company_id = ? ORDER BY is_primary DESC, created_at DESC', [req.params.companyId]);
+    res.json(contacts);
+  } catch (error) {
+    console.error('获取关键人列表失败:', error);
+    res.status(500).json({ error: '获取关键人列表失败' });
   }
-  
-  const query = `
-    INSERT INTO contacts (company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  
-  const params = [company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary ? 1 : 0];
-
-  db.run(query, params, function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ id: this.lastID, message: '关键人创建成功' });
-  });
 });
 
-// 更新关键人
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
-  
-  // 如果设置为 primary，先将同公司的其他关键人设为非 primary
-  if (is_primary) {
-    db.run('UPDATE contacts SET is_primary = 0 WHERE company_id = ? AND id != ?', [company_id, id]);
+// 获取关键人详情
+router.get('/:id', async (req, res) => {
+  try {
+    const db = getDatabase();
+    const contact = await db.get('SELECT * FROM contacts WHERE id = ?', [req.params.id]);
+    
+    if (!contact) {
+      return res.status(404).json({ error: '关键人不存在' });
+    }
+
+    res.json(contact);
+  } catch (error) {
+    console.error('获取关键人详情失败:', error);
+    res.status(500).json({ error: '获取关键人详情失败' });
   }
-  
-  const query = `
-    UPDATE contacts SET
-      name = ?, position = ?, birth_date = ?, family_info = ?, 
-      preferences = ?, gift_recommendations = ?, is_primary = ?,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `;
-  
-  const params = [name, position, birth_date, family_info, preferences, gift_recommendations, is_primary ? 1 : 0, id];
-
-  db.run(query, params, function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: '关键人不存在' });
-    }
-    res.json({ message: '关键人更新成功' });
-  });
-});
-
-// 删除关键人
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  
-  db.run('DELETE FROM contacts WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: '关键人不存在' });
-    }
-    res.json({ message: '关键人删除成功' });
-  });
 });
 
 // 获取即将过生日的关键人
-router.get('/birthdays/upcoming', (req, res) => {
-  const { days = 30 } = req.query;
-  
-  const query = `
-    SELECT c.*, co.name as company_name
-    FROM contacts c
-    LEFT JOIN companies co ON c.company_id = co.id
-    WHERE c.birth_date IS NOT NULL
-    AND strftime('%m-%d', c.birth_date) BETWEEN strftime('%m-%d', 'now') 
-        AND date('now', '+' || ? || ' days')
-    ORDER BY strftime('%m-%d', c.birth_date)
-  `;
+router.get('/birthdays/upcoming', async (req, res) => {
+  try {
+    const db = getDatabase();
+    const contacts = await db.all(`
+      SELECT c.*, comp.name as company_name
+      FROM contacts c
+      LEFT JOIN companies comp ON c.company_id = comp.id
+      WHERE c.birth_date IS NOT NULL
+      AND strftime('%m-%d', c.birth_date) = strftime('%m-%d', date('now', '+7 days'))
+      ORDER BY c.birth_date
+    `);
+    
+    res.json(contacts);
+  } catch (error) {
+    console.error('获取生日提醒失败:', error);
+    res.status(500).json({ error: '获取生日提醒失败' });
+  }
+});
 
-  db.all(query, [days], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
+// 创建关键人
+router.post('/', async (req, res) => {
+  try {
+    const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
+    
+    const db = getDatabase();
+    const result = await db.run(`
+      INSERT INTO contacts (company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary || 0]);
+
+    res.json({ id: result.lastID, message: '关键人创建成功' });
+  } catch (error) {
+    console.error('创建关键人失败:', error);
+    res.status(500).json({ error: '创建关键人失败' });
+  }
+});
+
+// 更新关键人
+router.put('/:id', async (req, res) => {
+  try {
+    const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
+    
+    const db = getDatabase();
+    await db.run(`
+      UPDATE contacts 
+      SET company_id = ?, name = ?, position = ?, birth_date = ?, family_info = ?, preferences = ?, gift_recommendations = ?, is_primary = ?
+      WHERE id = ?
+    `, [company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary || 0, req.params.id]);
+
+    res.json({ message: '关键人更新成功' });
+  } catch (error) {
+    console.error('更新关键人失败:', error);
+    res.status(500).json({ error: '更新关键人失败' });
+  }
+});
+
+// 删除关键人
+router.delete('/:id', async (req, res) => {
+  try {
+    const db = getDatabase();
+    
+    // 先删除相关的营销进度和提醒
+    await db.run('DELETE FROM marketing_progress WHERE contact_id = ?', [req.params.id]);
+    await db.run('DELETE FROM reminders WHERE contact_id = ?', [req.params.id]);
+    
+    // 删除关键人
+    await db.run('DELETE FROM contacts WHERE id = ?', [req.params.id]);
+
+    res.json({ message: '关键人删除成功' });
+  } catch (error) {
+    console.error('删除关键人失败:', error);
+    res.status(500).json({ error: '删除关键人失败' });
+  }
 });
 
 module.exports = router;

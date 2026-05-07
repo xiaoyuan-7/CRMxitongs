@@ -1,106 +1,111 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { getDatabase } = require('../database');
 
-// 获取企业的所有营销进度记录
-router.get('/company/:companyId', (req, res) => {
-  const { companyId } = req.params;
-  
-  const query = `
-    SELECT mp.*, c.name as contact_name
-    FROM marketing_progress mp
-    LEFT JOIN contacts c ON mp.contact_id = c.id
-    WHERE mp.company_id = ?
-    ORDER BY mp.follow_up_date DESC
-  `;
-
-  db.all(query, [companyId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
+// 获取企业的跟进记录
+router.get('/company/:companyId', async (req, res) => {
+  try {
+    const db = getDatabase();
+    const records = await db.all(`
+      SELECT mp.*, ct.name as contact_name, comp.name as company_name
+      FROM marketing_progress mp
+      LEFT JOIN contacts ct ON mp.contact_id = ct.id
+      LEFT JOIN companies comp ON mp.company_id = comp.id
+      WHERE mp.company_id = ?
+      ORDER BY mp.follow_up_date DESC
+    `, [req.params.companyId]);
+    
+    res.json(records);
+  } catch (error) {
+    console.error('获取跟进记录失败:', error);
+    res.status(500).json({ error: '获取跟进记录失败' });
+  }
 });
 
-// 获取统计信息（跟进频率）
-router.get('/stats/:companyId', (req, res) => {
-  const { companyId } = req.params;
-  
-  const query = `
-    SELECT 
-      COUNT(*) as total_follow_ups,
-      COUNT(DISTINCT follow_up_date) as follow_up_days,
-      MAX(follow_up_date) as last_follow_up,
-      MIN(follow_up_date) as first_follow_up
-    FROM marketing_progress
-    WHERE company_id = ?
-  `;
+// 获取跟进统计
+router.get('/stats/:companyId', async (req, res) => {
+  try {
+    const db = getDatabase();
+    
+    // 总跟进次数
+    const totalFollowups = await db.get('SELECT COUNT(*) as count FROM marketing_progress WHERE company_id = ?', [req.params.companyId]);
+    
+    // 按类型统计
+    const typeStats = await db.all(`
+      SELECT follow_up_type, COUNT(*) as count
+      FROM marketing_progress 
+      WHERE company_id = ?
+      GROUP BY follow_up_type
+    `, [req.params.companyId]);
+    
+    // 最近30天跟进趋势
+    const recentTrend = await db.all(`
+      SELECT DATE(follow_up_date) as date, COUNT(*) as count
+      FROM marketing_progress 
+      WHERE company_id = ? AND follow_up_date >= date('now', '-30 days')
+      GROUP BY DATE(follow_up_date)
+      ORDER BY date
+    `, [req.params.companyId]);
 
-  db.get(query, [companyId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(row || { total_follow_ups: 0, follow_up_days: 0 });
-  });
+    res.json({
+      totalFollowups: totalFollowups.count,
+      typeStats,
+      recentTrend
+    });
+  } catch (error) {
+    console.error('获取跟进统计失败:', error);
+    res.status(500).json({ error: '获取跟进统计失败' });
+  }
 });
 
-// 创建营销进度记录
-router.post('/', (req, res) => {
-  const { company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, notes } = req.body;
-  
-  const query = `
-    INSERT INTO marketing_progress (company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-  
-  const params = [company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, notes];
+// 创建跟进记录
+router.post('/', async (req, res) => {
+  try {
+    const { company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date } = req.body;
+    
+    const db = getDatabase();
+    const result = await db.run(`
+      INSERT INTO marketing_progress (company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date]);
 
-  db.run(query, params, function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ id: this.lastID, message: '跟进记录创建成功' });
-  });
+    res.json({ id: result.lastID, message: '跟进记录创建成功' });
+  } catch (error) {
+    console.error('创建跟进记录失败:', error);
+    res.status(500).json({ error: '创建跟进记录失败' });
+  }
 });
 
-// 更新营销进度记录
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  const { contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, notes } = req.body;
-  
-  const query = `
-    UPDATE marketing_progress SET
-      contact_id = ?, follow_up_date = ?, follow_up_type = ?, 
-      follow_up_content = ?, next_follow_up_date = ?, notes = ?
-    WHERE id = ?
-  `;
-  
-  const params = [contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, notes, id];
+// 更新跟进记录
+router.put('/:id', async (req, res) => {
+  try {
+    const { company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date } = req.body;
+    
+    const db = getDatabase();
+    await db.run(`
+      UPDATE marketing_progress 
+      SET company_id = ?, contact_id = ?, follow_up_date = ?, follow_up_type = ?, follow_up_content = ?, next_follow_up_date = ?
+      WHERE id = ?
+    `, [company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date, req.params.id]);
 
-  db.run(query, params, function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: '记录不存在' });
-    }
     res.json({ message: '跟进记录更新成功' });
-  });
+  } catch (error) {
+    console.error('更新跟进记录失败:', error);
+    res.status(500).json({ error: '更新跟进记录失败' });
+  }
 });
 
-// 删除营销进度记录
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  
-  db.run('DELETE FROM marketing_progress WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: '记录不存在' });
-    }
+// 删除跟进记录
+router.delete('/:id', async (req, res) => {
+  try {
+    const db = getDatabase();
+    await db.run('DELETE FROM marketing_progress WHERE id = ?', [req.params.id]);
+
     res.json({ message: '跟进记录删除成功' });
-  });
+  } catch (error) {
+    console.error('删除跟进记录失败:', error);
+    res.status(500).json({ error: '删除跟进记录失败' });
+  }
 });
 
 module.exports = router;
