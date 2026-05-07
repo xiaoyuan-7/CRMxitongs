@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 
 // 获取提醒列表
 router.get('/', async (req, res) => {
   try {
     const db = getDatabase();
-    const reminders = await db.all(`
+    const reminders = await allAsync(`
       SELECT r.*, u.username, c.name as contact_name, comp.name as company_name
       FROM reminders r
       LEFT JOIN users u ON r.user_id = u.id
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 router.get('/today', async (req, res) => {
   try {
     const db = getDatabase();
-    const reminders = await db.all(`
+    const reminders = await allAsync(`
       SELECT r.*, u.username, c.name as contact_name, comp.name as company_name
       FROM reminders r
       LEFT JOIN users u ON r.user_id = u.id
@@ -48,7 +48,7 @@ router.get('/today', async (req, res) => {
 router.get('/upcoming', async (req, res) => {
   try {
     const db = getDatabase();
-    const reminders = await db.all(`
+    const reminders = await allAsync(`
       SELECT r.*, u.username, c.name as contact_name, comp.name as company_name
       FROM reminders r
       LEFT JOIN users u ON r.user_id = u.id
@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
     const { user_id, contact_id, company_id, reminder_type, reminder_date, title, description } = req.body;
     
     const db = getDatabase();
-    const result = await db.run(`
+    const result = await runAsync(`
       INSERT INTO reminders (user_id, contact_id, company_id, reminder_type, reminder_date, title, description)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [user_id, contact_id, company_id, reminder_type, reminder_date, title, description]);
@@ -91,7 +91,7 @@ router.post('/generate-birthday-reminders', async (req, res) => {
     const db = getDatabase();
     
     // 获取所有关键人
-    const contacts = await db.all('SELECT * FROM contacts WHERE birth_date IS NOT NULL');
+    const contacts = await allAsync('SELECT * FROM contacts WHERE birth_date IS NOT NULL');
     
     const currentYear = new Date().getFullYear();
     const reminders = [];
@@ -102,7 +102,7 @@ router.post('/generate-birthday-reminders', async (req, res) => {
         birthday.setFullYear(currentYear);
         const reminderDate = birthday.toISOString().split('T')[0];
         
-        const result = await db.run(`
+        const result = await runAsync(`
           INSERT INTO reminders (user_id, contact_id, company_id, reminder_type, reminder_date, title, description)
           VALUES (1, ?, ?, 'birthday', ?, ?, ?)
         `, [contact.id, contact.company_id, reminderDate, `生日提醒 - ${contact.name}`, `${contact.name}的生日到了`]);
@@ -136,10 +136,10 @@ router.post('/generate-gift-reminders', async (req, res) => {
     
     for (const holiday of holidays) {
       // 获取所有关键人
-      const contacts = await db.all('SELECT * FROM contacts');
+      const contacts = await allAsync('SELECT * FROM contacts');
       
       for (const contact of contacts) {
-        const result = await db.run(`
+        const result = await runAsync(`
           INSERT INTO reminders (user_id, contact_id, company_id, reminder_type, reminder_date, title, description)
           VALUES (1, ?, ?, 'gift', ?, ?, ?)
         `, [contact.id, contact.company_id, holiday.date, `节日送礼提醒 - ${holiday.name}`, `${holiday.name}将至，记得为${contact.name}准备礼物`]);
@@ -162,7 +162,7 @@ router.post('/generate-gift-reminders', async (req, res) => {
 router.post('/:id/complete', async (req, res) => {
   try {
     const db = getDatabase();
-    await db.run('UPDATE reminders SET is_completed = 1 WHERE id = ?', [req.params.id]);
+    await runAsync('UPDATE reminders SET is_completed = 1 WHERE id = ?', [req.params.id]);
 
     res.json({ message: '提醒已标记为完成' });
   } catch (error) {
@@ -175,7 +175,7 @@ router.post('/:id/complete', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDatabase();
-    await db.run('DELETE FROM reminders WHERE id = ?', [req.params.id]);
+    await runAsync('DELETE FROM reminders WHERE id = ?', [req.params.id]);
 
     res.json({ message: '提醒删除成功' });
   } catch (error) {

@@ -350,6 +350,9 @@ function initDatabase() {
 // ========== 导出 ==========
 
 module.exports = {
+  // 获取数据库实例（供旧路由使用）
+  getDatabase: () => db,
+  
   // 原始 sqlite3 数据库对象（支持回调方式）
   db,
   

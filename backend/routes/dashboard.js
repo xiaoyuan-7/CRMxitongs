@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 
 // 获取统计数据
 router.get('/stats', async (req, res) => {
@@ -8,16 +8,16 @@ router.get('/stats', async (req, res) => {
     const db = getDatabase();
     
     // 总企业数
-    const totalCompanies = await db.get('SELECT COUNT(*) as count FROM companies');
+    const totalCompanies = await getAsync('SELECT COUNT(*) as count FROM companies');
     
     // 总关键人数
-    const totalContacts = await db.get('SELECT COUNT(*) as count FROM contacts');
+    const totalContacts = await getAsync('SELECT COUNT(*) as count FROM contacts');
     
     // 总跟进记录数
-    const totalFollowups = await db.get('SELECT COUNT(*) as count FROM marketing_progress');
+    const totalFollowups = await getAsync('SELECT COUNT(*) as count FROM marketing_progress');
     
     // 总提醒数
-    const totalReminders = await db.get('SELECT COUNT(*) as count FROM reminders');
+    const totalReminders = await getAsync('SELECT COUNT(*) as count FROM reminders');
     
     res.json({
       totalCompanies: totalCompanies.count,
@@ -37,18 +37,18 @@ router.get('/conversion', async (req, res) => {
     const db = getDatabase();
     
     // 开户企业数
-    const accountOpened = await db.get('SELECT COUNT(*) as count FROM companies WHERE is_account_opened = 1');
+    const accountOpened = await getAsync('SELECT COUNT(*) as count FROM companies WHERE is_account_opened = 1');
     
     // 代发企业数
-    const payrollService = await db.get('SELECT COUNT(*) as count FROM companies WHERE is_payroll_service = 1');
+    const payrollService = await getAsync('SELECT COUNT(*) as count FROM companies WHERE is_payroll_service = 1');
     
     // 有效户企业数
-    const activeCustomer = await db.get('SELECT COUNT(*) as count FROM companies WHERE is_active_customer = 1');
+    const activeCustomer = await getAsync('SELECT COUNT(*) as count FROM companies WHERE is_active_customer = 1');
     
     // 高质量企业数
-    const highQuality = await db.get('SELECT COUNT(*) as count FROM companies WHERE is_high_quality = 1');
+    const highQuality = await getAsync('SELECT COUNT(*) as count FROM companies WHERE is_high_quality = 1');
     
-    const totalCompanies = await db.get('SELECT COUNT(*) as count FROM companies');
+    const totalCompanies = await getAsync('SELECT COUNT(*) as count FROM companies');
     
     res.json({
       totalCompanies: totalCompanies.count,
@@ -75,14 +75,14 @@ router.get('/follow-up-stats', async (req, res) => {
     const db = getDatabase();
     
     // 按类型统计
-    const typeStats = await db.all(`
+    const typeStats = await allAsync(`
       SELECT follow_up_type, COUNT(*) as count
       FROM marketing_progress 
       GROUP BY follow_up_type
     `);
     
     // 最近30天跟进趋势
-    const recentTrend = await db.all(`
+    const recentTrend = await allAsync(`
       SELECT DATE(follow_up_date) as date, COUNT(*) as count
       FROM marketing_progress 
       WHERE follow_up_date >= date('now', '-30 days')
@@ -106,7 +106,7 @@ router.get('/performance-trend', async (req, res) => {
     const db = getDatabase();
     
     // 最近6个月的趋势
-    const monthlyTrend = await db.all(`
+    const monthlyTrend = await allAsync(`
       SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
       FROM companies 
       WHERE created_at >= date('now', '-6 months')
@@ -126,7 +126,7 @@ router.get('/progress-distribution', async (req, res) => {
   try {
     const db = getDatabase();
     
-    const progressStats = await db.all(`
+    const progressStats = await allAsync(`
       SELECT progress_status, COUNT(*) as count
       FROM companies 
       GROUP BY progress_status
@@ -144,7 +144,7 @@ router.get('/industry-distribution', async (req, res) => {
   try {
     const db = getDatabase();
     
-    const industryStats = await db.all(`
+    const industryStats = await allAsync(`
       SELECT industry, COUNT(*) as count
       FROM companies 
       WHERE industry IS NOT NULL

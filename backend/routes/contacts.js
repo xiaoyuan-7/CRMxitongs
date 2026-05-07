@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 
 // 获取企业的关键人列表
 router.get('/company/:companyId', async (req, res) => {
   try {
     const db = getDatabase();
-    const contacts = await db.all('SELECT * FROM contacts WHERE company_id = ? ORDER BY is_primary DESC, created_at DESC', [req.params.companyId]);
+    const contacts = await allAsync('SELECT * FROM contacts WHERE company_id = ? ORDER BY is_primary DESC, created_at DESC', [req.params.companyId]);
     res.json(contacts);
   } catch (error) {
     console.error('获取关键人列表失败:', error);
@@ -18,7 +18,7 @@ router.get('/company/:companyId', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = getDatabase();
-    const contact = await db.get('SELECT * FROM contacts WHERE id = ?', [req.params.id]);
+    const contact = await getAsync('SELECT * FROM contacts WHERE id = ?', [req.params.id]);
     
     if (!contact) {
       return res.status(404).json({ error: '关键人不存在' });
@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
 router.get('/birthdays/upcoming', async (req, res) => {
   try {
     const db = getDatabase();
-    const contacts = await db.all(`
+    const contacts = await allAsync(`
       SELECT c.*, comp.name as company_name
       FROM contacts c
       LEFT JOIN companies comp ON c.company_id = comp.id
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
     const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
     
     const db = getDatabase();
-    const result = await db.run(`
+    const result = await runAsync(`
       INSERT INTO contacts (company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary || 0]);
@@ -75,7 +75,7 @@ router.put('/:id', async (req, res) => {
     const { company_id, name, position, birth_date, family_info, preferences, gift_recommendations, is_primary } = req.body;
     
     const db = getDatabase();
-    await db.run(`
+    await runAsync(`
       UPDATE contacts 
       SET company_id = ?, name = ?, position = ?, birth_date = ?, family_info = ?, preferences = ?, gift_recommendations = ?, is_primary = ?
       WHERE id = ?
@@ -94,11 +94,11 @@ router.delete('/:id', async (req, res) => {
     const db = getDatabase();
     
     // 先删除相关的营销进度和提醒
-    await db.run('DELETE FROM marketing_progress WHERE contact_id = ?', [req.params.id]);
-    await db.run('DELETE FROM reminders WHERE contact_id = ?', [req.params.id]);
+    await runAsync('DELETE FROM marketing_progress WHERE contact_id = ?', [req.params.id]);
+    await runAsync('DELETE FROM reminders WHERE contact_id = ?', [req.params.id]);
     
     // 删除关键人
-    await db.run('DELETE FROM contacts WHERE id = ?', [req.params.id]);
+    await runAsync('DELETE FROM contacts WHERE id = ?', [req.params.id]);
 
     res.json({ message: '关键人删除成功' });
   } catch (error) {

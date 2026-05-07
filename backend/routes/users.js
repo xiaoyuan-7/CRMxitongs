@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 const bcrypt = require('bcryptjs');
 
 // 用户注册
@@ -15,7 +15,7 @@ router.post('/register', async (req, res) => {
     const db = getDatabase();
     
     // 检查用户名是否已存在
-    const existingUser = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    const existingUser = await getAsync('SELECT * FROM users WHERE username = ?', [username]);
     if (existingUser) {
       return res.status(400).json({ error: '用户名已存在' });
     }
@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     
     // 创建用户
-    const result = await db.run(`
+    const result = await runAsync(`
       INSERT INTO users (username, password_hash, role)
       VALUES (?, ?, ?)
     `, [username, passwordHash, role || 'user']);
@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
     const db = getDatabase();
     
     // 查找用户
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    const user = await getAsync('SELECT * FROM users WHERE username = ?', [username]);
     if (!user) {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
@@ -82,7 +82,7 @@ router.get('/me', async (req, res) => {
     const userId = 1; // 简化处理，使用默认用户
     
     const db = getDatabase();
-    const user = await db.get('SELECT id, username, role, created_at FROM users WHERE id = ?', [userId]);
+    const user = await getAsync('SELECT id, username, role, created_at FROM users WHERE id = ?', [userId]);
     
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
@@ -99,7 +99,7 @@ router.get('/me', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const db = getDatabase();
-    const users = await db.all('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC');
+    const users = await allAsync('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC');
     res.json(users);
   } catch (error) {
     console.error('获取用户列表失败:', error);
@@ -113,7 +113,7 @@ router.put('/:id/role', async (req, res) => {
     const { role } = req.body;
     
     const db = getDatabase();
-    await db.run('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id]);
+    await runAsync('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id]);
     
     res.json({ message: '用户角色更新成功' });
   } catch (error) {
@@ -137,7 +137,7 @@ router.put('/password', async (req, res) => {
     const db = getDatabase();
     
     // 获取用户信息
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
+    const user = await getAsync('SELECT * FROM users WHERE id = ?', [userId]);
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
     }
@@ -152,7 +152,7 @@ router.put('/password', async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     
     // 更新密码
-    await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [newPasswordHash, userId]);
+    await runAsync('UPDATE users SET password_hash = ? WHERE id = ?', [newPasswordHash, userId]);
     
     res.json({ message: '密码修改成功' });
   } catch (error) {

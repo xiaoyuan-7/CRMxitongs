@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 
 // 获取所有企业（支持搜索和筛选）
 router.get('/', async (req, res) => {
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
 
   try {
     const db = getDatabase();
-    const companies = await db.all(query, params);
+    const companies = await allAsync(query, params);
     res.json(companies);
   } catch (error) {
     console.error('获取企业列表失败:', error);
@@ -59,17 +59,17 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = getDatabase();
-    const company = await db.get('SELECT * FROM companies WHERE id = ?', [req.params.id]);
+    const company = await getAsync('SELECT * FROM companies WHERE id = ?', [req.params.id]);
     
     if (!company) {
       return res.status(404).json({ error: '企业不存在' });
     }
 
     // 获取企业关键人
-    const contacts = await db.all('SELECT * FROM contacts WHERE company_id = ?', [req.params.id]);
+    const contacts = await allAsync('SELECT * FROM contacts WHERE company_id = ?', [req.params.id]);
     
     // 获取营销进度
-    const marketing = await db.all(`
+    const marketing = await allAsync(`
       SELECT mp.*, ct.name as contact_name 
       FROM marketing_progress mp 
       LEFT JOIN contacts ct ON mp.contact_id = ct.id 
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
     const { name, introduction, industry, financial_info, upstream_info, downstream_info } = req.body;
     
     const db = getDatabase();
-    const result = await db.run(`
+    const result = await runAsync(`
       INSERT INTO companies (name, introduction, industry, financial_info, upstream_info, downstream_info)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [name, introduction, industry, financial_info, upstream_info, downstream_info]);
@@ -112,7 +112,7 @@ router.put('/:id', async (req, res) => {
     const { name, introduction, industry, financial_info, upstream_info, downstream_info, is_account_opened, is_payroll_service, is_active_customer, is_high_quality, progress_status } = req.body;
     
     const db = getDatabase();
-    await db.run(`
+    await runAsync(`
       UPDATE companies 
       SET name = ?, introduction = ?, industry = ?, financial_info = ?, upstream_info = ?, downstream_info = ?, 
           is_account_opened = ?, is_payroll_service = ?, is_active_customer = ?, is_high_quality = ?, progress_status = ?
@@ -132,12 +132,12 @@ router.delete('/:id', async (req, res) => {
     const db = getDatabase();
     
     // 先删除相关的数据
-    await db.run('DELETE FROM marketing_progress WHERE company_id = ?', [req.params.id]);
-    await db.run('DELETE FROM contacts WHERE company_id = ?', [req.params.id]);
-    await db.run('DELETE FROM reminders WHERE company_id = ?', [req.params.id]);
+    await runAsync('DELETE FROM marketing_progress WHERE company_id = ?', [req.params.id]);
+    await runAsync('DELETE FROM contacts WHERE company_id = ?', [req.params.id]);
+    await runAsync('DELETE FROM reminders WHERE company_id = ?', [req.params.id]);
     
     // 删除企业
-    await db.run('DELETE FROM companies WHERE id = ?', [req.params.id]);
+    await runAsync('DELETE FROM companies WHERE id = ?', [req.params.id]);
 
     res.json({ message: '企业删除成功' });
   } catch (error) {

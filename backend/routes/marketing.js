@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getDatabase } = require('../database');
+const { getDatabase, allAsync, getAsync, runAsync } = require('../database');
 
 // 获取企业的跟进记录
 router.get('/company/:companyId', async (req, res) => {
   try {
     const db = getDatabase();
-    const records = await db.all(`
+    const records = await allAsync(`
       SELECT mp.*, ct.name as contact_name, comp.name as company_name
       FROM marketing_progress mp
       LEFT JOIN contacts ct ON mp.contact_id = ct.id
@@ -28,10 +28,10 @@ router.get('/stats/:companyId', async (req, res) => {
     const db = getDatabase();
     
     // 总跟进次数
-    const totalFollowups = await db.get('SELECT COUNT(*) as count FROM marketing_progress WHERE company_id = ?', [req.params.companyId]);
+    const totalFollowups = await getAsync('SELECT COUNT(*) as count FROM marketing_progress WHERE company_id = ?', [req.params.companyId]);
     
     // 按类型统计
-    const typeStats = await db.all(`
+    const typeStats = await allAsync(`
       SELECT follow_up_type, COUNT(*) as count
       FROM marketing_progress 
       WHERE company_id = ?
@@ -39,7 +39,7 @@ router.get('/stats/:companyId', async (req, res) => {
     `, [req.params.companyId]);
     
     // 最近30天跟进趋势
-    const recentTrend = await db.all(`
+    const recentTrend = await allAsync(`
       SELECT DATE(follow_up_date) as date, COUNT(*) as count
       FROM marketing_progress 
       WHERE company_id = ? AND follow_up_date >= date('now', '-30 days')
@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
     const { company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date } = req.body;
     
     const db = getDatabase();
-    const result = await db.run(`
+    const result = await runAsync(`
       INSERT INTO marketing_progress (company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date]);
@@ -82,7 +82,7 @@ router.put('/:id', async (req, res) => {
     const { company_id, contact_id, follow_up_date, follow_up_type, follow_up_content, next_follow_up_date } = req.body;
     
     const db = getDatabase();
-    await db.run(`
+    await runAsync(`
       UPDATE marketing_progress 
       SET company_id = ?, contact_id = ?, follow_up_date = ?, follow_up_type = ?, follow_up_content = ?, next_follow_up_date = ?
       WHERE id = ?
@@ -99,7 +99,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDatabase();
-    await db.run('DELETE FROM marketing_progress WHERE id = ?', [req.params.id]);
+    await runAsync('DELETE FROM marketing_progress WHERE id = ?', [req.params.id]);
 
     res.json({ message: '跟进记录删除成功' });
   } catch (error) {
