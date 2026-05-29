@@ -141,11 +141,11 @@ router.get('/leads/:id', (req, res) => {
 });
 
 router.post('/leads', (req, res) => {
-  const { board_id, company_name, employee_count, is_visited, visit_status, manager_name, remarks } = req.body;
+  const { board_id, company_name, employee_count, daily_deposit, credit_exposure, is_visited, visit_status, manager_name, remarks } = req.body;
   if (!company_name) return res.status(400).json({ error: '企业名称不能为空' });
-  db.run(`INSERT INTO leads (board_id, company_name, employee_count, is_visited, visit_status, manager_name, remarks)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [board_id || null, company_name, employee_count || '', is_visited ? 1 : 0, visit_status || '', manager_name || '', remarks || ''],
+  db.run(`INSERT INTO leads (board_id, company_name, employee_count, daily_deposit, credit_exposure, is_visited, visit_status, manager_name, remarks)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [board_id || null, company_name, employee_count || '', daily_deposit || '', credit_exposure || '', is_visited ? 1 : 0, visit_status || '', manager_name || '', remarks || ''],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID, message: '线索添加成功' });
@@ -161,6 +161,8 @@ router.put('/leads/:id', (req, res) => {
     db.run(`UPDATE leads SET
       company_name = ?,
       employee_count = ?,
+      daily_deposit = ?,
+      credit_exposure = ?,
       is_visited = ?,
       visit_status = ?,
       manager_name = ?,
@@ -169,6 +171,8 @@ router.put('/leads/:id', (req, res) => {
       [
         data.company_name !== undefined ? data.company_name : existing.company_name,
         data.employee_count !== undefined ? data.employee_count : existing.employee_count,
+        data.daily_deposit !== undefined ? data.daily_deposit : existing.daily_deposit,
+        data.credit_exposure !== undefined ? data.credit_exposure : existing.credit_exposure,
         data.is_visited !== undefined ? (data.is_visited ? 1 : 0) : existing.is_visited,
         data.visit_status !== undefined ? data.visit_status : existing.visit_status,
         data.manager_name !== undefined ? data.manager_name : existing.manager_name,
