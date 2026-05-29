@@ -138,11 +138,11 @@
         .progress-section { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
         .progress-section h3 { font-size: 15px; margin-bottom: 12px; color: #333; }
         .progress-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .progress-item { text-align: center; }
+        .progress-item { text-align: center; display: flex; flex-direction: column; align-items: center; }
         .progress-item .label { font-size: 11px; color: #666; margin-bottom: 6px; }
-        .progress-item .circle { width: 60px; height: 60px; border-radius: 50%; background: conic-gradient(#667eea 0%, #e5e7eb 0%); margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; }
+        .progress-item .circle { width: 60px; height: 60px; border-radius: 50%; background: conic-gradient(#667eea 0%, #e5e7eb 0%); margin-bottom: 6px; display: flex; align-items: center; justify-content: center; }
         .progress-item .circle-inner { width: 45px; height: 45px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #333; }
-        .progress-item .value { font-size: 14px; color: #667eea; font-weight: 600; margin-top: 8px; min-width: 100px; text-align: center; display: block; letter-spacing: 1px; }
+        .progress-item .value { font-size: 14px; color: #667eea; font-weight: 600; margin-top: 8px; text-align: center; white-space: nowrap; }
         .number-input { width: 60px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 13px; }
         .number-input:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 2px rgba(102,126,234,0.2); }
         .select-inline { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; cursor: pointer; background: white; }
@@ -609,8 +609,9 @@
                     <option value="">客户经理</option>
                 </select>
                 <select id="sortSelect" onchange="sortCompanies()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+                    <option value="landing_cycle_desc" selected>🎯 落地周期 ↓</option>
+                    <option value="landing_cycle_asc">🎯 落地周期 ↑</option>
                     <option value="default">📅 更新时间</option>
-                    <option value="landing_cycle">🎯 落地周期</option>
                     <option value="active_count_desc">有效户数 ↓</option>
                     <option value="active_count_asc">有效户数 ↑</option>
                     <option value="hq_count_desc">高质量数 ↓</option>
@@ -1105,6 +1106,7 @@
                         element.textContent = newValue || '-';
                         element.classList.add('editable');
                         element.onclick = () => makeEditable(element, id, field, newValue);
+                        apiCache.clear('/companies');
                         refreshCurrentView();
                     } else {
                         alert('更新失败');
@@ -1137,6 +1139,7 @@
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: parseInt(value) || 0 }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 } else {
                     alert('更新失败');
@@ -1153,6 +1156,7 @@
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: c[field] ? 0 : 1 }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {}
@@ -1163,6 +1167,7 @@
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {}
@@ -1184,6 +1189,7 @@
                 });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {
@@ -1334,16 +1340,16 @@
             // 统一格式，确保对齐（固定宽度）
             const formatNumber = (num, target) => {
                 if (target > 0) {
-                    return `${String(num).padStart(3, ' ')} / ${String(target).padStart(3, ' ')}`;
+                    return `${num} / ${target}`;
                 }
-                return `${String(num).padStart(3, ' ')}`;
+                return `${num}`;
             };
-            document.getElementById('activeProgress').textContent = formatNumber(completedCount, activeTarget);
-            document.getElementById('hqProgress').textContent = formatNumber(completedCount, hqTarget);
+            document.getElementById('activeProgress').textContent = formatNumber(dataManager.getActiveCount(), activeTarget);
+            document.getElementById('hqProgress').textContent = formatNumber(dataManager.getHqCount(), hqTarget);
             
             // 更新圆形进度（基于已落地企业数除以目标数）
-            updateCircleProgressWithTarget('active', completedCount, activeTarget);
-            updateCircleProgressWithTarget('hq', completedCount, hqTarget);
+            updateCircleProgressWithTarget('active', dataManager.getActiveCount(), activeTarget);
+            updateCircleProgressWithTarget('hq', dataManager.getHqCount(), hqTarget);
             
             // 储备进度 = 本月落地 + 三个月落地
             const monthCompanies = list.filter(c => c.landing_cycle === 'month');
@@ -1356,11 +1362,11 @@
             const reserveHq = monthCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0) + 
                               quarterCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0);
             
-            document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+activeTarget : ''}`;
-            document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+hqTarget : ''}`;
+            document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+Math.max(0, activeTarget - dataManager.getActiveCount()) : ''}`;
+            document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+Math.max(0, hqTarget - dataManager.getHqCount()) : ''}`;
             
-            updateCircleProgressWithTarget('reserveActive', reserveActive, activeTarget);
-            updateCircleProgressWithTarget('reserveHq', reserveHq, hqTarget);
+            updateCircleProgressWithTarget('reserveActive', reserveActive, Math.max(0, activeTarget - dataManager.getActiveCount()));
+            updateCircleProgressWithTarget('reserveHq', reserveHq, Math.max(0, hqTarget - dataManager.getHqCount()));
         }
         
         function updateCircleProgressSimple(type, current) {
@@ -1499,8 +1505,12 @@
             else if (value === 'name_desc') sorted.sort((a,b) => (b.name||'').localeCompare(a.name||''));
             else if (value === 'manager_asc') sorted.sort((a,b) => (a.manager_name||'').localeCompare(b.manager_name||''));
             else if (value === 'manager_desc') sorted.sort((a,b) => (b.manager_name||'').localeCompare(a.manager_name||''));
-            else if (value === 'landing_cycle') {
-                const order = { 'month': 1, 'quarter': 2, 'year': 3, 'completed': 4, 'ongoing': 5 };
+            else if (value === 'landing_cycle_desc') {
+                const orderD = { 'month': 1, 'quarter': 2, 'year': 3, 'ongoing': 4, 'completed': 5 };
+                sorted.sort((a,b) => (orderD[a.landing_cycle]||99) - (orderD[b.landing_cycle]||99));
+            }
+            else if (value === 'landing_cycle_asc') {
+                const order = { 'completed': 1, 'ongoing': 2, 'year': 3, 'quarter': 4, 'month': 5 };
                 sorted.sort((a,b) => (order[a.landing_cycle]||99) - (order[b.landing_cycle]||99));
             }
             // default: 按创建顺序（数据库返回顺序）
@@ -2032,7 +2042,7 @@
                 'active_count': { asc: 'active_count_asc', desc: 'active_count_desc' },
                 'hq_count': { asc: 'hq_count_asc', desc: 'hq_count_desc' },
                 'is_account_opened': { asc: 'default', desc: 'default' },
-                'landing_cycle': { asc: 'landing_cycle', desc: 'landing_cycle' }
+                'landing_cycle': { asc: 'landing_cycle_asc', desc: 'landing_cycle_desc' }
             };
             
             const fieldMap = sortMap[field];
@@ -3442,6 +3452,7 @@
                         
                         alert('✅ 已保存');
                         closeXinfutongModal();
+                        apiCache.clear('/companies');
                         refreshCurrentView();
                     } catch (e) {
                         alert('保存失败');
@@ -3481,7 +3492,19 @@
             const headers = {
                 name: '企业名称', manager_name: '对公客户经理', active_count: '有效户数',
                 hq_count: '高质量数', is_account_opened: '开户状态', landing_cycle: '落地周期',
-                xinfutong_status: '薪福通状态', contact_names: '关键人', remarks: '备注'
+                xinfutong_status: '薪福通状态', contact_names: '关键人', remarks: '备注',
+                industry: '行业', introduction: '企业简介', annual_revenue: '年营业额',
+                contact_frequency: '联系频次', progress_status: '进度状态',
+                is_payroll_service: '是否代发', is_active_customer: '有效户标识',
+                is_high_quality: '高质量标识', financial_info: '财务信息',
+                upstream_info: '上游信息', downstream_info: '下游信息',
+                main_product: '主营产品', top5_customers: '前五大下游客户',
+                revenue_range: '营收范围', net_profit: '净利润',
+                vat_tax: '增值税纳税额', income_tax: '所得税纳税额',
+                domestic_settlement: '境内业务结算', cross_border: '跨境业务',
+                main_banks: '主要合作银行', personal_cards: '个人持卡情况',
+                asset_status: '资产情况', family_status: '家庭情况',
+                venture_status: '风投情况', executive_stock: '高管持股', listing_plan: '上市计划'
             };
             
             // 使用标准 CSV 格式
@@ -3492,6 +3515,10 @@
                 if (f === 'is_account_opened') val = c.is_account_opened ? '已开户' : '未开户';
                 else if (f === 'landing_cycle') val = c.landing_cycle === 'month' ? '本月落地' : c.landing_cycle === 'quarter' ? '3 个月落地' : c.landing_cycle === 'year' ? '本年落地' : '持续跟进';
                 else if (f === 'xinfutong_status') val = c.xinfutong_status === 'applicable' ? '适用' : c.xinfutong_status === 'not_applicable' ? '不适用' : '未设置';
+                else if (f === 'is_payroll_service') val = c.is_payroll_service ? '是' : '否';
+                else if (f === 'is_active_customer') val = c.is_active_customer ? '是' : '否';
+                else if (f === 'is_high_quality') val = c.is_high_quality ? '是' : '否';
+                else if (f === 'executive_stock') val = c.executive_stock ? '是' : '否';
                 else val = c[f] || '';
                 
                 const str = String(val);
@@ -3528,6 +3555,32 @@
                                 <label><input type="checkbox" checked value="xinfutong_status"> 薪福通状态</label>
                                 <label><input type="checkbox" checked value="contact_names"> 关键人</label>
                                 <label><input type="checkbox" checked value="remarks"> 备注</label>
+                                <label><input type="checkbox" value="industry"> 行业</label>
+                                <label><input type="checkbox" value="introduction"> 企业简介</label>
+                                <label><input type="checkbox" value="annual_revenue"> 年营业额</label>
+                                <label><input type="checkbox" value="contact_frequency"> 联系频次</label>
+                                <label><input type="checkbox" value="progress_status"> 进度状态</label>
+                                <label><input type="checkbox" value="is_payroll_service"> 是否代发</label>
+                                <label><input type="checkbox" value="is_active_customer"> 有效户标识</label>
+                                <label><input type="checkbox" value="is_high_quality"> 高质量标识</label>
+                                <label><input type="checkbox" value="financial_info"> 财务信息</label>
+                                <label><input type="checkbox" value="upstream_info"> 上游信息</label>
+                                <label><input type="checkbox" value="downstream_info"> 下游信息</label>
+                                <label><input type="checkbox" value="main_product"> 主营产品</label>
+                                <label><input type="checkbox" value="top5_customers"> 前五大下游客户</label>
+                                <label><input type="checkbox" value="revenue_range"> 营收范围</label>
+                                <label><input type="checkbox" value="net_profit"> 净利润</label>
+                                <label><input type="checkbox" value="vat_tax"> 增值税纳税额</label>
+                                <label><input type="checkbox" value="income_tax"> 所得税纳税额</label>
+                                <label><input type="checkbox" value="domestic_settlement"> 境内业务结算</label>
+                                <label><input type="checkbox" value="cross_border"> 跨境业务</label>
+                                <label><input type="checkbox" value="main_banks"> 主要合作银行</label>
+                                <label><input type="checkbox" value="personal_cards"> 个人持卡情况</label>
+                                <label><input type="checkbox" value="asset_status"> 资产情况</label>
+                                <label><input type="checkbox" value="family_status"> 家庭情况</label>
+                                <label><input type="checkbox" value="venture_status"> 风投情况</label>
+                                <label><input type="checkbox" value="executive_stock"> 高管持股</label>
+                                <label><input type="checkbox" value="listing_plan"> 上市计划</label>
                             </div>
                         </div>
                         <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
@@ -4143,6 +4196,7 @@
                             <li><strong>方法 2：</strong>直接粘贴整个 Excel 工作表</li>
                             <li><strong>列顺序：</strong>企业名称 | 参保人数 | 是否约访 | 面访情况 | 对公客户经理</li>
                             <li><strong>是否约访：</strong>填写"是/1/✅"表示已约访，其他表示未约访</li>
+                            <li><strong>日均存款/授信敞口：</strong>在 Excel 中对应第 7-8 列（导入后手动补充）</li>
                         </ul>
                     </div>
                     <div class="info-item">
@@ -4218,6 +4272,8 @@
                         <label>选择要修改的字段</label>
                         <select id="batchEditField" onchange="window.toggleBatchEditInput()">
                             <option value="employee_count">参保人数</option>
+                            <option value="daily_deposit">日均存款</option>
+                            <option value="credit_exposure">授信敞口</option>
                             <option value="is_visited">是否约访</option>
                             <option value="visit_status">面访情况</option>
                             <option value="manager_name">对公客户经理</option>
@@ -4298,8 +4354,8 @@
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无线索，点击"添加线索"开始</div>';
                 return;
             }
-            let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
-            html += allLeads.map(l => `<tr style="${l.status==='converted'?'opacity:0.6;background:#f0fdf4;':''}"><td style="text-align:center;"><input type="checkbox" class="lead-checkbox" value="${l.id}" ${l.status==='converted'?'disabled':''}></td><td style="font-weight:500;">${escapeHtml(l.company_name)||'-'}</td><td>${escapeHtml(l.employee_count)||'-'}</td><td>${l.is_visited?'✅ 已约访':'❌ 未约访'}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(l.visit_status)||''}">${escapeHtml(l.visit_status)||'-'}</td><td>${escapeHtml(l.manager_name)||'-'}</td><td>${l.status!=='converted'?`<button class="btn btn-sm btn-primary" onclick="window.convertLead(${l.id})">转为营销任务</button>`:'<span style="color:#22c55e;">✅ 已转化</span>'} <button class="btn btn-sm btn-secondary" onclick="window.editLead(${l.id})" style="margin-left:4px;">✏️</button> <button class="btn btn-sm btn-secondary" onclick="window.deleteLead(${l.id})" style="color:#ef4444;margin-left:4px;">🗑️</button></td></tr>`).join('');
+            let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>日均存款</th><th>授信敞口</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
+            html += allLeads.map(l => `<tr style="${l.status==='converted'?'opacity:0.6;background:#f0fdf4;':''}"><td style="text-align:center;"><input type="checkbox" class="lead-checkbox" value="${l.id}" ${l.status==='converted'?'disabled':''}></td><td style="font-weight:500;">${escapeHtml(l.company_name)||'-'}</td><td>${escapeHtml(l.employee_count)||'-'}</td><td>${escapeHtml(l.daily_deposit)||'-'}</td><td>${escapeHtml(l.credit_exposure)||'-'}</td><td>${l.is_visited?'✅ 已约访':'❌ 未约访'}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(l.visit_status)||''}">${escapeHtml(l.visit_status)||'-'}</td><td>${escapeHtml(l.manager_name)||'-'}</td><td>${l.status!=='converted'?`<button class="btn btn-sm btn-primary" onclick="window.convertLead(${l.id})">转为营销任务</button>`:'<span style="color:#22c55e;">✅ 已转化</span>'} <button class="btn btn-sm btn-secondary" onclick="window.editLead(${l.id})" style="margin-left:4px;">✏️</button> <button class="btn btn-sm btn-secondary" onclick="window.deleteLead(${l.id})" style="color:#ef4444;margin-left:4px;">🗑️</button></td></tr>`).join('');
             html += '</tbody></table></div>';
             html += '<div style="margin-top:16px;display:flex;gap:8px;align-items:center;"><label><input type="checkbox" id="selectConverted" onchange="window.toggleConvertedLeads()"> 显示已转化线索</label></div>';
             container.innerHTML = html;
@@ -4354,11 +4410,11 @@
             }
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '添加线索';
-            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>日均存款</label><input type="text" id="leadDailyDeposit" placeholder="如：500 万"></div><div class="info-item"><label>授信敞口</label><input type="text" id="leadCreditExposure" placeholder="如：300 万"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
             document.getElementById('addLeadForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/leads/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board_id: currentLeadBoardId, company_name: document.getElementById('leadCompany').value, employee_count: document.getElementById('leadEmployee').value, is_visited: parseInt(document.getElementById('leadVisited').value), visit_status: document.getElementById('leadVisitStatus').value, manager_name: document.getElementById('leadManager').value }) });
+                    const res = await fetch(`${API_BASE}/leads/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board_id: currentLeadBoardId, company_name: document.getElementById('leadCompany').value, employee_count: document.getElementById('leadEmployee').value, daily_deposit: document.getElementById('leadDailyDeposit').value, credit_exposure: document.getElementById('leadCreditExposure').value, is_visited: parseInt(document.getElementById('leadVisited').value), visit_status: document.getElementById('leadVisitStatus').value, manager_name: document.getElementById('leadManager').value }) });
                     if (res.ok) { alert('✅ 线索已添加'); closeAddModal(); loadLeads(); } else { alert('添加失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4369,11 +4425,11 @@
             if (!lead) return;
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '编辑线索';
-            document.getElementById('addModalBody').innerHTML = `<form id="editLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="editLeadCompany" value="${lead.company_name||''}" required></div><div class="info-item"><label>参保人数</label><input type="text" id="editLeadEmployee" value="${lead.employee_count||''}"></div><div class="info-item"><label>是否约访</label><select id="editLeadVisited"><option value="0" ${!lead.is_visited?'selected':''}>未约访</option><option value="1" ${lead.is_visited?'selected':''}>已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="editLeadManager" value="${lead.manager_name||''}"></div></div><div class="info-item"><label>面访情况</label><textarea id="editLeadVisitStatus" rows="3">${lead.visit_status||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="editLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="editLeadCompany" value="${lead.company_name||''}" required></div><div class="info-item"><label>参保人数</label><input type="text" id="editLeadEmployee" value="${lead.employee_count||''}"></div><div class="info-item"><label>日均存款</label><input type="text" id="editLeadDailyDeposit" value="${lead.daily_deposit||''}"></div><div class="info-item"><label>授信敞口</label><input type="text" id="editLeadCreditExposure" value="${lead.credit_exposure||''}"></div><div class="info-item"><label>是否约访</label><select id="editLeadVisited"><option value="0" ${!lead.is_visited?'selected':''}>未约访</option><option value="1" ${lead.is_visited?'selected':''}>已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="editLeadManager" value="${lead.manager_name||''}"></div></div><div class="info-item"><label>面访情况</label><textarea id="editLeadVisitStatus" rows="3">${lead.visit_status||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
             document.getElementById('editLeadForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company_name: document.getElementById('editLeadCompany').value, employee_count: document.getElementById('editLeadEmployee').value, is_visited: parseInt(document.getElementById('editLeadVisited').value), visit_status: document.getElementById('editLeadVisitStatus').value, manager_name: document.getElementById('editLeadManager').value }) });
+                    const res = await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company_name: document.getElementById('editLeadCompany').value, employee_count: document.getElementById('editLeadEmployee').value, daily_deposit: document.getElementById('editLeadDailyDeposit').value, credit_exposure: document.getElementById('editLeadCreditExposure').value, is_visited: parseInt(document.getElementById('editLeadVisited').value), visit_status: document.getElementById('editLeadVisitStatus').value, manager_name: document.getElementById('editLeadManager').value }) });
                     if (res.ok) { alert('✅ 已更新'); closeAddModal(); loadLeads(); } else { alert('更新失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4426,8 +4482,9 @@
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                console.log('📊 后端返回数据:', data.length, '条记录');
-                allReferrals = data;
+                const rows = data.rows || data;
+                console.log('📊 后端返回数据:', rows.length, '条记录');
+                allReferrals = rows;
                 renderReferralsTable();
                 updateReferralStats();
                 loadReferralCharts(month);
