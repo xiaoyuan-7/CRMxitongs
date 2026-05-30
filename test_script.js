@@ -1,0 +1,4369 @@
+
+        const API_BASE = '/api';
+        let allCompanies = [];
+        let allTasks = [];
+        let allWeekTasks = [];
+        let selectedCompany = null;
+        let currentTaskId = null;
+        let targets = JSON.parse(localStorage.getItem('crm_targets') || '{}');
+        const weekDays = ['周一','周二','周三','周四','周五','周六','周日'];
+        
+        // XSS 防护：转义 HTML 特殊字符
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 统一错误日志函数
+        function logError(context, error) {
+            console.error(`[${context}]`, error);
+            // 可选：发送到日志服务器
+            // fetch('/api/log-error', { 
+            //     method: 'POST', 
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ context, error: error.message, stack: error.stack, timestamp: new Date().toISOString() })
+            // }).catch(() => {});
+        }
+        
+        // 统一错误提示函数
+        function showError(message, context = '') {
+            if (context) {
+                logError(context, new Error(message));
+            }
+            alert(message);
+        }
+        
+        // 全局 Loading 管理
+        function showLoading(message = '加载中...') {
+            const loading = document.getElementById('globalLoading');
+            const loadingText = document.getElementById('loadingText');
+            if (loading && loadingText) {
+                loadingText.textContent = message;
+                loading.classList.add('active');
+            }
+        }
+        
+        function hideLoading() {
+            const loading = document.getElementById('globalLoading');
+            if (loading) {
+                loading.classList.remove('active');
+            }
+        }
+        
+        // 表单验证工具函数
+        const validators = {
+            // 必填验证
+            required: (value) => {
+                return value && value.trim().length > 0;
+            },
+            // 最大长度验证
+            maxLength: (value, max) => {
+                return !value || value.length <= max;
+            },
+            // 最小长度验证
+            minLength: (value, min) => {
+                return !value || value.length >= min;
+            },
+            // 数字验证
+            isNumber: (value) => {
+                return !value || /^\d+$/.test(value);
+            },
+            // 正整数验证
+            isPositiveInteger: (value) => {
+                return !value || /^[1-9]\d*$/.test(value);
+            },
+            // 手机号验证（中国大陆）
+            isPhone: (value) => {
+                return !value || /^1[3-9]\d{9}$/.test(value);
+            },
+            // 邮箱验证
+            isEmail: (value) => {
+                return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+            }
+        };
+        
+        // 统一表单验证函数
+        function validateForm(fields) {
+            const errors = [];
+            
+            fields.forEach(field => {
+                const value = field.value;
+                const label = field.label;
+                
+                // 必填验证
+                if (field.required && !validators.required(value)) {
+                    errors.push(`${label}不能为空`);
+                    return;
+                }
+                
+                // 跳过空值的可选字段
+                if (!value) return;
+                
+                // 最大长度验证
+                if (field.maxLength && !validators.maxLength(value, field.maxLength)) {
+                    errors.push(`${label}不能超过${field.maxLength}个字`);
+                }
+                
+                // 最小长度验证
+                if (field.minLength && !validators.minLength(value, field.minLength)) {
+                    errors.push(`${label}不能少于${field.minLength}个字`);
+                }
+                
+                // 数字验证
+                if (field.isNumber && !validators.isNumber(value)) {
+                    errors.push(`${label}必须是数字`);
+                }
+                
+                // 正整数验证
+                if (field.isPositiveInteger && !validators.isPositiveInteger(value)) {
+                    errors.push(`${label}必须是正整数`);
+                }
+                
+                // 手机号验证
+                if (field.isPhone && !validators.isPhone(value)) {
+                    errors.push(`${label}格式不正确（示例：13800138000）`);
+                }
+                
+                // 邮箱验证
+                if (field.isEmail && !validators.isEmail(value)) {
+                    errors.push(`${label}格式不正确（示例：name@example.com）`);
+                }
+            });
+            
+            return errors;
+        }
+        
+        // 显示表单错误
+        function showFormErrors(errors) {
+            if (!errors || errors.length === 0) return;
+            alert('❌ ' + errors.join('\n'));
+        }
+
+        async function init() { 
+            // 1. 首先加载企业数据，确保展示面板有数据
+            await loadData();
+            // 2. 展示面板会通过 DataManager 监听器自动更新
+            // 3. 加载其他模块数据
+            await loadLeadBoards();
+            await loadLeads(); 
+            await loadTasks(); 
+            // 4. 初始化其他组件
+            initWeekSelect(); 
+            updateTargetsDisplay(); 
+            loadWeekPlan(); 
+            // 5. 默认显示线索板块列表
+            const boardsList = document.getElementById('leadBoardsList');
+            const leadsContent = document.getElementById('leadsContent');
+            if (boardsList) boardsList.style.display = 'block';
+            if (leadsContent) leadsContent.style.display = 'none';
+            currentLeadBoardId = null;
+            // 6. 更新待办提醒
+            updateWeekTaskSummary();
+        }
+
+        function initWeekSelect() {
+            const select = document.getElementById('weekSelect');
+            const weeks = [];
+            
+            for (let i = 0; i < 4; i++) {
+                const week = getWeekInfo(i);
+                weeks.push(week);
+            }
+            
+            select.innerHTML = weeks.map((w,i) => `<option value="${w.start}" ${i===0?'selected':''}>${w.start} 至 ${w.end}</option>`).join('');
+        }
+
+        function getWeekInfo(offset = 0) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const day = now.getDate();
+            
+            // 获取今天是周几 (0=周日，1=周一，..., 6=周六)
+            let jsDay = now.getDay();
+            // 转换为周一=1, 周日=7
+            let dayNum = jsDay === 0 ? 7 : jsDay;
+            
+            // 计算本周一的日期
+            const mondayOffset = dayNum - 1;
+            const monday = new Date(year, month, day - mondayOffset + (offset * 7));
+            
+            // 生成本周 7 天的日期
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dt = String(d.getDate()).padStart(2, '0');
+                days.push(`${y}-${m}-${dt}`);
+            }
+            
+            return { start: days[0], end: days[6], days };
+        }
+
+        function getWeekInfoFromStart(start) {
+            const s = new Date(start);
+            return { start, end: (() => { const e=new Date(s); e.setDate(s.getDate()+6); return e.toISOString().split('T')[0]; })(), days: Array.from({length: 7}, (_, i) => { const d=new Date(s); d.setDate(s.getDate()+i); return d.toISOString().split('T')[0]; }) };
+        }
+
+        async function loadTasks() { 
+            showLoading('正在加载任务...');
+            try { 
+                const res = await fetch(`${API_BASE}/marketing-tasks`); 
+                allTasks = await res.json(); 
+                renderTasks(); 
+                updateTaskFilterSelect();
+            } catch (e) { 
+                logError('loadTasks', e);
+                allTasks = []; 
+                renderTasks();
+                showError('加载任务失败，请刷新页面重试', 'loadTasks');
+            } finally {
+                hideLoading();
+            }
+        }
+        function renderTasks() { 
+            const c = document.getElementById('tasksList'); 
+            if (!allTasks.length) { 
+                c.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><p>暂无营销任务</p><p style="font-size:13px;margin-top:8px;">点击"+新建营销任务"并选择要关联的企业</p></div>'; 
+                return; 
+            } 
+            c.innerHTML = allTasks.map(t => `
+                <div class="task-card">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div style="flex:1;cursor:pointer;" onclick="viewTaskCompanies(${t.id})">
+                            <h3>${escapeHtml(t.name)||'未命名'}</h3>
+                            <p>${escapeHtml(t.description)||''}</p>
+                            <div style="margin-top:8px;font-size:13px;color:#667eea;font-weight:600;">
+                                📦 ${t.company_count||0} 家企业
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewTaskCompanies(${t.id}); openAddModal()">📝 添加企业</button>
+                            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); deleteTask(${t.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join(''); 
+        }
+        async function viewTaskCompanies(id) { 
+            switchTab('companies'); 
+            document.getElementById('taskFilterSelect').value = id;
+            currentTaskId = id;
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                const all = await res.json();
+                allCompanies = all.filter(c => c.task_id === id);
+                renderCompanies(allCompanies);
+                updateStats(allCompanies);
+                updatePipeline(allCompanies);
+            } catch (e) { alert('加载失败'); }
+        }
+
+        let contactFreqUpdated = false;
+        
+        async function loadData() {
+            showLoading('正在加载企业数据...');
+            try {
+                const allCompanies = await fetchWithCache('/companies', {}, true);
+                dataManager.setCompanies(allCompanies);
+                
+                // 首次加载时自动更新联系频次
+                if (!contactFreqUpdated) {
+                    await updateAllContactFrequency();
+                    contactFreqUpdated = true;
+                }
+                // 保持当前排序，不自动重排
+                const currentSort = document.getElementById('sortSelect').value;
+                if (currentSort && currentSort !== 'default') {
+                    sortCompanies(currentSort);
+                } else {
+                    renderCompanies(dataManager.getCompanies());
+                }
+            } catch (e) { 
+                logError('loadData', e);
+                document.getElementById('companiesTable').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#ef4444;">加载失败，请刷新页面重试</td></tr>';
+                showError('加载企业数据失败', 'loadData');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderCompanies(list) {
+            const tb = document.getElementById('companiesTable');
+            if (!list || !list.length) { tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;">暂无数据</td></tr>'; return; }
+            
+            list.forEach(c => { if (c.selected === undefined) c.selected = false; });
+            
+            tb.innerHTML = list.map(c => `
+                <tr style="${c.xinfutong_status==='applicable'?'background:#f0fdf4;':''}">
+                    <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
+                    <td style="font-weight:600;">${escapeHtml(c.name)||'-'}</td>
+                    <td>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                    </td>
+                    <td>
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">📋 详情</button>` : ''}
+                    </td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\'")}')" title="点击编辑">${escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">管理</button></td>
+                    <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
+                    <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
+                    <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
+                    <td><select class="select-inline" onchange="inlineSelect(${c.id},'landing_cycle',this.value)"><option value="ongoing" ${c.landing_cycle==='ongoing'?'selected':''}>持续跟进</option><option value="month" ${c.landing_cycle==='month'?'selected':''}>本月</option><option value="quarter" ${c.landing_cycle==='quarter'?'selected':''}>3 个月</option><option value="year" ${c.landing_cycle==='year'?'selected':''}>本年</option><option value="completed" ${c.landing_cycle==='completed'?'selected':''}>✅ 已落地</option></select></td>
+                    <td style="display:flex;gap:4px;">
+                        <button class="btn btn-sm btn-secondary" onclick="showCompanyDetail(${c.id})">详情</button>
+                        <button class="btn btn-sm btn-secondary" style="color:#ef4444;" onclick="deleteCompany(${c.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function toggleCompanySelect(id) {
+            const company = allCompanies.find(c => c.id === id);
+            if (company) {
+                company.selected = !company.selected;
+            }
+        }
+
+        function makeEditable(element, id, field, currentValue) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue || '';
+            input.style.cssText = 'width:100%;padding:4px 8px;border:1px solid #667eea;border-radius:4px;font-size:13px;';
+            
+            element.innerHTML = '';
+            element.appendChild(input);
+            input.focus();
+            input.select();
+            
+            const save = async () => {
+                const newValue = input.value;
+                if (newValue === currentValue) {
+                    element.textContent = currentValue || '-';
+                    element.classList.add('editable');
+                    element.onclick = () => makeEditable(element, id, field, currentValue);
+                    return;
+                }
+                try {
+                    const res = await fetch(`${API_BASE}/companies/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ [field]: newValue })
+                    });
+                    const result = await res.json();
+                    if (res.ok && result.message) {
+                        element.textContent = newValue || '-';
+                        element.classList.add('editable');
+                        element.onclick = () => makeEditable(element, id, field, newValue);
+                        apiCache.clear('/companies');
+                        refreshCurrentView();
+                    } else {
+                        alert('更新失败');
+                        element.textContent = currentValue || '-';
+                        element.classList.add('editable');
+                        element.onclick = () => makeEditable(element, id, field, currentValue);
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                    element.textContent = currentValue || '-';
+                    element.classList.add('editable');
+                    element.onclick = () => makeEditable(element, id, field, currentValue);
+                }
+            };
+            
+            input.onblur = save;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                } else if (e.key === 'Escape') {
+                    element.textContent = currentValue || '-';
+                    element.classList.add('editable');
+                    element.onclick = () => makeEditable(element, id, field, currentValue);
+                }
+            };
+        }
+
+        async function inlineNumber(id, field, value) {
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: parseInt(value) || 0 }) });
+                const result = await res.json();
+                if (res.ok && result.message) {
+                    apiCache.clear('/companies');
+                    refreshCurrentView();
+                } else {
+                    alert('更新失败');
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        async function inlineToggle(id, field) {
+            const c = allCompanies.find(x => x.id === id);
+            if (!c) return;
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: c[field] ? 0 : 1 }) });
+                const result = await res.json();
+                if (res.ok && result.message) {
+                    apiCache.clear('/companies');
+                    refreshCurrentView();
+                }
+            } catch (e) {}
+        }
+
+        async function inlineSelect(id, field, value) {
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
+                const result = await res.json();
+                if (res.ok && result.message) {
+                    apiCache.clear('/companies');
+                    refreshCurrentView();
+                }
+            } catch (e) {}
+        }
+
+        async function updateContactFrequency(id, name, current) {
+            const frequencies = ['本周触达', '两周触达', '本月触达', '一月前触达'];
+            const currentIndex = frequencies.indexOf(current);
+            const nextIndex = (currentIndex + 1) % frequencies.length;
+            const nextFreq = frequencies[nextIndex];
+            
+            if (!confirm(`将 "${name}" 的联系频次从 ${current} 更新为 ${nextFreq}？`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contact_frequency: nextFreq })
+                });
+                const result = await res.json();
+                if (res.ok && result.message) {
+                    apiCache.clear('/companies');
+                    refreshCurrentView();
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+        
+        // 自动计算所有企业的联系频次（基于每周待办完成情况）
+        async function updateAllContactFrequency() {
+            try {
+                // 获取所有企业
+                const companiesRes = await fetch(`${API_BASE}/companies`);
+                const companies = await companiesRes.json();
+                
+                // 获取所有周待办
+                const weekTasksRes = await fetch(`${API_BASE}/week-tasks`);
+                const weekTasks = await weekTasksRes.json();
+                
+                const now = new Date();
+                const thisWeekStart = getWeekStart(now);
+                const lastWeekStart = new Date(thisWeekStart);
+                lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+                const lastLastWeekStart = new Date(thisWeekStart);
+                lastLastWeekStart.setDate(lastLastWeekStart.getDate() - 14);
+                const lastMonthStart = new Date(thisWeekStart);
+                lastMonthStart.setDate(lastMonthStart.getDate() - 30);
+                
+                for (const company of companies) {
+                    // 查找该企业的已完成待办
+                    const companyTasks = weekTasks.filter(t => 
+                        t.company_id === company.id && 
+                        t.status === 'completed' &&
+                        t.plan_date
+                    );
+                    
+                    if (companyTasks.length === 0) {
+                        continue; // 没有待办记录，不更新
+                    }
+                    
+                    // 找最近的完成日期
+                    const latestTask = companyTasks.sort((a, b) => 
+                        new Date(b.plan_date) - new Date(a.plan_date)
+                    )[0];
+                    
+                    const taskDate = new Date(latestTask.plan_date);
+                    const daysDiff = Math.floor((now - taskDate) / (1000 * 60 * 60 * 24));
+                    
+                    let newFreq = '一月前触达';
+                    if (daysDiff <= 7) {
+                        newFreq = '本周触达';
+                    } else if (daysDiff <= 14) {
+                        newFreq = '两周触达';
+                    } else if (daysDiff <= 30) {
+                        newFreq = '本月触达';
+                    }
+                    
+                    // 如果不同则更新
+                    if (company.contact_frequency !== newFreq) {
+                        await fetch(`${API_BASE}/companies/${company.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contact_frequency: newFreq })
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('更新联系频次失败:', e);
+            }
+        }
+        
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+        
+        function refreshCurrentView() {
+            // 保持当前排序和筛选，只刷新数据
+            const currentSort = document.getElementById('sortSelect').value;
+            if (currentTaskId) {
+                viewTaskCompanies(currentTaskId);
+            } else {
+                // 重新获取数据但保持排序
+                loadData();
+            }
+        }
+        
+        async function deleteCompany(id) {
+            if (!confirm('⚠️ 确定删除该企业？删除后无法恢复！')) return;
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('✅ 已删除');
+                    loadData();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        function updateStats(list) {
+            const stats = dataManager.getStats();
+            
+            // 获取趋势数据
+            const openedTrend = dataManager.getTrend('opened');
+            const activeTrend = dataManager.getTrend('active');
+            const hqTrend = dataManager.getTrend('hq');
+            
+            // 渲染趋势箭头
+            const renderTrend = (trend) => {
+                const icon = trend.direction === 'up' ? '🔼' : trend.direction === 'down' ? '🔽' : '➖';
+                return `<span class="trend ${trend.direction}">${icon} ${trend.percent > 0 ? trend.percent + '%' : '无变化'}</span>`;
+            };
+            
+            // 更新展示面板（添加趋势）
+            const updateStatCard = (id, value, trend, label) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.parentElement.querySelector('.value').textContent = value;
+                    // 移除旧趋势
+                    const oldTrend = el.parentElement.querySelector('.trend');
+                    if (oldTrend) oldTrend.remove();
+                    // 添加新趋势
+                    const trendEl = document.createElement('div');
+                    trendEl.className = `trend ${trend.direction}`;
+                    trendEl.innerHTML = renderTrend(trend);
+                    el.parentElement.appendChild(trendEl);
+                }
+            };
+            
+            updateStatCard('openedAccounts', stats.opened, openedTrend, '已开户');
+            updateStatCard('activeAccounts', stats.active, activeTrend, '有效户');
+            updateStatCard('highQuality', stats.hq, hqTrend, '高质量');
+            document.getElementById('totalCompanies').textContent = stats.total;
+            
+            updateProgressBar('opened', stats.opened);
+            updateProgressBar('active', stats.active);
+            updateProgressBar('hq', stats.hq);
+            
+            // 有效户完成和高质量完成 = 已落地企业数 / 任务目标数
+            const activeTarget = targets['active'] || 0;
+            const hqTarget = targets['hq'] || 0;
+            const completedCount = dataManager.getCompletedCount();
+            
+            // 统一格式，确保对齐（固定宽度）
+            const formatNumber = (num, target) => {
+                if (target > 0) {
+                    return `${num} / ${target}`;
+                }
+                return `${num}`;
+            };
+            document.getElementById('activeProgress').textContent = formatNumber(dataManager.getActiveCount(), activeTarget);
+            document.getElementById('hqProgress').textContent = formatNumber(dataManager.getHqCount(), hqTarget);
+            
+            // 更新圆形进度（基于已落地企业数除以目标数）
+            updateCircleProgressWithTarget('active', dataManager.getActiveCount(), activeTarget);
+            updateCircleProgressWithTarget('hq', dataManager.getHqCount(), hqTarget);
+            
+            // 储备进度 = 本月落地 + 三个月落地
+            const monthCompanies = list.filter(c => c.landing_cycle === 'month');
+            const quarterCompanies = list.filter(c => c.landing_cycle === 'quarter');
+            
+            // 有效户储备
+            const reserveActive = monthCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0) + 
+                                  quarterCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0);
+            // 高质量储备
+            const reserveHq = monthCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0) + 
+                              quarterCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0);
+            
+            document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+Math.max(0, activeTarget - dataManager.getActiveCount()) : ''}`;
+            document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+Math.max(0, hqTarget - dataManager.getHqCount()) : ''}`;
+            
+            updateCircleProgressWithTarget('reserveActive', reserveActive, Math.max(0, activeTarget - dataManager.getActiveCount()));
+            updateCircleProgressWithTarget('reserveHq', reserveHq, Math.max(0, hqTarget - dataManager.getHqCount()));
+        }
+        
+        function updateCircleProgressSimple(type, current) {
+            // 简单版本：只显示数值，不计算百分比
+            const circle = document.getElementById(`${type}Circle`);
+            const inner = document.getElementById(`${type}Percent`);
+            if (circle && inner) {
+                inner.textContent = current > 0 ? '✅' : '-';
+            }
+        }
+        
+        function updateCircleProgressWithTarget(type, current, target) {
+            const circle = document.getElementById(`${type}Circle`);
+            const inner = document.getElementById(`${type}Percent`);
+            if (circle && inner) {
+                const percent = target > 0 ? Math.round((current / target) * 100) : 0;
+                circle.style.background = `conic-gradient(#667eea ${percent}%, #e5e7eb ${percent}%)`;
+                inner.textContent = target > 0 ? percent + '%' : '-';
+            }
+        }
+
+        function updateProgressBar(type, current) {
+            const target = targets[type] || 0;
+            const percent = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+            document.getElementById(`${type}Progress`).style.width = percent + '%';
+            document.getElementById(`${type}Target`).textContent = `目标：${target}`;
+        }
+        
+        // 展示面板点击下钻功能
+        function filterByStat(type) {
+            // 切换到企业列表
+            switchTab('companies');
+            
+            // 根据类型筛选
+            const list = dataManager.getCompanies();
+            let filtered = list;
+            
+            switch(type) {
+                case 'opened':
+                    filtered = list.filter(c => c.is_account_opened);
+                    break;
+                case 'active':
+                    filtered = list.filter(c => c.landing_cycle === 'completed' && c.active_count > 0);
+                    break;
+                case 'hq':
+                    filtered = list.filter(c => c.landing_cycle === 'completed' && c.hq_count > 0);
+                    break;
+                default:
+                    filtered = list;
+            }
+            
+            renderCompanies(filtered);
+            
+            // 高亮显示
+            setTimeout(() => {
+                const table = document.getElementById('companiesTable');
+                if (table) {
+                    table.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    table.style.boxShadow = '0 0 0 3px #667eea';
+                    setTimeout(() => {
+                        table.style.boxShadow = '';
+                    }, 2000);
+                }
+            }, 300);
+        }
+
+        function updateCircleProgress(type, current, label) {
+            // 此函数已废弃，使用 updateCircleProgressSimple 和 updateCircleProgressWithTarget 替代
+        }
+
+        function updatePipeline(list) {
+            const month = list.filter(c => c.landing_cycle === 'month').length;
+            const quarter = list.filter(c => c.landing_cycle === 'quarter').length;
+            const year = list.filter(c => c.landing_cycle === 'year').length;
+            const ongoing = list.filter(c => c.landing_cycle === 'ongoing').length;
+            const completed = list.filter(c => c.landing_cycle === 'completed').length;
+            
+            document.getElementById('monthCount').textContent = month;
+            document.getElementById('quarterCount').textContent = quarter;
+            document.getElementById('yearCount').textContent = year;
+            document.getElementById('ongoingCount').textContent = ongoing;
+            
+            // 更新已落地显示（添加到三个月落地卡片）
+            const quarterCard = document.getElementById('quarterCount').parentNode;
+            let completedBadge = quarterCard.querySelector('.completed-badge');
+            if (!completedBadge) {
+                completedBadge = document.createElement('div');
+                completedBadge.className = 'completed-badge';
+                completedBadge.style.cssText = 'margin-top:6px;font-size:11px;color:#22c55e;font-weight:600;';
+                quarterCard.appendChild(completedBadge);
+            }
+            completedBadge.textContent = `✅ 已落地：${completed}`;
+        }
+
+        function updateTargetsDisplay() {
+            updateProgressBar('opened', allCompanies.filter(c => c.is_account_opened).length);
+            updateProgressBar('active', allCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0));
+            updateProgressBar('hq', allCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0));
+        }
+
+        function editTarget(type) {
+            document.getElementById('targetModal').classList.add('active');
+            const names = { total: '企业总数', opened: '已开户', active: '有效户', hq: '高质量客户' };
+            document.getElementById('targetModalTitle').textContent = `设置${names[type]}目标`;
+            document.getElementById('targetModalBody').innerHTML = `
+                <div class="info-item"><label>目标数量</label><input type="number" id="targetValue" value="${targets[type]||0}" min="0"></div>
+                <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeTargetModal()">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTarget('${type}')">保存</button>
+                </div>
+            `;
+        }
+
+        function saveTarget(type) {
+            const value = parseInt(document.getElementById('targetValue').value) || 0;
+            targets[type] = value;
+            localStorage.setItem('crm_targets', JSON.stringify(targets));
+            alert('✅ 目标已保存');
+            closeTargetModal();
+            updateTargetsDisplay();
+            updateStats(allCompanies);
+        }
+
+        function searchCompanies() { const q = document.getElementById('searchInput').value.toLowerCase(); renderCompanies(allCompanies.filter(c => (c.name&&c.name.toLowerCase().includes(q))||(c.contact_names&&c.contact_names.toLowerCase().includes(q)))); }
+        
+        function sortCompanies(field) {
+            const select = document.getElementById('sortSelect');
+            const value = field || select.value;
+            let sorted = [...allCompanies];
+            
+            if (value === 'active_count_desc') sorted.sort((a,b) => (b.active_count||0) - (a.active_count||0));
+            else if (value === 'active_count_asc') sorted.sort((a,b) => (a.active_count||0) - (b.active_count||0));
+            else if (value === 'hq_count_desc') sorted.sort((a,b) => (b.hq_count||0) - (a.hq_count||0));
+            else if (value === 'hq_count_asc') sorted.sort((a,b) => (a.hq_count||0) - (b.hq_count||0));
+            else if (value === 'name_asc') sorted.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+            else if (value === 'name_desc') sorted.sort((a,b) => (b.name||'').localeCompare(a.name||''));
+            else if (value === 'manager_asc') sorted.sort((a,b) => (a.manager_name||'').localeCompare(b.manager_name||''));
+            else if (value === 'manager_desc') sorted.sort((a,b) => (b.manager_name||'').localeCompare(a.manager_name||''));
+            else if (value === 'landing_cycle_desc') {
+                const orderD = { 'month': 1, 'quarter': 2, 'year': 3, 'ongoing': 4, 'completed': 5 };
+                sorted.sort((a,b) => (orderD[a.landing_cycle]||99) - (orderD[b.landing_cycle]||99));
+            }
+            else if (value === 'landing_cycle_asc') {
+                const order = { 'completed': 1, 'ongoing': 2, 'year': 3, 'quarter': 4, 'month': 5 };
+                sorted.sort((a,b) => (order[a.landing_cycle]||99) - (order[b.landing_cycle]||99));
+            }
+            // default: 按创建顺序（数据库返回顺序）
+            
+            renderCompanies(sorted);
+        }
+        
+        function filterByXinfutong(value) {
+            if (value === 'all') {
+                loadData();
+                return;
+            }
+            const filtered = allCompanies.filter(c => {
+                if (value === '1') return c.xinfutong;
+                if (value === '0') return !c.xinfutong;
+                return true;
+            });
+            renderCompanies(filtered);
+        }
+        
+        function filterByTask() {
+            const taskId = document.getElementById('taskFilterSelect').value;
+            if (taskId) {
+                viewTaskCompanies(parseInt(taskId));
+            } else {
+                showAllCompanies();
+            }
+        }
+        
+        async function showAllCompanies() {
+            document.getElementById('taskFilterSelect').value = '';
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                allCompanies = await res.json();
+                renderCompanies(allCompanies);
+                updateStats(allCompanies);
+                updatePipeline(allCompanies);
+            } catch (e) { alert('加载失败'); }
+        }
+        
+        function updateTaskFilterSelect() {
+            const select = document.getElementById('taskFilterSelect');
+            const options = '<option value="">全部企业</option>' + allTasks.map(t => `<option value="${t.id}">${t.name||'未命名'} (${t.company_count||0}家)</option>`).join('');
+            select.innerHTML = options;
+        }
+        
+        function updateWeekTaskSummary() {
+            const summary = document.getElementById('weekTaskSummary');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 计算本周一和周日的日期
+            const now = new Date();
+            const day = now.getDay() || 7; // 获取今天是周几 (1=周一，7=周日)
+            const mondayOffset = day - 1;
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - mondayOffset);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            const weekStart = monday.toISOString().split('T')[0];
+            const weekEnd = sunday.toISOString().split('T')[0];
+            
+            // 统计本周待办（本周一到周日）
+            const pendingThisWeek = allWeekTasks.filter(t => {
+                return t.plan_date >= weekStart && t.plan_date <= weekEnd && t.status === 'pending';
+            }).length;
+            
+            // 统计今日待办
+            const pendingToday = allWeekTasks.filter(t => t.plan_date === today && t.status === 'pending').length;
+            
+            if (pendingThisWeek === 0) {
+                summary.innerHTML = '<div style="color:#fff;font-size:13px;">✅ 本周无待办</div>';
+            } else {
+                summary.innerHTML = `
+                    <div style="color:#fff;font-size:13px;margin-bottom:4px;">📋 本周待办</div>
+                    <div style="color:#fff;font-size:20px;font-weight:bold;">${pendingThisWeek} <span style="font-size:12px;font-weight:normal;">项未完成</span></div>
+                    ${pendingToday > 0 ? `<div style="color:#fbbf24;font-size:12px;margin-top:4px;">⚠️ 今日：${pendingToday}项</div>` : ''}
+                `;
+            }
+        }
+        
+        // 待办提醒下拉弹窗管理
+        function toggleTodoDropdown() {
+            const dropdown = document.getElementById('todoDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('active');
+                if (dropdown.classList.contains('active')) {
+                    renderTodoDropdown();
+                }
+            }
+        }
+        
+        function closeTodoDropdown() {
+            const dropdown = document.getElementById('todoDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('active');
+            }
+        }
+        
+        function renderTodoDropdown() {
+            const list = document.getElementById('todoDropdownList');
+            const summary = document.getElementById('todoDropdownSummary');
+            if (!list || !summary) return;
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 计算本周范围
+            const now = new Date();
+            const day = now.getDay() || 7;
+            const mondayOffset = day - 1;
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - mondayOffset);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            const weekStart = monday.toISOString().split('T')[0];
+            const weekEnd = sunday.toISOString().split('T')[0];
+            
+            // 获取本周待办
+            const pendingTasks = allWeekTasks.filter(t => {
+                return t.plan_date >= weekStart && t.plan_date <= weekEnd && t.status === 'pending';
+            });
+            
+            summary.textContent = `${pendingTasks.length} 项未完成`;
+            
+            if (pendingTasks.length === 0) {
+                list.innerHTML = '<div class="todo-dropdown-empty">✅ 暂无待办事项</div>';
+                return;
+            }
+            
+            // 按日期排序
+            pendingTasks.sort((a, b) => a.plan_date.localeCompare(b.plan_date));
+            
+            list.innerHTML = pendingTasks.map(t => {
+                const isToday = t.plan_date === today;
+                const urgencyClass = isToday ? 'today' : '';
+                const timeLabel = isToday ? '今天' : t.plan_date;
+                
+                return `
+                    <div class="todo-dropdown-item ${urgencyClass}" onclick="goToWeekTask(${t.id})">
+                        <input type="checkbox" class="todo-dropdown-checkbox" onclick="event.stopPropagation(); quickCompleteTodo(${t.id}, this)">
+                        <div class="todo-dropdown-content">
+                            <div class="todo-dropdown-company">${escapeHtml(t.company_name) || '未分配企业'}</div>
+                            <div class="todo-dropdown-action">${escapeHtml(t.action) || '待办事项'}</div>
+                            <div class="todo-dropdown-time">📅 ${timeLabel} | ${t.time_period === 'am' ? '上午' : t.time_period === 'pm' ? '下午' : '晚上'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function quickCompleteTodo(id, checkbox) {
+            showLoading('正在完成...');
+            fetch(`${API_BASE}/week-tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'completed' })
+            })
+            .then(res => res.json())
+            .then(() => {
+                checkbox.checked = true;
+                checkbox.disabled = true;
+                checkbox.parentElement.style.opacity = '0.6';
+                // 重新渲染
+                renderTodoDropdown();
+                updateWeekTaskSummary();
+                loadWeekPlan();
+            })
+            .catch(e => {
+                logError('quickCompleteTodo', e);
+                showError('完成失败', 'quickCompleteTodo');
+                checkbox.checked = false;
+            })
+            .finally(() => {
+                hideLoading();
+            });
+        }
+        
+        function goToWeekTask(id) {
+            // 跳转到每周计划模块并滚动到该任务
+            switchTab('weekly');
+            setTimeout(() => {
+                const taskEl = document.querySelector(`[data-task-id="${id}"]`);
+                if (taskEl) {
+                    taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    taskEl.style.background = '#fef3c7';
+                    setTimeout(() => {
+                        taskEl.style.background = '';
+                    }, 2000);
+                }
+            }, 300);
+        }
+        
+        // 点击外部关闭下拉框
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('todoDropdown');
+            const summary = document.getElementById('weekTaskSummary');
+            if (dropdown && summary && !dropdown.contains(e.target) && e.target !== summary) {
+                closeTodoDropdown();
+            }
+        });
+        
+        // ========== 数据管理器（消除重复代码）==========
+        class DataManager {
+            constructor() {
+                this.companies = [];
+                this.listeners = [];
+                this.history = {
+                    opened: [],
+                    active: [],
+                    hq: []
+                };
+            }
+            
+            // 设置企业数据并通知所有监听器
+            setCompanies(data) {
+                const oldStats = this.getStats();
+                this.companies = data;
+                this.notifyListeners();
+                
+                // 记录历史数据用于趋势计算
+                this.recordHistory(oldStats);
+            }
+            
+            // 记录历史数据
+            recordHistory(oldStats) {
+                const now = Date.now();
+                const newStats = this.getStats();
+                
+                // 只记录有变化的数据
+                if (oldStats.opened !== newStats.opened) {
+                    this.history.opened.push({ value: newStats.opened, timestamp: now });
+                    if (this.history.opened.length > 10) this.history.opened.shift();
+                }
+                if (oldStats.active !== newStats.active) {
+                    this.history.active.push({ value: newStats.active, timestamp: now });
+                    if (this.history.active.length > 10) this.history.active.shift();
+                }
+                if (oldStats.hq !== newStats.hq) {
+                    this.history.hq.push({ value: newStats.hq, timestamp: now });
+                    if (this.history.hq.length > 10) this.history.hq.shift();
+                }
+            }
+            
+            // 获取趋势
+            getTrend(type) {
+                const history = this.history[type] || [];
+                if (history.length < 2) return { direction: 'flat', percent: 0 };
+                
+                const last = history[history.length - 1].value;
+                const prev = history[history.length - 2].value;
+                
+                if (prev === 0) return { direction: 'flat', percent: 0 };
+                
+                const change = last - prev;
+                const percent = Math.round((change / prev) * 100);
+                
+                return {
+                    direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat',
+                    percent: Math.abs(percent)
+                };
+            }
+            
+            // 获取当前统计数据
+            getStats() {
+                return {
+                    total: this.companies.length,
+                    opened: this.getOpenedCount(),
+                    active: this.getActiveCount(),
+                    hq: this.getHqCount()
+                };
+            }
+            
+            // 添加数据更新监听器
+            addListener(callback) {
+                this.listeners.push(callback);
+            }
+            
+            // 通知所有监听器数据已更新
+            notifyListeners() {
+                this.listeners.forEach(cb => {
+                    try {
+                        cb(this.companies);
+                    } catch (e) {
+                        logError('DataManager listener', e);
+                    }
+                });
+            }
+            
+            // 获取企业数据
+            getCompanies() {
+                return this.companies;
+            }
+            
+            // 获取已开户数量
+            getOpenedCount() {
+                return this.companies.filter(c => c.is_account_opened).length;
+            }
+            
+            // 获取有效户总数（仅统计已落地企业）
+            getActiveCount() {
+                const completed = this.companies.filter(c => c.landing_cycle === 'completed');
+                return completed.reduce((sum, c) => sum + (c.active_count || 0), 0);
+            }
+            
+            // 获取高质量客户总数（仅统计已落地企业）
+            getHqCount() {
+                const completed = this.companies.filter(c => c.landing_cycle === 'completed');
+                return completed.reduce((sum, c) => sum + (c.hq_count || 0), 0);
+            }
+            
+            // 获取已落地企业数量
+            getCompletedCount() {
+                return this.companies.filter(c => c.landing_cycle === 'completed').length;
+            }
+        }
+        
+        // ========== API 缓存管理器 ==========
+        class ApiCache {
+            constructor() {
+                this.cache = {};
+                this.TTL = 5 * 60 * 1000; // 5 分钟默认缓存时间
+            }
+            
+            // 生成缓存键
+            _getKey(endpoint, params = {}) {
+                return `${endpoint}:${JSON.stringify(params)}`;
+            }
+            
+            // 检查缓存是否有效
+            isValid(key) {
+                const item = this.cache[key];
+                return item && (Date.now() - item.timestamp < this.TTL);
+            }
+            
+            // 获取缓存数据
+            get(key) {
+                if (this.isValid(key)) {
+                    return this.cache[key].data;
+                }
+                return null;
+            }
+            
+            // 设置缓存
+            set(key, data) {
+                this.cache[key] = {
+                    data,
+                    timestamp: Date.now()
+                };
+            }
+            
+            // 清除缓存
+            clear(endpoint) {
+                Object.keys(this.cache).forEach(key => {
+                    if (key.startsWith(endpoint)) {
+                        delete this.cache[key];
+                    }
+                });
+            }
+            
+            // 清除所有缓存
+            clearAll() {
+                this.cache = {};
+            }
+        }
+        
+        // 创建全局缓存实例
+        const apiCache = new ApiCache();
+        
+        // ========== API 请求控制器（取消过期请求）==========
+        class RequestController {
+            constructor() {
+                this.controllers = new Map(); // 存储 AbortController
+            }
+            
+            // 创建或获取请求控制器
+            getController(key) {
+                // 如果已有相同请求，取消它
+                if (this.controllers.has(key)) {
+                    this.controllers.get(key).abort();
+                }
+                
+                const controller = new AbortController();
+                this.controllers.set(key, controller);
+                return controller;
+            }
+            
+            // 清除请求控制器
+            clear(key) {
+                this.controllers.delete(key);
+            }
+            
+            // 清除所有请求控制器
+            clearAll() {
+                this.controllers.forEach(controller => {
+                    try {
+                        controller.abort();
+                    } catch (e) {}
+                });
+                this.controllers.clear();
+            }
+        }
+        
+        // 创建全局请求控制器实例
+        const requestController = new RequestController();
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // 节流函数
+        function throttle(func, limit) {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+        
+        // 带缓存和取消功能的 API 请求函数
+        async function fetchWithCache(endpoint, options = {}, useCache = true) {
+            const cacheKey = apiCache._getKey(endpoint, options.params);
+            const requestKey = `req:${cacheKey}`;
+            
+            // 尝试从缓存获取
+            if (useCache) {
+                const cached = apiCache.get(cacheKey);
+                if (cached) {
+                    console.log(`[Cache Hit] ${endpoint}`);
+                    return cached;
+                }
+            }
+            
+            console.log(`[Cache Miss] ${endpoint}`);
+            
+            // 获取请求控制器（会自动取消相同请求）
+            const controller = requestController.getController(requestKey);
+            
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    signal: controller.signal
+                });
+                const data = await res.json();
+                
+                // 缓存 GET 请求结果
+                if (useCache && (!options.method || options.method === 'GET')) {
+                    apiCache.set(cacheKey, data);
+                }
+                
+                requestController.clear(requestKey);
+                return data;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log(`[Request Cancelled] ${endpoint}`);
+                    throw new Error('请求已取消');
+                }
+                throw error;
+            }
+        }
+        
+        // 创建全局数据管理器实例
+        const dataManager = new DataManager();
+        
+        // 注册展示面板更新监听器
+        dataManager.addListener((companies) => {
+            updateStats(companies);
+            updatePipeline(companies);
+        });
+        
+        let draggedSrc = null;
+        
+        function dragStart(e) {
+            draggedSrc = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => e.target.style.opacity = '0.4', 0);
+        }
+        
+        function dragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        
+        function drop(e) {
+            e.stopPropagation();
+            const target = e.target.closest('th');
+            if (!draggedSrc || !target || draggedSrc === target) return false;
+            
+            const thead = document.getElementById('companiesTableHead');
+            const ths = Array.from(thead.querySelectorAll('th[data-col]'));
+            const srcIdx = ths.indexOf(draggedSrc);
+            const targetIdx = ths.indexOf(target);
+            
+            if (srcIdx < targetIdx) {
+                target.parentNode.insertBefore(draggedSrc, target.nextSibling);
+            } else {
+                target.parentNode.insertBefore(draggedSrc, target);
+            }
+            
+            draggedSrc.style.opacity = '1';
+            draggedSrc = null;
+            return false;
+        }
+        
+        let currentSortField = null;
+        let currentSortOrder = 'desc';
+        
+        function handleSortClick(event, field) {
+            // 防止拖拽时触发点击
+            if (draggedSrc) return;
+            event.stopPropagation();
+            
+            const sortMap = {
+                'name': { asc: 'name_asc', desc: 'name_desc' },
+                'contact_frequency': { asc: 'default', desc: 'default' },
+                'manager_name': { asc: 'manager_asc', desc: 'manager_desc' },
+                'active_count': { asc: 'active_count_asc', desc: 'active_count_desc' },
+                'hq_count': { asc: 'hq_count_asc', desc: 'hq_count_desc' },
+                'is_account_opened': { asc: 'default', desc: 'default' },
+                'landing_cycle': { asc: 'landing_cycle_asc', desc: 'landing_cycle_desc' }
+            };
+            
+            const fieldMap = sortMap[field];
+            if (!fieldMap) return;
+            
+            // 切换排序方向
+            if (currentSortField === field) {
+                currentSortOrder = currentSortOrder === 'desc' ? 'asc' : 'desc';
+            } else {
+                currentSortField = field;
+                currentSortOrder = 'desc';
+            }
+            
+            const sortValue = fieldMap[currentSortOrder];
+            
+            // 更新表头样式
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sorted');
+            });
+            event.currentTarget.classList.add('sorted');
+            
+            // 执行排序
+            if (sortValue !== 'default') {
+                document.getElementById('sortSelect').value = sortValue;
+                sortCompanies(sortValue);
+            } else {
+                alert('该字段暂不支持排序');
+            }
+        }
+
+        async function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            ['leads','tasks','companies','referrals','todo','weekly','reminders','fusion'].forEach(t => { 
+                document.getElementById(t+'Tab').style.display = t===tab?'block':'none'; 
+            });
+            if (tab==='companies') { 
+                loadData(); 
+                updateWeekTaskSummary(); 
+            }
+            if (tab==='leads') { 
+                loadLeadBoards(); 
+                updateWeekTaskSummary(); 
+                // 切换回线索挖掘时显示板块列表
+                const boardsList = document.getElementById('leadBoardsList');
+                const leadsContent = document.getElementById('leadsContent');
+                if (boardsList) boardsList.style.display = 'block';
+                if (leadsContent) leadsContent.style.display = 'none';
+                currentLeadBoardId = null;
+            }
+            if (tab==='tasks') { 
+                loadTasks(); 
+                updateWeekTaskSummary(); 
+            }
+            if (tab==='referrals') { loadReferrals(); updateWeekTaskSummary(); }
+            if (tab==='weekly') { loadWeekPlan(); updateWeekTaskSummary(); }
+            if (tab==='reminders') { loadReminders(); updateWeekTaskSummary(); }
+            if (tab==='todo') { loadTodos(); updateWeekTaskSummary(); }
+            if (tab==='fusion') { loadFusionData(); }
+        }
+
+        async function loadWeekPlan() {
+            const weekStart = document.getElementById('weekSelect').value;
+            const week = getWeekInfoFromStart(weekStart);
+            const container = document.getElementById('weekPlan');
+            
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks`);
+                allWeekTasks = await res.json();
+                allTodos = allWeekTasks;
+                updateWeekTaskSummary();
+                renderWeekTaskList();
+            } catch (e) { 
+                allWeekTasks = []; 
+                allTodos = [];
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (!allWeekTasks.length) {
+                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#999;">本周暂无待办，点击"添加待办"开始规划</div>';
+                return;
+            }
+            
+            container.innerHTML = weekDays.map((day, i) => {
+                const date = week.days[i];
+                const isToday = date === today;
+                const tasks = allWeekTasks.filter(t => t.plan_date === date);
+                const amTasks = tasks.filter(t => t.time_period === 'am');
+                const pmTasks = tasks.filter(t => t.time_period === 'pm');
+                return `
+                    <div class="day-card ${isToday?'today':''}">
+                        <h4>${day} ${date.substr(5)}</h4>
+                        <div class="day-tasks">
+                            ${amTasks.length ? '<div style="font-size:11px;color:#666;margin-bottom:4px;">上午</div>' : ''}
+                            ${amTasks.map(t => `
+                                <div class="day-task">
+                                    <div class="company">${t.company_name||'未知'}</div>
+                                    <div class="action">${t.action||'待办'}</div>
+                                    <span class="time-badge ${t.time_period==='am'?'time-am':'time-pm'}">${t.time_period==='am'?'上午':'下午'}</span>
+                                    <span class="priority priority-${t.priority||'medium'}">${t.priority==='high'?'高':t.priority==='low'?'低':'中'}</span>
+                                    <button class="btn btn-sm btn-secondary" style="margin-top:4px;width:100%;font-size:10px;" onclick="toggleWeekTask(${t.id},this)">${t.status==='completed'?'✅ 已完成':'⬜ 未完成'}</button>
+                                    <button class="btn btn-sm btn-secondary" style="margin-top:4px;width:100%;font-size:10px;color:#ef4444;" onclick="deleteWeekTask(${t.id})">删除</button>
+                                </div>
+                            `).join('')}
+                            ${pmTasks.length ? '<div style="font-size:11px;color:#666;margin:8px 0 4px;">下午</div>' : ''}
+                            ${pmTasks.map(t => `
+                                <div class="day-task">
+                                    <div class="company">${t.company_name||'未知'}</div>
+                                    <div class="action">${t.action||'待办'}</div>
+                                    <span class="time-badge ${t.time_period==='am'?'time-am':'time-pm'}">${t.time_period==='am'?'上午':'下午'}</span>
+                                    <span class="priority priority-${t.priority||'medium'}">${t.priority==='high'?'高':t.priority==='low'?'低':'中'}</span>
+                                    <button class="btn btn-sm btn-secondary" style="margin-top:4px;width:100%;font-size:10px;" onclick="toggleWeekTask(${t.id},this)">${t.status==='completed'?'✅ 已完成':'⬜ 未完成'}</button>
+                                    <button class="btn btn-sm btn-secondary" style="margin-top:4px;width:100%;font-size:10px;color:#ef4444;" onclick="deleteWeekTask(${t.id})">删除</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function toggleWeekTask(id, btn) {
+            const task = allWeekTasks.find(t => t.id === id);
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'completed', company_id: task ? task.company_id : null })
+                });
+                if (res.ok) {
+                    btn.textContent = '✅ 已完成';
+                    if (task && task.company_id) {
+                        // 自动更新联系频次
+                        await updateAllContactFrequency();
+                    }
+                    loadWeekPlan();
+                    updateWeekTaskSummary();
+                }
+            } catch (e) {
+                alert('更新失败');
+            }
+        }
+
+        function renderTask(t) {
+            return `<div class="day-task"><div class="company">${t.company_name||'未知'}</div><div class="action">${t.action||'待办'}</div><span class="time-badge ${t.time_period==='am'?'time-am':'time-pm'}">${t.time_period==='am'?'上午':'下午'}</span><span class="priority priority-${t.priority||'medium'}">${t.priority==='high'?'高':t.priority==='low'?'低':'中'}</span><div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-secondary" style="flex:1;" onclick="editWeekTask(${t.id})">编辑</button><button class="btn btn-sm btn-secondary" style="flex:1;" onclick="deleteWeekTask(${t.id})">删除</button></div></div>`;
+        }
+
+        async function openAddWeekTask(type = 'company') {
+            selectedCompany = null;
+            document.getElementById('weekTaskModal').classList.add('active');
+            document.getElementById('weekTaskModalTitle').textContent = type === 'other' ? '添加其他事项' : '添加企业待办';
+            const weekStart = document.getElementById('weekSelect').value;
+            const week = getWeekInfoFromStart(weekStart);
+            
+            // 重新加载最新数据
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks?week_start=${weekStart}`);
+                allWeekTasks = await res.json();
+            } catch (e) { allWeekTasks = []; }
+            
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                allCompanies = await res.json();
+            } catch (e) {}
+            
+            if (type === 'other') {
+                document.getElementById('weekTaskModalBody').innerHTML = `
+                    <div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#0369a1;">💡 添加与企业无关的其他事项，如：周例会、培训、资料整理等</div>
+                    <div class="info-item"><label>选择日期 *</label><select id="weekDate" required>${weekDays.map((d,i) => `<option value="${week.days[i]}">${d} (${week.days[i]})</option>`).join('')}</select></div>
+                    <div class="info-item"><label>时间段 *</label><select id="weekTimePeriod" required><option value="am">上午</option><option value="pm">下午</option></select></div>
+                    <div class="info-item"><label>事项标题 *</label><input type="text" id="weekAction" required placeholder="如：周例会、培训、资料整理"></div>
+                    <div class="info-item"><label>详细描述</label><textarea id="weekDesc" rows="3" placeholder="事项的详细说明..."></textarea></div>
+                    <div class="info-item"><label>优先级</label><select id="weekPriority"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeWeekTaskModal()">取消</button><button type="button" class="btn btn-primary" onclick="submitWeekTask('other')">添加</button></div>
+                `;
+            } else {
+                document.getElementById('weekTaskModalBody').innerHTML = `
+                    <div style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#166534;">💡 添加与企业相关的待办，如：上门拜访、电话跟进等，完成后可同步更新企业联系频次</div>
+                    <div class="info-item"><label>搜索并选择企业 *</label><div class="company-search-container"><input type="text" id="weekCompanySearch" placeholder="输入企业名称搜索..." onkeyup="searchCompanyForTask()" autocomplete="off"><div id="companySearchResults" class="company-search-results" style="display:none;"></div></div><div id="selectedCompanyDisplay"></div></div>
+                    <div class="info-item"><label>选择日期 *</label><select id="weekDate" required>${weekDays.map((d,i) => `<option value="${week.days[i]}">${d} (${week.days[i]})</option>`).join('')}</select></div>
+                    <div class="info-item"><label>时间段 *</label><select id="weekTimePeriod" required><option value="am">上午</option><option value="pm">下午</option></select></div>
+                    <div class="info-item"><label>待办事项 *</label><input type="text" id="weekAction" required placeholder="如：电话拜访、上门拜访"></div>
+                    <div class="info-item"><label>优先级</label><select id="weekPriority"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeWeekTaskModal()">取消</button><button type="button" class="btn btn-primary" onclick="submitWeekTask('company')">添加</button></div>
+                `;
+            }
+        }
+
+        function searchCompanyForTask() {
+            const query = document.getElementById('weekCompanySearch').value.toLowerCase();
+            const resultsDiv = document.getElementById('companySearchResults');
+            if (!query || query.length < 1) { resultsDiv.style.display = 'none'; return; }
+            const filtered = allCompanies.filter(c => c.name.toLowerCase().includes(query)).slice(0, 10);
+            if (!filtered.length) { resultsDiv.innerHTML = '<div style="padding:10px;color:#999;">未找到企业</div>'; resultsDiv.style.display = 'block'; return; }
+            resultsDiv.innerHTML = filtered.map(c => `<div class="company-search-result" onclick="selectCompanyForTask(${c.id}, '${c.name.replace(/'/g, "\\'")}')">${c.name} ${c.contact_names ? '· ' + c.contact_names : ''}</div>`).join('');
+            resultsDiv.style.display = 'block';
+        }
+
+        function selectCompanyForTask(id, name) {
+            selectedCompany = { id, name };
+            document.getElementById('weekCompanySearch').value = name;
+            document.getElementById('companySearchResults').style.display = 'none';
+            document.getElementById('selectedCompanyDisplay').innerHTML = `<div class="selected-company">✅ 已选择：<strong>${name}</strong></div>`;
+        }
+
+        async function submitWeekTask(type = 'company') {
+            const weekStart = document.getElementById('weekSelect').value;
+            const data = {
+                plan_date: document.getElementById('weekDate').value,
+                time_period: document.getElementById('weekTimePeriod').value,
+                action: document.getElementById('weekAction').value,
+                priority: document.getElementById('weekPriority').value,
+                week_start: weekStart,
+                description: document.getElementById('weekDesc') ? document.getElementById('weekDesc').value : null
+            };
+            
+            if (type === 'company') {
+                if (!selectedCompany) { alert('请选择企业'); return; }
+                data.company_id = selectedCompany.id;
+                data.company_name = selectedCompany.name;
+            }
+            
+            if (!data.action) { alert('请填写事项标题'); return; }
+            
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('✅ 已添加');
+                    closeWeekTaskModal();
+                    loadWeekPlan();
+                    renderWeekTaskList();
+                } else {
+                    alert('添加失败');
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        async function editWeekTask(id) { const task = weekTasks.find(t=>t.id===id); if(!task) return; const modal = document.getElementById('taskEditModal'); document.getElementById('editTaskId').value = id; document.getElementById('editCompany').value = task.company_name||''; document.getElementById('editAction').value = task.action||''; document.getElementById('editTimePeriod').value = task.time_period||'am'; document.getElementById('editPriority').value = task.priority||'medium'; modal.classList.add('active'); } async function closeEditModal() { document.getElementById('taskEditModal').classList.remove('active'); } async function saveEditTask() { const id = document.getElementById('editTaskId').value; const data = { company_name: document.getElementById('editCompany').value, action: document.getElementById('editAction').value, time_period: document.getElementById('editTimePeriod').value, priority: document.getElementById('editPriority').value }; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); closeEditModal(); loadWeekPlan(); renderWeekTaskList(); alert('保存成功'); } catch (e) { alert('保存失败'); } } async function deleteWeekTask(id) { if (!confirm('确定删除？')) return; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' }); loadWeekPlan(); renderWeekTaskList(); } catch (e) { alert('删除失败'); } }
+
+        function renderWeekTaskList() {
+            const filter = document.getElementById('weekListFilter').value;
+            const weekStart = document.getElementById('weekSelect').value;
+            const week = getWeekInfoFromStart(weekStart);
+            const tbody = document.getElementById('weekTaskList');
+            
+            // 只显示当周的待办
+            let filtered = allWeekTasks.filter(t => t.plan_date >= week.days[0] && t.plan_date <= week.days[6]);
+            
+            if (filter === 'pending') filtered = filtered.filter(t => t.status !== 'completed');
+            else if (filter === 'completed') filtered = filtered.filter(t => t.status === 'completed');
+            else if (filter === 'company') filtered = filtered.filter(t => t.company_id);
+            else if (filter === 'other') filtered = filtered.filter(t => !t.company_id);
+            
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">暂无待办事项</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(t => `
+                <tr style="${t.status==='completed'?'opacity:0.6;background:#f0fdf4;':''}">
+                    <td style="text-align:center;">
+                        <button class="btn btn-sm ${t.status==='completed'?'btn-secondary':'btn-primary'}" onclick="toggleWeekTaskStatus(${t.id},'${t.status==='completed'?'pending':'completed'}); renderWeekTaskList();" style="padding:4px 8px;font-size:11px;">
+                            ${t.status==='completed'?'✅':'⬜'}
+                        </button>
+                    </td>
+                    <td style="font-weight:500;">${t.plan_date}</td>
+                    <td><span class="time-badge ${t.time_period==='am'?'time-am':'time-pm'}">${t.time_period==='am'?'上午':'下午'}</span></td>
+                    <td style="font-weight:500;">${t.action||'-'}</td>
+                    <td>
+                        ${t.company_name ? `<span style="color:#667eea;">🏢 ${t.company_name}</span>` : `<span style="color:#666;">📝 ${t.description||'其他事项'}</span>`}
+                    </td>
+                    <td><span class="priority priority-${t.priority||'medium'}">${t.priority==='high'?'🔴 高':t.priority==='low'?'🟢 低':'🟡 中'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="deleteWeekTask(${t.id})" style="padding:4px 8px;font-size:11px;color:#ef4444;">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function toggleWeekTaskStatus(id, status) {
+            const task = allWeekTasks.find(t => t.id === id);
+            try {
+                await fetch(`${API_BASE}/week-tasks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, company_id: task ? task.company_id : null })
+                });
+                if (task) task.status = status;
+                if (status === 'completed' && task && task.company_id) {
+                    await updateAllContactFrequency();
+                }
+                renderWeekTaskList();
+                updateWeekTaskSummary();
+            } catch (e) {
+                alert('更新失败');
+            }
+        }
+
+        async function showCompanyDetail(id) {
+            document.getElementById('companyModal').classList.add('active');
+            document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`);
+                const c = await res.json();
+                document.getElementById('modalTitle').textContent = c.name;
+                document.getElementById('modalBody').innerHTML = `
+                    <div style="padding:20px;max-height:70vh;overflow-y:auto;">
+                        <!-- 基本信息 -->
+                        <div class="info-grid" style="margin-bottom:16px;">
+                            <div class="info-item"><label>企业名称</label><div style="font-weight:600;font-size:15px;">${c.name||'-'}</div></div>
+                            <div class="info-item"><label>进度状态</label><div><span class="badge badge-blue">${c.progress_status||'初步接触'}</span></div></div>
+                            <div class="info-item"><label>行业</label><div>${c.industry||'-'}</div></div>
+                            <div class="info-item"><label>落地周期</label><div>${getLandingLabel(c.landing_cycle)}</div></div>
+                            <div class="info-item"><label>开户状态</label><div>${c.is_account_opened?'<span class="badge badge-success">已开户</span>':'<span class="badge badge-warning">未开户</span>'}</div></div>
+                            <div class="info-item"><label>薪福通</label><div>${c.xinfutong?'<span class="badge badge-success">✅ 已标记</span>':'<span class="badge badge-gray">❌ 未标记</span>'}</div></div>
+                        </div>
+                        
+                        <!-- 跟进记录 -->
+                        <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <h3 style="font-size:16px;color:#333;">📝 跟进记录</h3>
+                                <button class="btn btn-sm btn-primary" onclick="openAddFollowUpModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')">+ 添加跟进</button>
+                            </div>
+                            <div id="followUpList_${c.id}" style="min-height:100px;">
+                                <p style="text-align:center;color:#999;">加载中...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 企业尽调信息 -->
+                        <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
+                            <h3 style="font-size:16px;margin-bottom:12px;color:#333;">📋 企业尽调信息</h3>
+                            
+                            <!-- 基本信息 -->
+                            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:12px;">
+                                <h4 style="font-size:14px;color:#0369a1;margin-bottom:8px;">📌 基本信息</h4>
+                                <div class="info-grid">
+                                    <div class="info-item"><label>主营产品</label><div>${c.main_product||'-'}</div></div>
+                                    <div class="info-item"><label>前五大下游客户</label><div>${c.top5_customers||'-'}</div></div>
+                                    <div class="info-item"><label>近 2 年营收</label><div>${getRevenueLabel(c.revenue_range)||'-'}</div></div>
+                                    <div class="info-item"><label>净利润</label><div>${c.net_profit===1?'<span class="badge badge-success">盈利</span>':c.net_profit===0?'<span class="badge badge-warning">亏损</span>':'-'}</div></div>
+                                    <div class="info-item"><label>增值税纳税额</label><div>${c.vat_tax||'-'}</div></div>
+                                    <div class="info-item"><label>所得税纳税额</label><div>${c.income_tax||'-'}</div></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 结算模式 -->
+                            <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:12px;">
+                                <h4 style="font-size:14px;color:#92400e;margin-bottom:8px;">💰 结算模式</h4>
+                                <div class="info-grid">
+                                    <div class="info-item"><label>境内业务结算</label><div>${getDomesticSettlementLabel(c.domestic_settlement)||'-'}</div></div>
+                                    <div class="info-item"><label>跨境业务</label><div>${getCrossBorderLabel(c.cross_border)||'-'}</div></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 合作银行 -->
+                            <div style="background:#dbeafe;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:12px;">
+                                <h4 style="font-size:14px;color:#1e40af;margin-bottom:8px;">🏦 合作银行</h4>
+                                <div class="info-item"><label>主要合作银行及业务</label><div>${c.main_banks||'-'}</div></div>
+                            </div>
+                            
+                            <!-- 零售业务 -->
+                            <div style="background:#f3e8ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px;margin-bottom:12px;">
+                                <h4 style="font-size:14px;color:#6b21a8;margin-bottom:8px;">👤 零售业务</h4>
+                                <div class="info-grid">
+                                    <div class="info-item"><label>个人持卡情况</label><div>${c.personal_cards||'-'}</div></div>
+                                    <div class="info-item"><label>资产情况</label><div>${getAssetLabel(c.asset_status)||'-'}</div></div>
+                                    <div class="info-item"><label>家庭情况</label><div>${c.family_status||'-'}</div></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 资本市场 -->
+                            <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:12px;">
+                                <h4 style="font-size:14px;color:#166534;margin-bottom:8px;">📈 资本市场</h4>
+                                <div class="info-grid">
+                                    <div class="info-item"><label>风投情况</label><div>${getVentureLabel(c.venture_status)||'-'}</div></div>
+                                    <div class="info-item"><label>高管持股</label><div>${c.executive_stock?'<span class="badge badge-success">已实施</span>':'<span class="badge badge-gray">未实施</span>'}</div></div>
+                                    <div class="info-item"><label>上市计划</label><div>${getListingLabel(c.listing_plan)||'-'}</div></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:white;padding-top:12px;border-top:1px solid #e5e7eb;">
+                            <button class="btn btn-primary" onclick="editCompanyDetail(${c.id})">✏️ 编辑</button>
+                            <button class="btn btn-secondary" onclick="closeCompanyModal()">关闭</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 加载跟进记录
+                loadFollowUps(c.id);
+            } catch (e) {
+                document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
+            }
+        }
+        
+        // 辅助函数
+        function getLandingLabel(value) {
+            const map = { 'month':'本月落地', 'quarter':'3 个月落地', 'year':'本年落地', 'ongoing':'持续跟进' };
+            return map[value] || '持续跟进';
+        }
+        function getRevenueLabel(value) {
+            const map = { '1':'1000 万以内', '2':'1000 万 -5000 万', '3':'5000 万 -3 亿元', '4':'3 亿元以上' };
+            return map[value] || '-';
+        }
+        function getDomesticSettlementLabel(value) {
+            const map = { '1':'银行转账', '2':'收取银承', '3':'收私账' };
+            return map[value] || '-';
+        }
+        function getCrossBorderLabel(value) {
+            const map = { '1':'进口为主', '2':'出口为主' };
+            return map[value] || '无';
+        }
+        function getAssetLabel(value) {
+            const map = { '1':'深圳有房产', '2':'深圳无房产' };
+            return map[value] || '-';
+        }
+        function getVentureLabel(value) {
+            const map = { '1':'已有风投', '2':'计划引入' };
+            return map[value] || '无';
+        }
+        function getListingLabel(value) {
+            const map = { '1':'境内上市', '2':'境外上市', '3':'计划中' };
+            return map[value] || '无';
+        }
+        
+        async function editCompanyDetail(id) {
+            try {
+                const res = await fetch(`${API_BASE}/companies/${id}`);
+                const c = await res.json();
+                document.getElementById('modalTitle').textContent = '编辑企业 - ' + c.name;
+                document.getElementById('modalBody').innerHTML = `
+                    <form id="editCompanyForm" style="max-height:70vh;overflow-y:auto;padding:20px;">
+                        <!-- 基本信息 -->
+                        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <h4 style="font-size:14px;color:#0369a1;margin-bottom:8px;">📌 基本信息</h4>
+                            <div class="info-grid">
+                                <div class="info-item"><label>主营产品</label><input type="text" id="editMainProduct" value="${c.main_product||''}" placeholder="主营产品/服务"></div>
+                                <div class="info-item"><label>前五大下游客户</label><input type="text" id="editTop5Customers" value="${c.top5_customers||''}" placeholder="客户名称"></div>
+                                <div class="info-item"><label>近 2 年营收</label>
+                                    <select id="editRevenue">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.revenue_range==='1'?'selected':''}>1000 万以内</option>
+                                        <option value="2" ${c.revenue_range==='2'?'selected':''}>1000 万 -5000 万</option>
+                                        <option value="3" ${c.revenue_range==='3'?'selected':''}>5000 万 -3 亿元</option>
+                                        <option value="4" ${c.revenue_range==='4'?'selected':''}>3 亿元以上</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>净利润</label>
+                                    <select id="editNetProfit">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.net_profit===1?'selected':''}>盈利</option>
+                                        <option value="0" ${c.net_profit===0?'selected':''}>亏损</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>增值税纳税额</label><input type="text" id="editVatTax" value="${c.vat_tax||''}"></div>
+                                <div class="info-item"><label>所得税纳税额</label><input type="text" id="editIncomeTax" value="${c.income_tax||''}"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 结算模式 -->
+                        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <h4 style="font-size:14px;color:#92400e;margin-bottom:8px;">💰 结算模式</h4>
+                            <div class="info-grid">
+                                <div class="info-item"><label>境内业务结算</label>
+                                    <select id="editDomesticSettlement">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.domestic_settlement==='1'?'selected':''}>银行转账</option>
+                                        <option value="2" ${c.domestic_settlement==='2'?'selected':''}>收取银承</option>
+                                        <option value="3" ${c.domestic_settlement==='3'?'selected':''}>收私账</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>跨境业务</label>
+                                    <select id="editCrossBorder">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.cross_border==='1'?'selected':''}>进口为主</option>
+                                        <option value="2" ${c.cross_border==='2'?'selected':''}>出口为主</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 合作银行 -->
+                        <div style="background:#dbeafe;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <h4 style="font-size:14px;color:#1e40af;margin-bottom:8px;">🏦 合作银行</h4>
+                            <div class="info-item"><label>主要合作银行及业务</label><textarea id="editMainBanks" rows="2" placeholder="银行名称及主要业务">${c.main_banks||''}</textarea></div>
+                        </div>
+                        
+                        <!-- 零售业务 -->
+                        <div style="background:#f3e8ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <h4 style="font-size:14px;color:#6b21a8;margin-bottom:8px;">👤 零售业务</h4>
+                            <div class="info-grid">
+                                <div class="info-item"><label>个人持卡情况</label><input type="text" id="editPersonalCards" value="${c.personal_cards||''}" placeholder="实控人、股东高管持卡"></div>
+                                <div class="info-item"><label>资产情况</label>
+                                    <select id="editAssetStatus">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.asset_status==='1'?'selected':''}>深圳有房产</option>
+                                        <option value="2" ${c.asset_status==='2'?'selected':''}>深圳无房产</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>家庭情况</label><input type="text" id="editFamilyStatus" value="${c.family_status||''}" placeholder="夫妻、儿女情况"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 资本市场 -->
+                        <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <h4 style="font-size:14px;color:#166534;margin-bottom:8px;">📈 资本市场</h4>
+                            <div class="info-grid">
+                                <div class="info-item"><label>风投情况</label>
+                                    <select id="editVentureStatus">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.venture_status==='1'?'selected':''}>已有风投</option>
+                                        <option value="2" ${c.venture_status==='2'?'selected':''}>计划引入</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>高管持股</label>
+                                    <select id="editExecutiveStock">
+                                        <option value="0" ${!c.executive_stock?'selected':''}>未实施</option>
+                                        <option value="1" ${c.executive_stock?'selected':''}>已实施</option>
+                                    </select>
+                                </div>
+                                <div class="info-item"><label>上市计划</label>
+                                    <select id="editListingPlan">
+                                        <option value="">请选择</option>
+                                        <option value="1" ${c.listing_plan==='1'?'selected':''}>境内上市</option>
+                                        <option value="2" ${c.listing_plan==='2'?'selected':''}>境外上市</option>
+                                        <option value="3" ${c.listing_plan==='3'?'selected':''}>计划中</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:white;padding-top:12px;border-top:1px solid #e5e7eb;">
+                            <button type="button" class="btn btn-secondary" onclick="showCompanyDetail(${id})">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                `;
+                
+                document.getElementById('editCompanyForm').onsubmit = async function(e) {
+                    e.preventDefault();
+                    try {
+                        const res = await fetch(`${API_BASE}/companies/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                main_product: document.getElementById('editMainProduct').value,
+                                top5_customers: document.getElementById('editTop5Customers').value,
+                                revenue_range: document.getElementById('editRevenue').value,
+                                net_profit: document.getElementById('editNetProfit').value ? parseInt(document.getElementById('editNetProfit').value) : null,
+                                vat_tax: document.getElementById('editVatTax').value,
+                                income_tax: document.getElementById('editIncomeTax').value,
+                                domestic_settlement: document.getElementById('editDomesticSettlement').value,
+                                cross_border: document.getElementById('editCrossBorder').value,
+                                main_banks: document.getElementById('editMainBanks').value,
+                                personal_cards: document.getElementById('editPersonalCards').value,
+                                asset_status: document.getElementById('editAssetStatus').value,
+                                family_status: document.getElementById('editFamilyStatus').value,
+                                venture_status: document.getElementById('editVentureStatus').value,
+                                executive_stock: parseInt(document.getElementById('editExecutiveStock').value),
+                                listing_plan: document.getElementById('editListingPlan').value
+                            })
+                        });
+                        if (res.ok) {
+                            alert('✅ 已更新');
+                            loadData();
+                            showCompanyDetail(id);
+                        } else {
+                            alert('更新失败');
+                        }
+                    } catch (e) {
+                        alert('网络错误');
+                    }
+                };
+            } catch (e) {
+                alert('加载失败');
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            const taskName = currentTaskId ? allTasks.find(t=>t.id===currentTaskId)?.name : null;
+            document.getElementById('addModalTitle').textContent = taskName ? `新增企业 - ${taskName}` : '新增企业';
+            document.getElementById('addModalBody').innerHTML = `
+                <form id="addCompanyForm">
+                    <div class="info-grid">
+                        <div><div class="info-item"><label>企业名称 *</label><input type="text" id="addName" required></div><div class="info-item"><label>行业</label><input type="text" id="addIndustry"></div></div>
+                        <div><div class="info-item"><label>年营业额</label><input type="text" id="addFinancial"></div><div class="info-item"><label>落地周期</label><select id="addLanding"><option value="ongoing">持续跟进</option><option value="month">本月落地</option><option value="quarter">3 个月落地</option><option value="year">本年落地</option></select></div></div>
+                    </div>
+                    ${taskName ? `<div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:10px;margin-top:12px;font-size:12px;color:#0369a1;">💡 新企业将自动关联到"${taskName}"任务</div>` : ''}
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+                </form>
+            `;
+            document.getElementById('addCompanyForm').onsubmit = async function(e) {
+                e.preventDefault();
+                
+                // 表单验证
+                const errors = validateForm([
+                    { label: '企业名称', value: document.getElementById('addName').value, required: true, maxLength: 100 },
+                    { label: '行业', value: document.getElementById('addIndustry').value, required: false, maxLength: 50 },
+                    { label: '年营业额', value: document.getElementById('addFinancial').value, required: false, maxLength: 50 }
+                ]);
+                
+                if (errors.length > 0) {
+                    showFormErrors(errors);
+                    return;
+                }
+                
+                const data = {
+                    name: document.getElementById('addName').value.trim(),
+                    industry: document.getElementById('addIndustry').value.trim(),
+                    financial_info: document.getElementById('addFinancial').value.trim(),
+                    landing_cycle: document.getElementById('addLanding').value,
+                    active_count: 0,
+                    hq_count: 0,
+                    progress_status: '初步接触'
+                };
+                if (currentTaskId) data.task_id = currentTaskId;
+                try {
+                    const res = await fetch(`${API_BASE}/companies`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (res.ok) {
+                        const newCompany = await res.json();
+                        closeAddModal();
+                        // 立即刷新显示
+                        if (currentTaskId) {
+                            // 重新获取最新数据
+                            const res = await fetch(`${API_BASE}/companies`);
+                            const all = await res.json();
+                            allCompanies = all.filter(c => c.task_id === currentTaskId);
+                            renderCompanies(allCompanies);
+                            updateStats(allCompanies);
+                            updatePipeline(allCompanies);
+                            alert(`✅ 已添加，企业 "${data.name}" 已关联到此任务`);
+                        } else {
+                            loadData();
+                            alert('✅ 已添加');
+                        }
+                    } else {
+                        alert('添加失败');
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                }
+            };
+        }
+
+        function downloadTemplate() {
+            const headers = ['企业名称', '行业', '年营业额', '有效户数', '高质量数', '开户状态 (已开户/未开户)', '落地周期 (month/quarter/year/ongoing)'];
+            const sample = [
+                ['XX 科技公司', '信息技术', '5000 万', '10', '5', '已开户', 'month'],
+                ['XX 贸易公司', '贸易', '3000 万', '8', '3', '未开户', 'quarter'],
+                ['XX 制造厂', '制造业', '8000 万', '15', '8', '已开户', 'year']
+            ];
+            // 使用 CSV 格式
+            let csv = '\uFEFF';
+            csv += headers.join(',') + '\n';
+            csv += sample.map(row => row.map(cell => {
+                const str = String(cell||'');
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '企业导入模板.csv';
+            link.click();
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.add('active');
+            document.getElementById('importModalBody').innerHTML = `
+                <div class="template-box">
+                    <h4>📄 CSV 模板说明</h4>
+                    <ul>
+                        <li><strong>格式</strong>：CSV 格式（逗号分隔），WPS/Excel 均可打开</li>
+                        <li><strong>企业名称</strong>：必填，如"XX 科技公司"</li>
+                        <li><strong>行业</strong>：必填，如"信息技术"</li>
+                        <li><strong>年营业额</strong>：选填，如"5000 万"</li>
+                        <li><strong>有效户数</strong>：数字，如"10"</li>
+                        <li><strong>高质量数</strong>：数字，如"5"</li>
+                        <li><strong>开户状态</strong>："已开户"或"未开户"</li>
+                        <li><strong>落地周期</strong>：month(本月)/quarter(3 个月)/year(本年)/ongoing(持续跟进)</li>
+                        <li><strong>对公客户经理</strong>：选填，如"张三"</li>
+                        <li><strong>备注</strong>：选填，任意文本</li>
+                    </ul>
+                    <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="downloadTemplate()">📄 下载 CSV 模板</button>
+                </div>
+                <div class="info-item"><label>粘贴数据（从 Excel 复制）</label><textarea id="importData" rows="8" placeholder="从 Excel 复制后直接粘贴到这里"></textarea></div>
+                <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button><button type="button" class="btn btn-primary" onclick="doImport()">导入</button></div>
+            `;
+        }
+
+        async function doImport() {
+            const data = document.getElementById('importData').value.trim();
+            if (!data) { alert('请输入数据'); return; }
+            const lines = data.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(/\t|,/).map(h => h.trim().toLowerCase());
+            let s = 0, f = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const vals = lines[i].split(/\t|,/).map(v => v.trim());
+                const row = {};
+                headers.forEach((h, j) => { row[h] = vals[j] || ''; });
+                const name = row['企业名称'] || row['name'] || vals[0];
+                if (!name) continue;
+                try {
+                    await fetch(`${API_BASE}/companies`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            industry: row['行业']||'',
+                            financial_info: row['年营业额']||'',
+                            active_count: parseInt(row['有效户数'])||0,
+                            hq_count: parseInt(row['高质量数'])||0,
+                            is_account_opened: (row['开户状态']||'').includes('已')?1:0,
+                            landing_cycle: row['落地周期']||'ongoing',
+                            progress_status: '初步接触'
+                        })
+                    });
+                    s++;
+                } catch (e) { f++; }
+            }
+            alert(`✅ 导入完成！成功:${s} 失败:${f}`); closeImportModal(); loadData();
+        }
+
+        function exportCompanies() {
+            if (!allCompanies.length) { alert('无数据'); return; }
+            const headers = ['企业名称', '行业', '年营业额', '有效户数', '高质量数', '关键人', '开户状态', '落地周期', '进度状态', '备注'];
+            const rows = allCompanies.map(c => [
+                c.name||'', 
+                c.industry||'', 
+                c.financial_info||'', 
+                c.active_count||0, 
+                c.hq_count||0, 
+                c.contact_names||'', 
+                c.is_account_opened?'已开户':'未开户', 
+                c.landing_cycle==='month'?'本月落地':c.landing_cycle==='quarter'?'3 个月落地':c.landing_cycle==='year'?'本年落地':'持续跟进', 
+                c.progress_status||'',
+                c.remarks||''
+            ]);
+            // 使用标准 CSV 格式，WPS 兼容性最好
+            let csv = '\uFEFF'; // BOM 标记
+            csv += headers.join(',') + '\n';
+            csv += rows.map(row => row.map(cell => {
+                const str = String(cell||'');
+                // 如果包含逗号、引号或换行，用引号包裹并转义
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `企业数据_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        async function loadReminders() {
+            const c = document.getElementById('remindersList'); c.innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+            const today = new Date(); const month = today.getMonth()+1, date = today.getDate();
+            const bds = [];
+            for (const comp of allCompanies) { try { const res = await fetch(`${API_BASE}/contacts/company/${comp.id}`); const list = await res.json(); list.forEach(ct => { if (ct.birth_date) bds.push({...ct, company_name: comp.name}); }); } catch (e) {} }
+            const todayBd = bds.filter(ct => { const d = new Date(ct.birth_date); return (d.getMonth()+1)===month && d.getDate()===date; });
+            const monthBd = bds.filter(ct => { const d = new Date(ct.birth_date); return (d.getMonth()+1)===month; });
+            let html = '';
+            if (todayBd.length) { html += '<h3 style="margin:16px 0 12px;color:#ef4444;">🎂 今日生日</h3>'; todayBd.forEach(ct => { html += `<div class="reminder-card urgent"><h4>${ct.company_name} - ${ct.name}</h4><p>${ct.position||''}</p></div>`; }); }
+            if (monthBd.length) { html += '<h3 style="margin:16px 0 12px;color:#f59e0b;">📅 本月生日</h3>'; monthBd.forEach(ct => { const d = new Date(ct.birth_date); html += `<div class="reminder-card"><h4>${ct.company_name} - ${ct.name}</h4><p>${today.getFullYear()-d.getFullYear()}岁</p></div>`; }); }
+            c.innerHTML = html || '<p style="text-align:center;color:#999;padding:40px;">暂无提醒</p>';
+        }
+
+        function createNewTask() {
+            document.getElementById('taskModal').classList.add('active');
+            document.getElementById('taskModalTitle').textContent = '新建营销任务';
+            const companyOptions = allCompanies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            document.getElementById('taskModalBody').innerHTML = `
+                <form id="taskForm">
+                    <div class="info-item"><label>任务名称 *</label><input type="text" id="taskName" required placeholder="如：薪福通专项营销"></div>
+                    <div class="info-item"><label>描述</label><textarea id="taskDesc" rows="3" placeholder="任务目标、策略等"></textarea></div>
+                    <div class="info-item"><label>关联企业信息</label><select id="taskCompanySelect" multiple style="width:100%;min-height:120px;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;">${companyOptions}</select><div style="font-size:11px;color:#999;margin-top:4px;">💡 按住 Ctrl/Cmd 可多选，创建后仍可修改</div></div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeTaskModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div>
+                </form>`;
+            document.getElementById('taskForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const selectedCompanyIds = Array.from(document.getElementById('taskCompanySelect').selectedOptions).map(opt => parseInt(opt.value));
+                try {
+                    const res = await fetch(`${API_BASE}/marketing-tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: document.getElementById('taskName').value,
+                            description: document.getElementById('taskDesc').value,
+                            company_ids: selectedCompanyIds
+                        })
+                    });
+                    if (res.ok) {
+                        alert('✅ 已创建');
+                        closeTaskModal();
+                        loadTasks();
+                    } else {
+                        alert('创建失败');
+                    }
+                } catch (e) { alert('网络错误'); }
+            };
+        }
+
+        // 跟进记录相关函数
+        async function loadFollowUps(companyId) {
+            try {
+                const res = await fetch(`${API_BASE}/follow-ups/company/${companyId}`);
+                const followUps = await res.json();
+                const container = document.getElementById(`followUpList_${companyId}`);
+                
+                if (!followUps.length) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">暂无跟进记录，点击右上角添加</p>';
+                    return;
+                }
+                
+                const typeIcons = { '电话': '📞', '上门': '🚗', '微信': '💬', '邮件': '📧', '会议': '🤝', '其他': '📝' };
+                
+                let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+                followUps.forEach(fu => {
+                    const icon = typeIcons[fu.follow_type] || '📝';
+                    const timeLabel = fu.follow_time === 'am' ? '上午' : fu.follow_time === 'pm' ? '下午' : fu.follow_time;
+                    html += `
+                        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:18px;">${icon}</span>
+                                    <span style="font-weight:600;color:#333;">${fu.follow_type} - ${fu.follow_date} ${timeLabel}</span>
+                                </div>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="btn btn-sm btn-secondary" onclick="editFollowUp(${fu.id}, ${companyId})" style="padding:2px 6px;font-size:11px;">✏️</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="deleteFollowUp(${fu.id}, ${companyId})" style="padding:2px 6px;font-size:11px;color:#ef4444;">🗑️</button>
+                                </div>
+                            </div>
+                            <div style="color:#333;font-size:13px;line-height:1.6;margin-bottom:8px;">${escapeHtml(fu.follow_content)}</div>
+                            ${fu.next_follow_date ? `<div style="font-size:11px;color:#667eea;background:#dbeafe;padding:4px 8px;border-radius:4px;display:inline-block;">⏰ 下次跟进：${fu.next_follow_date}</div>` : ''}
+                            ${fu.notes ? `<div style="font-size:11px;color:#999;margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">备注：${escapeHtml(fu.notes)}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                const container = document.getElementById(`followUpList_${companyId}`);
+                container.innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
+            }
+        }
+        
+        window.openAddFollowUpModal = function(companyId, companyName) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '添加跟进记录';
+            document.getElementById('addModalBody').innerHTML = `
+                <form id="addFollowUpForm" style="padding:20px;">
+                    <div class="info-item">
+                        <label>跟进企业</label>
+                        <div style="padding:8px;background:#f0f9ff;border-radius:6px;color:#0369a1;font-weight:500;">${escapeHtml(companyName)}</div>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>跟进日期 *</label>
+                            <input type="date" id="followDate" required value="${today}">
+                        </div>
+                        <div class="info-item">
+                            <label>时间段</label>
+                            <select id="followTime">
+                                <option value="上午">上午</option>
+                                <option value="下午">下午</option>
+                                <option value="晚上">晚上</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <label>跟进方式</label>
+                        <select id="followType">
+                            <option value="电话">📞 电话</option>
+                            <option value="上门">🚗 上门拜访</option>
+                            <option value="微信">💬 微信</option>
+                            <option value="邮件">📧 邮件</option>
+                            <option value="会议">🤝 会议</option>
+                            <option value="其他">📝 其他</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <label>跟进内容 *</label>
+                        <textarea id="followContent" rows="4" required placeholder="详细记录沟通内容、客户反馈、下一步计划等..."></textarea>
+                    </div>
+                    <div class="info-item">
+                        <label>下次跟进日期</label>
+                        <input type="date" id="nextFollowDate" placeholder="选择下次跟进日期">
+                    </div>
+                    <div class="info-item">
+                        <label>备注</label>
+                        <textarea id="followNotes" rows="2" placeholder="其他补充信息..."></textarea>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('addFollowUpForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const timeMap = { '上午': 'am', '下午': 'pm', '晚上': 'evening' };
+                try {
+                    const res = await fetch(`${API_BASE}/follow-ups`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            company_id: companyId,
+                            follow_date: document.getElementById('followDate').value,
+                            follow_time: timeMap[document.getElementById('followTime').value],
+                            follow_type: document.getElementById('followType').value,
+                            follow_content: document.getElementById('followContent').value,
+                            next_follow_date: document.getElementById('nextFollowDate').value || null,
+                            notes: document.getElementById('followNotes').value
+                        })
+                    });
+                    if (res.ok) {
+                        alert('✅ 跟进记录已添加');
+                        closeAddModal();
+                        loadFollowUps(companyId);
+                    } else {
+                        alert('添加失败');
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                }
+            };
+        };
+        
+        window.editFollowUp = async function(id, companyId) {
+            try {
+                const res = await fetch(`${API_BASE}/follow-ups/company/${companyId}`);
+                const followUps = await res.json();
+                const fu = followUps.find(f => f.id === id);
+                if (!fu) return;
+                
+                const timeMapReverse = { 'am': '上午', 'pm': '下午', 'evening': '晚上' };
+                
+                document.getElementById('addModal').classList.add('active');
+                document.getElementById('addModalTitle').textContent = '编辑跟进记录';
+                document.getElementById('addModalBody').innerHTML = `
+                    <form id="editFollowUpForm" style="padding:20px;">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>跟进日期 *</label>
+                                <input type="date" id="editFollowDate" required value="${fu.follow_date}">
+                            </div>
+                            <div class="info-item">
+                                <label>时间段</label>
+                                <select id="editFollowTime">
+                                    <option value="上午" ${fu.follow_time==='am'?'selected':''}>上午</option>
+                                    <option value="下午" ${fu.follow_time==='pm'?'selected':''}>下午</option>
+                                    <option value="晚上" ${fu.follow_time==='evening'?'selected':''}>晚上</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <label>跟进方式</label>
+                            <select id="editFollowType">
+                                <option value="电话" ${fu.follow_type==='电话'?'selected':''}>📞 电话</option>
+                                <option value="上门" ${fu.follow_type==='上门'?'selected':''}>🚗 上门拜访</option>
+                                <option value="微信" ${fu.follow_type==='微信'?'selected':''}>💬 微信</option>
+                                <option value="邮件" ${fu.follow_type==='邮件'?'selected':''}>📧 邮件</option>
+                                <option value="会议" ${fu.follow_type==='会议'?'selected':''}>🤝 会议</option>
+                                <option value="其他" ${fu.follow_type==='其他'?'selected':''}>📝 其他</option>
+                            </select>
+                        </div>
+                        <div class="info-item">
+                            <label>跟进内容 *</label>
+                            <textarea id="editFollowContent" rows="4" required>${fu.follow_content||''}</textarea>
+                        </div>
+                        <div class="info-item">
+                            <label>下次跟进日期</label>
+                            <input type="date" id="editNextFollowDate" value="${fu.next_follow_date||''}">
+                        </div>
+                        <div class="info-item">
+                            <label>备注</label>
+                            <textarea id="editFollowNotes" rows="2">${fu.notes||''}</textarea>
+                        </div>
+                        <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </div>
+                    </form>
+                `;
+                document.getElementById('editFollowUpForm').onsubmit = async function(e) {
+                    e.preventDefault();
+                    const timeMap = { '上午': 'am', '下午': 'pm', '晚上': 'evening' };
+                    try {
+                        const res = await fetch(`${API_BASE}/follow-ups/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                follow_date: document.getElementById('editFollowDate').value,
+                                follow_time: timeMap[document.getElementById('editFollowTime').value],
+                                follow_type: document.getElementById('editFollowType').value,
+                                follow_content: document.getElementById('editFollowContent').value,
+                                next_follow_date: document.getElementById('editNextFollowDate').value || null,
+                                notes: document.getElementById('editFollowNotes').value
+                            })
+                        });
+                        if (res.ok) {
+                            alert('✅ 已更新');
+                            closeAddModal();
+                            loadFollowUps(companyId);
+                        } else {
+                            alert('更新失败');
+                        }
+                    } catch (e) {
+                        alert('网络错误');
+                    }
+                };
+            } catch (e) {
+                alert('加载失败');
+            }
+        };
+        
+        window.deleteFollowUp = async function(id, companyId) {
+            if (!confirm('确定删除这条跟进记录？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/follow-ups/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('✅ 已删除');
+                    loadFollowUps(companyId);
+                } else {
+                    alert('删除失败');
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        };
+        
+        function closeCompanyModal() { document.getElementById('companyModal').classList.remove('active'); }
+        function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+        function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+        function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
+        function closeWeekTaskModal() { document.getElementById('weekTaskModal').classList.remove('active'); }
+        function closeTargetModal() { document.getElementById('targetModal').classList.remove('active'); }
+        
+        async function editTaskCompanies(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // 获取该任务的所有企业
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                const all = await res.json();
+                const taskCompanies = all.filter(c => c.task_id === taskId).map(c => c.id);
+                
+                document.getElementById('taskModal').classList.add('active');
+                document.getElementById('taskModalTitle').textContent = `管理企业 - ${task.name}`;
+                
+                const companyOptions = all.map(c => `<option value="${c.id}" ${taskCompanies.includes(c.id)?'selected':''}>${c.name}</option>`).join('');
+                document.getElementById('taskModalBody').innerHTML = `
+                    <div class="info-item">
+                        <label>关联企业（按住 Ctrl/Cmd 多选）</label>
+                        <select id="editTaskCompanySelect" multiple style="width:100%;min-height:200px;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;">${companyOptions}</select>
+                        <div style="font-size:11px;color:#999;margin-top:4px;">当前已选 ${taskCompanies.length} 家企业</div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="saveTaskCompanies(${taskId})">保存</button>
+                    </div>
+                `;
+            } catch (e) {
+                alert('加载失败');
+            }
+        }
+        
+        async function saveTaskCompanies(taskId) {
+            const selectedCompanyIds = Array.from(document.getElementById('editTaskCompanySelect').selectedOptions).map(opt => parseInt(opt.value));
+            
+            // 先清空所有关联到该任务的企业
+            try {
+                const res = await fetch(`${API_BASE}/companies`);
+                const all = await res.json();
+                
+                // 取消所有原关联
+                const oldCompanies = all.filter(c => c.task_id === taskId);
+                for (const c of oldCompanies) {
+                    await fetch(`${API_BASE}/companies/${c.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: null })
+                    });
+                }
+                
+                // 关联新选择的企业
+                for (const companyId of selectedCompanyIds) {
+                    await fetch(`${API_BASE}/companies/${companyId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: taskId })
+                    });
+                }
+                
+                alert('✅ 已保存');
+                closeTaskModal();
+                loadTasks();
+            } catch (e) {
+                alert('保存失败');
+            }
+        }
+        
+        async function deleteTask(taskId) {
+            if (!confirm('⚠️ 确定删除此任务？\n\n删除任务后，关联的企业将自动解除关联（企业本身不会被删除）。')) return;
+            try {
+                // 先获取该任务关联的所有企业
+                const res = await fetch(`${API_BASE}/companies`);
+                const allCompanies = await res.json();
+                const taskCompanies = allCompanies.filter(c => c.task_id === taskId);
+                
+                // 解除所有关联企业的 task_id
+                for (const company of taskCompanies) {
+                    await fetch(`${API_BASE}/companies/${company.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: null })
+                    });
+                }
+                
+                // 删除任务
+                await fetch(`${API_BASE}/marketing-tasks/${taskId}`, { method: 'DELETE' });
+                alert('✅ 任务已删除，关联企业已解除关联');
+                loadTasks();
+                if (currentTaskId === taskId) {
+                    currentTaskId = null;
+                    loadData();
+                } else {
+                    refreshCurrentView();
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        async function manageContacts(companyId, companyName) {
+            document.getElementById('contactModal').classList.add('active');
+            document.getElementById('contactModalTitle').textContent = `关键人管理 - ${companyName}`;
+            
+            try {
+                const res = await fetch(`${API_BASE}/contacts/company/${companyId}`);
+                const contacts = await res.json();
+                
+                let html = `
+                    <div style="margin-bottom:16px;">
+                        <button class="btn btn-primary" onclick="addContact(${companyId})">+ 添加关键人</button>
+                    </div>
+                    ${contacts.length ? `
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f9fafb;">
+                                    <th style="padding:10px;text-align:left;">姓名</th>
+                                    <th style="padding:10px;text-align:left;">职位</th>
+                                    <th style="padding:10px;text-align:left;">生日</th>
+                                    <th style="padding:10px;text-align:left;">喜好</th>
+                                    <th style="padding:10px;text-align:left;">主要联系人</th>
+                                    <th style="padding:10px;text-align:left;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${contacts.map(ct => `
+                                    <tr style="border-bottom:1px solid #eee;">
+                                        <td style="padding:10px;">${ct.name}</td>
+                                        <td style="padding:10px;">${ct.position||'-'}</td>
+                                        <td style="padding:10px;">${ct.birth_date||'-'}</td>
+                                        <td style="padding:10px;">${ct.preferences||'-'}</td>
+                                        <td style="padding:10px;">${ct.is_primary ? '✅' : '❌'}</td>
+                                        <td style="padding:10px;display:flex;gap:4px;">
+                                            <button class="btn btn-sm btn-secondary" onclick="editContact(${ct.id})">编辑</button>
+                                            <button class="btn btn-sm btn-secondary" style="color:#ef4444;" onclick="deleteContact(${ct.id})">删除</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<p style="text-align:center;color:#999;padding:40px;">暂无关键人，点击"添加关键人"开始添加</p>'}
+                `;
+                
+                document.getElementById('contactModalBody').innerHTML = html;
+                currentCompanyId = companyId;
+            } catch (e) {
+                document.getElementById('contactModalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
+            }
+        }
+        
+        let currentCompanyId = null;
+        let editingContactId = null;
+        
+        function addContact(companyId) {
+            editingContactId = null;
+            document.getElementById('contactModalBody').innerHTML = `
+                <form id="contactForm">
+                    <div class="info-grid">
+                        <div class="info-item"><label>姓名 *</label><input type="text" id="contactName" required></div>
+                        <div class="info-item"><label>职位</label><input type="text" id="contactPosition"></div>
+                        <div class="info-item"><label>生日</label><input type="date" id="contactBirth"></div>
+                        <div class="info-item"><label>家庭信息</label><input type="text" id="contactFamily"></div>
+                        <div class="info-item"><label>喜好</label><input type="text" id="contactPreferences" placeholder="如：喝茶、高尔夫"></div>
+                        <div class="info-item"><label>推荐送礼</label><input type="text" id="contactGifts"></div>
+                    </div>
+                    <div class="info-item"><label>设为主要联系人</label><select id="contactIsPrimary"><option value="0">否</option><option value="1">是</option></select></div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="manageContacts(${companyId})">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('contactForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/contacts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            company_id: companyId,
+                            name: document.getElementById('contactName').value,
+                            position: document.getElementById('contactPosition').value,
+                            birth_date: document.getElementById('contactBirth').value || null,
+                            family_info: document.getElementById('contactFamily').value,
+                            preferences: document.getElementById('contactPreferences').value,
+                            gift_recommendations: document.getElementById('contactGifts').value,
+                            is_primary: parseInt(document.getElementById('contactIsPrimary').value)
+                        })
+                    });
+                    if (res.ok) {
+                        alert('✅ 已添加');
+                        manageContacts(companyId, document.getElementById('contactModalTitle').textContent.split(' - ')[1]);
+                    } else {
+                        alert('添加失败');
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                }
+            };
+        }
+        
+        async function editContact(contactId) {
+            try {
+                const res = await fetch(`${API_BASE}/contacts/${contactId}`);
+                const ct = await res.json();
+                editingContactId = contactId;
+                
+                document.getElementById('contactModalBody').innerHTML = `
+                    <form id="editContactForm">
+                        <div class="info-grid">
+                            <div class="info-item"><label>姓名 *</label><input type="text" id="editContactName" value="${ct.name||''}" required></div>
+                            <div class="info-item"><label>职位</label><input type="text" id="editContactPosition" value="${ct.position||''}"></div>
+                            <div class="info-item"><label>生日</label><input type="date" id="editContactBirth" value="${ct.birth_date||''}"></div>
+                            <div class="info-item"><label>家庭信息</label><input type="text" id="editContactFamily" value="${ct.family_info||''}"></div>
+                            <div class="info-item"><label>喜好</label><input type="text" id="editContactPreferences" value="${ct.preferences||''}"></div>
+                            <div class="info-item"><label>推荐送礼</label><input type="text" id="editContactGifts" value="${ct.gift_recommendations||''}"></div>
+                        </div>
+                        <div class="info-item"><label>设为主要联系人</label><select id="editContactIsPrimary"><option value="0" ${!ct.is_primary?'selected':''}>否</option><option value="1" ${ct.is_primary?'selected':''}>是</option></select></div>
+                        <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="manageContacts(${currentCompanyId})">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                `;
+                
+                document.getElementById('editContactForm').onsubmit = async function(e) {
+                    e.preventDefault();
+                    try {
+                        const res = await fetch(`${API_BASE}/contacts/${contactId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: document.getElementById('editContactName').value,
+                                position: document.getElementById('editContactPosition').value,
+                                birth_date: document.getElementById('editContactBirth').value || null,
+                                family_info: document.getElementById('editContactFamily').value,
+                                preferences: document.getElementById('editContactPreferences').value,
+                                gift_recommendations: document.getElementById('editContactGifts').value,
+                                is_primary: parseInt(document.getElementById('editContactIsPrimary').value)
+                            })
+                        });
+                        if (res.ok) {
+                            alert('✅ 已更新');
+                            manageContacts(currentCompanyId, document.getElementById('contactModalTitle').textContent.split(' - ')[1]);
+                        } else {
+                            alert('更新失败');
+                        }
+                    } catch (e) {
+                        alert('网络错误');
+                    }
+                };
+            } catch (e) {
+                alert('加载失败');
+            }
+        }
+        
+        async function deleteContact(contactId) {
+            if (!confirm('确定删除此关键人？')) return;
+            try {
+                await fetch(`${API_BASE}/contacts/${contactId}`, { method: 'DELETE' });
+                alert('✅ 已删除');
+                manageContacts(currentCompanyId, document.getElementById('contactModalTitle').textContent.split(' - ')[1]);
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        function closeContactModal() {
+            document.getElementById('contactModal').classList.remove('active');
+        }
+        
+        function closeXinfutongModal() {
+            document.getElementById('xinfutongModal').classList.remove('active');
+        }
+        
+        async function viewXinfutongDetails(companyId, companyName) {
+            document.getElementById('xinfutongModal').classList.add('active');
+            document.getElementById('xinfutongModalTitle').textContent = `薪福通详情 - ${companyName}`;
+            try {
+                let xfDetails = {};
+                try { const res = await fetch(`${API_BASE}/xinfutong/${companyId}`); xfDetails = await res.json(); } catch (e) {}
+                document.getElementById('xinfutongModalBody').innerHTML = `<div style="padding:20px;"><div class="info-grid"><div class="info-item"><label>是否注册</label><div>${xfDetails.is_registered ? '✅ 已注册' : '❌ 未注册'}</div></div><div class="info-item"><label>适用板块</label><div>${xfDetails.modules||'-'}</div></div><div class="info-item"><label>配置情况</label><div style="white-space:pre-wrap;">${xfDetails.config_status||'-'}</div></div><div class="info-item"><label>配置老师</label><div>${xfDetails.config_teacher||'-'}</div></div></div><div style="margin-top:20px;display:flex;justify-content:flex-end;"><button class="btn btn-secondary" onclick="closeXinfutongModal()">关闭</button><button class="btn btn-primary" style="margin-left:12px;" onclick="closeXinfutongModal();editXinfutong(${companyId},'${companyName}')">✏️ 编辑</button></div></div>`;
+            } catch (e) { alert('加载失败'); }
+        }
+        
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+        
+        async function editXinfutong(companyId, companyName) {
+            document.getElementById('xinfutongModal').classList.add('active');
+            document.getElementById('xinfutongModalTitle').textContent = `薪福通配置 - ${companyName}`;
+            
+            try {
+                const res = await fetch(`${API_BASE}/companies/${companyId}`);
+                const c = await res.json();
+                
+                let xfDetails = {};
+                try {
+                    const res2 = await fetch(`${API_BASE}/xinfutong/${companyId}`);
+                    xfDetails = await res2.json();
+                } catch (e) {}
+                
+                document.getElementById('xinfutongModalBody').innerHTML = `
+                    <form id="xinfutongForm">
+                        <div class="info-item"><label>薪福通适用性</label>
+                            <select id="xfStatus" onchange="toggleXfFields()" style="padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-width:200px;">
+                                <option value="applicable" ${c.xinfutong_status==='applicable'?'selected':''}>✅ 适用</option>
+                                <option value="not_applicable" ${c.xinfutong_status==='not_applicable'?'selected':''}>❌ 不适用</option>
+                                <option value="unregistered" ${c.xinfutong_status==='unregistered'?'selected':''}>🔵 未注册</option>
+                            </select>
+                        </div>
+                        <div id="xfDetailsFields" style="margin-top:12px;${c.xinfutong_status==='applicable'?'':'display:none;'}">
+                            <div class="info-item"><label>是否已注册</label>
+                                <select id="xfRegistered">
+                                    <option value="1" ${xfDetails.is_registered?'selected':''}>✅ 已注册</option>
+                                    <option value="0" ${!xfDetails.is_registered?'selected':''}>❌ 未注册</option>
+                                </select>
+                            </div>
+                            <div class="info-item"><label>适用板块</label><input type="text" id="xfModules" value="${xfDetails.modules||''}" placeholder="如：工资代发、企业缴费、党费云"></div>
+                            <div class="info-item"><label>配置情况</label><textarea id="xfConfig" rows="3" placeholder="配置进度、遇到的问题等">${xfDetails.config_status||''}</textarea></div>
+                            <div class="info-item"><label>配置老师</label><input type="text" id="xfTeacher" value="${xfDetails.config_teacher||''}" placeholder="负责配置的老师姓名"></div>
+                        </div>
+                        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="closeXinfutongModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                `;
+                
+                document.getElementById('xinfutongForm').onsubmit = async function(e) {
+                    e.preventDefault();
+                    try {
+                        await fetch(`${API_BASE}/companies/${companyId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                xinfutong_status: document.getElementById('xfStatus').value
+                            })
+                        });
+                        
+                        if (document.getElementById('xfStatus').value === 'applicable') {
+                            await fetch(`${API_BASE}/xinfutong`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    company_id: companyId,
+                                    is_registered: parseInt(document.getElementById('xfRegistered').value),
+                                    modules: document.getElementById('xfModules').value,
+                                    config_status: document.getElementById('xfConfig').value,
+                                    config_teacher: document.getElementById('xfTeacher').value
+                                })
+                            });
+                        }
+                        
+                        alert('✅ 已保存');
+                        closeXinfutongModal();
+                        apiCache.clear('/companies');
+                        refreshCurrentView();
+                    } catch (e) {
+                        alert('保存失败');
+                    }
+                };
+            } catch (e) {
+                alert('加载失败');
+            }
+        }
+        
+        function toggleXfFields() {
+            const status = document.getElementById('xfStatus').value;
+            document.getElementById('xfDetailsFields').style.display = status === 'applicable' ? 'block' : 'none';
+        }
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.export-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+                const companyId = parseInt(cb.value);
+                const company = allCompanies.find(c => c.id === companyId);
+                if (company) company.selected = selectAll.checked;
+            });
+        }
+        
+        function doExportSelected() {
+            const selected = allCompanies.filter(c => c.selected);
+            if (!selected.length) { 
+                alert('请先在企业列表中勾选要导出的企业（点击每行前面的复选框）'); 
+                return; 
+            }
+            
+            const checkboxes = document.querySelectorAll('#exportModal input[type="checkbox"]:checked');
+            const fields = Array.from(checkboxes).map(cb => cb.value);
+            
+            const headers = {
+                name: '企业名称', manager_name: '对公客户经理', active_count: '有效户数',
+                hq_count: '高质量数', is_account_opened: '开户状态', landing_cycle: '落地周期',
+                xinfutong_status: '薪福通状态', contact_names: '关键人', remarks: '备注',
+                industry: '行业', introduction: '企业简介', annual_revenue: '年营业额',
+                contact_frequency: '联系频次', progress_status: '进度状态',
+                is_payroll_service: '是否代发', is_active_customer: '有效户标识',
+                is_high_quality: '高质量标识', financial_info: '财务信息',
+                upstream_info: '上游信息', downstream_info: '下游信息',
+                main_product: '主营产品', top5_customers: '前五大下游客户',
+                revenue_range: '营收范围', net_profit: '净利润',
+                vat_tax: '增值税纳税额', income_tax: '所得税纳税额',
+                domestic_settlement: '境内业务结算', cross_border: '跨境业务',
+                main_banks: '主要合作银行', personal_cards: '个人持卡情况',
+                asset_status: '资产情况', family_status: '家庭情况',
+                venture_status: '风投情况', executive_stock: '高管持股', listing_plan: '上市计划'
+            };
+            
+            // 使用标准 CSV 格式
+            let csv = '\uFEFF'; // BOM 标记
+            csv += fields.map(f => headers[f]).join(',') + '\n';
+            csv += selected.map(c => fields.map(f => {
+                let val;
+                if (f === 'is_account_opened') val = c.is_account_opened ? '已开户' : '未开户';
+                else if (f === 'landing_cycle') val = c.landing_cycle === 'month' ? '本月落地' : c.landing_cycle === 'quarter' ? '3 个月落地' : c.landing_cycle === 'year' ? '本年落地' : '持续跟进';
+                else if (f === 'xinfutong_status') val = c.xinfutong_status === 'applicable' ? '适用' : c.xinfutong_status === 'not_applicable' ? '不适用' : '未设置';
+                else if (f === 'is_payroll_service') val = c.is_payroll_service ? '是' : '否';
+                else if (f === 'is_active_customer') val = c.is_active_customer ? '是' : '否';
+                else if (f === 'is_high_quality') val = c.is_high_quality ? '是' : '否';
+                else if (f === 'executive_stock') val = c.executive_stock ? '是' : '否';
+                else val = c[f] || '';
+                
+                const str = String(val);
+                // 如果包含逗号、引号或换行，用引号包裹并转义
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }).join(',')).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `企业数据_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            closeExportModal();
+        }
+        
+        function openExportModal() {
+            const selected = allCompanies.filter(c => c.selected);
+            document.getElementById('exportModal').classList.add('active');
+            document.getElementById('exportModalBody').innerHTML = `
+                <div style="padding:20px;">
+                    <p style="margin-bottom:16px;">已选中 <strong>${selected.length}</strong> 家企业</p>
+                    ${selected.length ? `
+                        <div class="info-item"><label>导出字段</label>
+                            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+                                <label><input type="checkbox" checked value="name"> 企业名称</label>
+                                <label><input type="checkbox" checked value="manager_name"> 对公客户经理</label>
+                                <label><input type="checkbox" checked value="active_count"> 有效户数</label>
+                                <label><input type="checkbox" checked value="hq_count"> 高质量数</label>
+                                <label><input type="checkbox" checked value="is_account_opened"> 开户状态</label>
+                                <label><input type="checkbox" checked value="landing_cycle"> 落地周期</label>
+                                <label><input type="checkbox" checked value="xinfutong_status"> 薪福通状态</label>
+                                <label><input type="checkbox" checked value="contact_names"> 关键人</label>
+                                <label><input type="checkbox" checked value="remarks"> 备注</label>
+                                <label><input type="checkbox" value="industry"> 行业</label>
+                                <label><input type="checkbox" value="introduction"> 企业简介</label>
+                                <label><input type="checkbox" value="annual_revenue"> 年营业额</label>
+                                <label><input type="checkbox" value="contact_frequency"> 联系频次</label>
+                                <label><input type="checkbox" value="progress_status"> 进度状态</label>
+                                <label><input type="checkbox" value="is_payroll_service"> 是否代发</label>
+                                <label><input type="checkbox" value="is_active_customer"> 有效户标识</label>
+                                <label><input type="checkbox" value="is_high_quality"> 高质量标识</label>
+                                <label><input type="checkbox" value="financial_info"> 财务信息</label>
+                                <label><input type="checkbox" value="upstream_info"> 上游信息</label>
+                                <label><input type="checkbox" value="downstream_info"> 下游信息</label>
+                                <label><input type="checkbox" value="main_product"> 主营产品</label>
+                                <label><input type="checkbox" value="top5_customers"> 前五大下游客户</label>
+                                <label><input type="checkbox" value="revenue_range"> 营收范围</label>
+                                <label><input type="checkbox" value="net_profit"> 净利润</label>
+                                <label><input type="checkbox" value="vat_tax"> 增值税纳税额</label>
+                                <label><input type="checkbox" value="income_tax"> 所得税纳税额</label>
+                                <label><input type="checkbox" value="domestic_settlement"> 境内业务结算</label>
+                                <label><input type="checkbox" value="cross_border"> 跨境业务</label>
+                                <label><input type="checkbox" value="main_banks"> 主要合作银行</label>
+                                <label><input type="checkbox" value="personal_cards"> 个人持卡情况</label>
+                                <label><input type="checkbox" value="asset_status"> 资产情况</label>
+                                <label><input type="checkbox" value="family_status"> 家庭情况</label>
+                                <label><input type="checkbox" value="venture_status"> 风投情况</label>
+                                <label><input type="checkbox" value="executive_stock"> 高管持股</label>
+                                <label><input type="checkbox" value="listing_plan"> 上市计划</label>
+                            </div>
+                        </div>
+                        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="closeExportModal()">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="doExportSelected()">导出 Excel</button>
+                        </div>
+                    ` : '<p style="color:#999;">请在企业列表中勾选要导出的企业</p>'}
+                </div>
+            `;
+        }
+        
+        function filterCompanies() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const taskFilter = document.getElementById('taskFilterSelect').value;
+            const xfFilter = document.getElementById('xinfutongFilterSelect').value;
+            const managerFilter = document.getElementById('managerFilterSelect').value;
+            
+            let filtered = dataManager.getCompanies();
+            
+            if (taskFilter) filtered = filtered.filter(c => c.task_id == taskFilter);
+            if (xfFilter) {
+                if (xfFilter === 'applicable') filtered = filtered.filter(c => c.xinfutong_status === 'applicable');
+                else if (xfFilter === 'not_applicable') filtered = filtered.filter(c => c.xinfutong_status === 'not_applicable');
+                else if (xfFilter === 'registered') filtered = filtered.filter(c => c.xinfutong_registered);
+            }
+            if (managerFilter) filtered = filtered.filter(c => c.manager_name === managerFilter);
+            if (search) filtered = filtered.filter(c => (c.name&&c.name.toLowerCase().includes(search))||(c.contact_names&&c.contact_names.toLowerCase().includes(search))||(c.manager_name&&c.manager_name.toLowerCase().includes(search)));
+            
+            renderCompanies(filtered);
+        }
+        
+        // 防抖版本的搜索（300ms 延迟）
+        const debouncedFilterCompanies = debounce(filterCompanies, 300);
+        
+        // 绑定搜索输入事件（使用防抖）
+        document.getElementById('searchInput').addEventListener('input', debouncedFilterCompanies);
+        
+        // ========== 搜索历史管理 ==========
+        const SEARCH_HISTORY_KEY = 'crm_search_history';
+        const MAX_HISTORY = 10;
+        
+        // 获取搜索历史
+        function getSearchHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+        
+        // 保存搜索历史
+        function saveSearchHistory(query) {
+            if (!query || query.trim().length === 0) return;
+            
+            let history = getSearchHistory();
+            // 移除重复项
+            history = history.filter(item => item !== query);
+            // 添加到开头
+            history.unshift(query);
+            // 限制数量
+            if (history.length > MAX_HISTORY) {
+                history = history.slice(0, MAX_HISTORY);
+            }
+            localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+        }
+        
+        // 删除搜索历史项
+        function deleteSearchHistoryItem(query, event) {
+            event.stopPropagation();
+            let history = getSearchHistory();
+            history = history.filter(item => item !== query);
+            localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+            renderSearchHistory();
+        }
+        
+        // 清空搜索历史
+        function clearSearchHistory() {
+            localStorage.removeItem(SEARCH_HISTORY_KEY);
+            renderSearchHistory();
+        }
+        
+        // 渲染搜索历史下拉框
+        function renderSearchHistory() {
+            const dropdown = document.getElementById('searchHistoryDropdown');
+            const history = getSearchHistory();
+            
+            if (history.length === 0) {
+                dropdown.classList.remove('active');
+                return;
+            }
+            
+            dropdown.innerHTML = history.map(item => `
+                <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\\'")}')">
+                    <span class="search-history-text">🔍 ${escapeHtml(item)}</span>
+                    <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\\'")}', event)">✕</span>
+                </div>
+            `).join('') + `<div class="search-history-clear" onclick="clearSearchHistory()">清空搜索历史</div>`;
+            
+            dropdown.classList.add('active');
+        }
+        
+        // 选择搜索历史项
+        function selectHistoryItem(query) {
+            document.getElementById('searchInput').value = query;
+            filterCompanies();
+            saveSearchHistory(query);
+            document.getElementById('searchHistoryDropdown').classList.remove('active');
+        }
+        
+        // 显示/隐藏搜索历史
+        function toggleSearchHistory() {
+            const dropdown = document.getElementById('searchHistoryDropdown');
+            const input = document.getElementById('searchInput');
+            
+            if (input.value.trim().length === 0) {
+                if (dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                } else {
+                    renderSearchHistory();
+                }
+            }
+        }
+        
+        // 绑定搜索历史事件
+        document.getElementById('searchInput').addEventListener('focus', toggleSearchHistory);
+        
+        // 点击外部关闭搜索历史
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('searchHistoryDropdown');
+            const input = document.getElementById('searchInput');
+            if (dropdown && input && !dropdown.contains(e.target) && e.target !== input) {
+                dropdown.classList.remove('active');
+            }
+        });
+        
+        // ========== 搜索高亮功能 ==========
+        function highlightText(text, keyword) {
+            if (!keyword || !text) return escapeHtml(text);
+            
+            const escaped = escapeHtml(text);
+            const regex = new RegExp(`(${escapeHtml(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return escaped.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+        
+        // 更新 filterCompanies 函数以支持高亮
+        const originalFilterCompanies = filterCompanies;
+        filterCompanies = function() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const taskFilter = document.getElementById('taskFilterSelect').value;
+            const xfFilter = document.getElementById('xinfutongFilterSelect').value;
+            const managerFilter = document.getElementById('managerFilterSelect').value;
+            
+            let filtered = dataManager.getCompanies();
+            
+            if (taskFilter) filtered = filtered.filter(c => c.task_id == taskFilter);
+            if (xfFilter) {
+                if (xfFilter === 'applicable') filtered = filtered.filter(c => c.xinfutong_status === 'applicable');
+                else if (xfFilter === 'not_applicable') filtered = filtered.filter(c => c.xinfutong_status === 'not_applicable');
+                else if (xfFilter === 'registered') filtered = filtered.filter(c => c.xinfutong_registered);
+            }
+            if (managerFilter) filtered = filtered.filter(c => c.manager_name === managerFilter);
+            if (search) {
+                filtered = filtered.filter(c => 
+                    (c.name && c.name.toLowerCase().includes(search)) ||
+                    (c.contact_names && c.contact_names.toLowerCase().includes(search)) ||
+                    (c.manager_name && c.manager_name.toLowerCase().includes(search))
+                );
+            }
+            
+            // 保存搜索历史
+            if (search) {
+                saveSearchHistory(document.getElementById('searchInput').value.trim());
+            }
+            
+            renderCompanies(filtered, search);
+        }
+        
+        // 更新 renderCompanies 函数以支持高亮
+        const originalRenderCompanies = renderCompanies;
+        renderCompanies = function(list, searchKeyword = '') {
+            const tb = document.getElementById('companiesTable');
+            if (!list || !list.length) { 
+                tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;">暂无数据</td></tr>'; 
+                return; 
+            }
+            
+            list.forEach(c => { if (c.selected === undefined) c.selected = false; });
+            
+            tb.innerHTML = list.map(c => `
+                <tr style="${c.xinfutong_status==='applicable'?'background:#f0fdf4;':''}">
+                    <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
+                    <td style="font-weight:600;">${searchKeyword ? highlightText(c.name, searchKeyword) : escapeHtml(c.name)||'-'}</td>
+                    <td>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                    </td>
+                    <td>
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">📋 详情</button>` : ''}
+                    </td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\\\'")}')" title="点击编辑">${searchKeyword ? highlightText(c.manager_name, searchKeyword) : escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${searchKeyword ? highlightText(c.contact_names, searchKeyword) : escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">管理</button></td>
+                    <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
+                    <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
+                    <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
+                    <td><select class="select-inline" onchange="inlineSelect(${c.id},'landing_cycle',this.value)"><option value="ongoing" ${c.landing_cycle==='ongoing'?'selected':''}>持续跟进</option><option value="month" ${c.landing_cycle==='month'?'selected':''}>本月</option><option value="quarter" ${c.landing_cycle==='quarter'?'selected':''}>3 个月</option><option value="year" ${c.landing_cycle==='year'?'selected':''}>本年</option><option value="completed" ${c.landing_cycle==='completed'?'selected':''}>✅ 已落地</option></select></td>
+                    <td style="display:flex;gap:4px;">
+                        <button class="btn btn-sm btn-secondary" onclick="showCompanyDetail(${c.id})">详情</button>
+                        <button class="btn btn-sm btn-secondary" style="color:#ef4444;" onclick="deleteCompany(${c.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateManagerFilter() {
+            const managers = [...new Set(allCompanies.map(c => c.manager_name).filter(m => m))];
+            const select = document.getElementById('managerFilterSelect');
+            select.innerHTML = '<option value="">对公客户经理</option>' + managers.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        // 待办清单功能 - 增强版（支持分页、筛选、折叠）
+        let todoCurrentPage = 1;
+        const todoPageSize = 20;
+        let todoShowCompleted = true;
+        
+        async function loadTodos() {
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks`);
+                allTodos = await res.json();
+                allWeekTasks = allTodos;
+                todoCurrentPage = 1;
+                renderTodos();
+                updateWeekTaskSummary();
+            } catch (e) { allTodos = []; allWeekTasks = []; }
+        }
+        
+        function getFilteredTodos() {
+            const statusFilter = document.getElementById('todoFilterStatus')?.value || 'all';
+            const dateFilter = document.getElementById('todoFilterDate')?.value || '';
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0];
+            const weekStart = calculateWeekStart(today);
+            
+            let filtered = [...allTodos];
+            
+            // 状态筛选
+            if (statusFilter === 'pending') {
+                filtered = filtered.filter(t => t.status === 'pending');
+            } else if (statusFilter === 'completed') {
+                filtered = filtered.filter(t => t.status === 'completed');
+            }
+            
+            // 日期筛选
+            if (dateFilter === 'today') {
+                filtered = filtered.filter(t => t.plan_date === today);
+            } else if (dateFilter === 'tomorrow') {
+                filtered = filtered.filter(t => t.plan_date === tomorrow);
+            } else if (dateFilter === 'week') {
+                filtered = filtered.filter(t => t.plan_date && t.plan_date >= weekStart);
+            } else if (dateFilter === 'overdue') {
+                filtered = filtered.filter(t => t.plan_date && t.plan_date < today && t.status === 'pending');
+            }
+            
+            // 排序：未完成优先，然后按日期
+            filtered.sort((a, b) => {
+                const aCompleted = a.status === 'completed' ? 1 : 0;
+                const bCompleted = b.status === 'completed' ? 1 : 0;
+                if (aCompleted !== bCompleted) return aCompleted - bCompleted;
+                if (!a.plan_date && !b.plan_date) return 0;
+                if (!a.plan_date) return 1;
+                if (!b.plan_date) return -1;
+                return a.plan_date.localeCompare(b.plan_date);
+            });
+            
+            return filtered;
+        }
+        
+        function renderPagination(filteredTodos, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const totalPages = Math.ceil(filteredTodos.length / todoPageSize);
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            const startPage = Math.max(1, todoCurrentPage - 2);
+            const endPage = Math.min(totalPages, todoCurrentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(1)">1</button>`;
+                if (startPage > 2) html += `<span style="color:#999;">...</span>`;
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === todoCurrentPage) {
+                    html += `<button class="btn btn-sm btn-primary">${i}</button>`;
+                } else {
+                    html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(${i})">${i}</button>`;
+                }
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span style="color:#999;">...</span>`;
+                html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            html += `<span style="font-size:12px;color:#666;margin-left:8px;">${todoCurrentPage}/${totalPages}页</span>`;
+            
+            container.innerHTML = html;
+        }
+        
+        function setTodoPage(page) {
+            todoCurrentPage = page;
+            renderTodos();
+        }
+        
+        function toggleCompleted() {
+            todoShowCompleted = !todoShowCompleted;
+            const btn = document.getElementById('toggleCompletedBtn');
+            if (btn) {
+                btn.textContent = todoShowCompleted ? '折叠已完成' : '展开已完成';
+            }
+            todoCurrentPage = 1;
+            renderTodos();
+        }
+        
+        function renderTodos() {
+            const container = document.getElementById('todoList');
+            const countSpan = document.getElementById('todoCount');
+            
+            let filteredTodos = getFilteredTodos();
+            
+            // 折叠已完成
+            if (!todoShowCompleted) {
+                filteredTodos = filteredTodos.filter(t => t.status === 'pending');
+            }
+            
+            const totalCount = allTodos.length;
+            const pendingCount = allTodos.filter(t => t.status === 'pending').length;
+            const completedCount = allTodos.filter(t => t.status === 'completed').length;
+            
+            if (countSpan) {
+                countSpan.textContent = `共${totalCount}项 (未完成${pendingCount} | 已完成${completedCount})`;
+            }
+            
+            if (!filteredTodos.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无待办事项</div>';
+                document.getElementById('todoPagination')?.remove();
+                document.getElementById('todoPaginationBottom')?.remove();
+                return;
+            }
+            
+            // 分页
+            const totalPages = Math.ceil(filteredTodos.length / todoPageSize);
+            if (todoCurrentPage > totalPages) todoCurrentPage = totalPages;
+            
+            const startIndex = (todoCurrentPage - 1) * todoPageSize;
+            const endIndex = startIndex + todoPageSize;
+            const pageTodos = filteredTodos.slice(startIndex, endIndex);
+            
+            container.innerHTML = pageTodos.map(t => {
+                const isCompleted = t.status === 'completed';
+                return `<div class="todo-item ${isCompleted?'completed':''}" data-id="${t.id}">
+                    <input type="checkbox" class="todo-checkbox" data-id="${t.id}" ${isCompleted?'checked':''}/>
+                    <span class="todo-text">${t.action||'待办'}</span>
+                    <span style="font-size:12px;color:#666;">${t.company_name||''}</span>
+                    <input type="date" class="todo-date select-inline" data-id="${t.id}" value="${t.plan_date||''}" style="width:140px;padding:4px 8px;"/>
+                    <div class="todo-actions"><button class="btn btn-sm btn-secondary" data-id="${t.id}" onclick="deleteTodo(${t.id})">删除</button></div>
+                </div>`;
+            }).join('');
+            
+            // 绑定事件
+            container.querySelectorAll('.todo-checkbox').forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    toggleTodo(id);
+                });
+            });
+            
+            container.querySelectorAll('.todo-date').forEach(input => {
+                input.addEventListener('change', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const value = this.value;
+                    updateTodoDate(id, value);
+                });
+            });
+            
+            // 渲染分页
+            renderPagination(filteredTodos, 'todoPagination');
+            renderPagination(filteredTodos, 'todoPaginationBottom');
+        }
+        async function addTodo() {
+            const input = document.getElementById('newTodoInput');
+            const dateSelect = document.getElementById('newTodoDate');
+            const action = input.value.trim();
+            if (!action) { alert('请输入待办内容'); return; }
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0];
+            let plan_date = '';
+            if (dateSelect.value === 'today') plan_date = today;
+            else if (dateSelect.value === 'tomorrow') plan_date = tomorrow;
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ action, plan_date, time_period:'am', priority:'medium' })
+                });
+                if(res.ok) {
+                    const data = await res.json();
+                    // 立即添加到本地数组
+                    const newTask = {
+                        id: data.id,
+                        action,
+                        plan_date,
+                        time_period: 'am',
+                        priority: 'medium',
+                        status: 'pending',
+                        week_start: plan_date ? calculateWeekStart(plan_date) : null
+                    };
+                    allTodos.push(newTask);
+                    allWeekTasks = allTodos;
+                    input.value = '';
+                    dateSelect.value = '';
+                    renderTodos();
+                    renderWeekTaskList();
+                    updateWeekTaskSummary();
+                }
+            } catch (e) { alert('添加失败'); }
+        }
+        
+        function calculateWeekStart(plan_date) {
+            const d = new Date(plan_date + 'T00:00:00');
+            let day = d.getUTCDay();
+            if (day === 0) day = 7;
+            const diff = d.getUTCDate() - day + 1;
+            const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+            return monday.toISOString().split('T')[0];
+        }
+        async function toggleTodo(id) {
+            const task = allTodos.find(t=>t.id===id);
+            if(!task) return;
+            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ status: newStatus, company_id: task.company_id })
+                });
+                if(res.ok) {
+                    task.status = newStatus;
+                    renderTodos();
+                    renderWeekTaskList();
+                    updateWeekTaskSummary();
+                }
+            } catch (e) { 
+                console.error('勾选失败:', e);
+                alert('更新失败'); 
+            }
+        }
+        async function updateTodoDate(id, date) {
+            try {
+                const res = await fetch(`${API_BASE}/week-tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ plan_date: date||null, time_period:'am' })
+                });
+                if(res.ok) {
+                    const task = allTodos.find(t=>t.id===id);
+                    if(task) {
+                        task.plan_date = date;
+                        // 重新计算 week_start
+                        const d = new Date(date + 'T00:00:00');
+                        let day = d.getUTCDay();
+                        if (day === 0) day = 7;
+                        const diff = d.getUTCDate() - day + 1;
+                        const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+                        task.week_start = monday.toISOString().split('T')[0];
+                    }
+                    renderTodos();
+                    renderWeekTaskList();
+                    updateWeekTaskSummary();
+                }
+            } catch (e) { 
+                console.error('日期更新失败:', e);
+                alert('更新失败'); 
+            }
+        }
+        async function deleteTodo(id) {
+            if (!confirm('确定删除？')) return;
+            try {
+                await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' });
+                loadTodos();
+                loadWeekPlan();
+            } catch (e) { alert('删除失败'); }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.company-search-container')) {
+                document.getElementById('companySearchResults').style.display = 'none';
+            }
+        });
+
+        init();
+
+        // 线索挖掘功能
+        let allLeadBoards = [];
+        let currentLeadBoardId = null;
+        let allLeads = [];
+
+        window.loadLeadBoards = async function() {
+            try {
+                const res = await fetch(`${API_BASE}/leads/boards`);
+                allLeadBoards = await res.json();
+                renderLeadBoards();
+            } catch (e) { console.error(e); }
+        }
+
+        window.renderLeadBoards = function() {
+            const container = document.getElementById('leadBoardsList');
+            if (!allLeadBoards.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><p>暂无线索板块</p><p style="font-size:13px;margin-top:8px;">点击"+新建线索板块"开始</p></div>';
+                document.getElementById('leadsContent').style.display = 'none';
+                return;
+            }
+            container.innerHTML = `
+                <div class="search-box" style="margin-bottom:16px;">
+                    <button class="btn btn-primary" onclick="window.openAddLeadBoardModal()">+ 新建线索板块</button>
+                </div>
+            ` + allLeadBoards.map(b => `
+                <div class="task-card" onclick="window.viewLeadBoard(${b.id})" style="cursor:pointer;">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div style="flex:1;">
+                            <h3>${b.name||'未命名'}</h3>
+                            <p>${b.description||''}</p>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); window.viewLeadBoard(${b.id}); window.openAddLeadModal()">📝 添加线索</button>
+                            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); window.deleteLeadBoard(${b.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.viewLeadBoard = async function(boardId, showBackButton = true) {
+            currentLeadBoardId = boardId;
+            const board = allLeadBoards.find(b => b.id === boardId);
+            
+            showLoading('正在加载线索...');
+            
+            // 隐藏板块列表，显示线索列表
+            document.getElementById('leadBoardsList').style.display = 'none';
+            document.getElementById('leadsContent').style.display = 'block';
+            
+            // 渲染线索列表头部（首页默认不显示返回按钮）
+            const container = document.getElementById('leadsContent');
+            container.innerHTML = `
+                <div class="search-box" style="margin-bottom:16px;">
+                    ${showBackButton ? '<button class="btn btn-secondary" onclick="window.backToLeadBoards()">← 返回板块列表</button>' : ''}
+                    <button class="btn btn-primary" onclick="window.openAddLeadModal()">+ 添加线索</button>
+                    <button class="btn btn-secondary" onclick="window.openImportLeadModal()">📥 批量导入</button>
+                    <button class="btn btn-secondary" onclick="window.openBatchEditModal()">✏️ 批量编辑</button>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <h2 style="font-size:18px;margin-bottom:4px;">${escapeHtml(board?.name)||'线索详情'}</h2>
+                    <p style="color:#666;font-size:13px;">${escapeHtml(board?.description)||''}</p>
+                </div>
+                <div id="leadsTableContainer"></div>
+            `;
+            
+            try {
+                const res = await fetch(`${API_BASE}/leads/boards/${boardId}/leads`);
+                allLeads = await res.json();
+                renderLeads();
+            } catch (e) { 
+                logError('viewLeadBoard', e);
+                showError('加载线索失败', 'viewLeadBoard');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        window.backToLeadBoards = function() {
+            document.getElementById('leadBoardsList').style.display = 'block';
+            document.getElementById('leadsContent').style.display = 'none';
+            currentLeadBoardId = null;
+        }
+        
+        // 首页加载时自动显示第一个线索板块的内容（不显示返回按钮）
+        async function showDefaultLeads() {
+            // 显示板块列表，不自动进入第一个板块
+            const boardsList = document.getElementById('leadBoardsList');
+            const leadsContent = document.getElementById('leadsContent');
+            
+            if (boardsList) boardsList.style.display = 'block';
+            if (leadsContent) leadsContent.style.display = 'none';
+            
+            // 重置当前板块 ID
+            currentLeadBoardId = null;
+        }
+
+        window.openImportLeadModal = function() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '批量导入线索';
+            document.getElementById('addModalBody').innerHTML = `
+                <div style="padding:20px;">
+                    <div class="template-box" style="background:#f0f9ff;border:1px solid #0284c7;border-radius:8px;padding:12px;margin-bottom:16px;">
+                        <h4 style="color:#0369a1;font-size:13px;margin-bottom:8px;">📋 导入说明</h4>
+                        <ul style="font-size:12px;color:#0c4a6e;padding-left:18px;line-height:1.8;">
+                            <li><strong>方法 1：</strong>从 Excel 选中数据区域 → 复制 → 粘贴到下方输入框</li>
+                            <li><strong>方法 2：</strong>直接粘贴整个 Excel 工作表</li>
+                            <li><strong>列顺序：</strong>企业名称 | 参保人数 | 是否约访 | 面访情况 | 对公客户经理</li>
+                            <li><strong>是否约访：</strong>填写"是/1/✅"表示已约访，其他表示未约访</li>
+                            <li><strong>日均存款/授信敞口：</strong>在 Excel 中对应第 7-8 列（导入后手动补充）</li>
+                        </ul>
+                    </div>
+                    <div class="info-item">
+                        <label>从 Excel 复制后粘贴到这里</label>
+                        <textarea id="importLeadData" rows="12" style="font-family:monospace;font-size:12px;" placeholder="直接从 Excel 复制，然后粘贴到这里&#10;&#10;示例：&#10;XX 科技公司&#9;50 人&#9;0&#9;初步沟通中&#9;张三&#10;YY 贸易公司&#9;30 人&#9;1&#9;已确定意向&#9;李四"></textarea>
+                    </div>
+                    <div style="margin-top:8px;font-size:12px;color:#666;">💡 提示：粘贴后会自动识别列数，不需要手动处理分隔符</div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="window.doImportLeads()">📥 开始导入</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.doImportLeads = async function() {
+            const data = document.getElementById('importLeadData').value.trim();
+            if (!data) { alert('请从 Excel 复制数据并粘贴'); return; }
+            
+            const lines = data.split('\n').filter(l => l.trim());
+            let success = 0, fail = 0, skipped = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // Excel 复制的数据用制表符分隔
+                const parts = line.split('\t').map(p => p.trim());
+                
+                // 跳过空行或没有企业名称的行
+                if (parts.length < 1 || !parts[0] || parts[0] === '企业名称') {
+                    skipped++;
+                    continue;
+                }
+                
+                // 解析是否约访
+                const visitedRaw = (parts[2] || '0').toString().toLowerCase();
+                const isVisited = (visitedRaw === '1' || visitedRaw === '是' || visitedRaw === '✅' || visitedRaw === 'yes') ? 1 : 0;
+                
+                try {
+                    await fetch(`${API_BASE}/leads/leads`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            board_id: currentLeadBoardId,
+                            company_name: parts[0] || '',
+                            employee_count: parts[1] || '',
+                            is_visited: isVisited,
+                            visit_status: parts[3] || '',
+                            manager_name: parts[4] || ''
+                        })
+                    });
+                    success++;
+                } catch (e) { 
+                    console.error('导入失败:', parts[0], e);
+                    fail++; 
+                }
+            }
+            
+            let msg = `✅ 导入完成！\n成功：${success} 条\n失败：${fail} 条`;
+            if (skipped > 0) msg += `\n跳过：${skipped} 条（空行或标题行）`;
+            
+            alert(msg);
+            closeAddModal();
+            window.viewLeadBoard(currentLeadBoardId);
+        }
+
+        window.openBatchEditModal = function() {
+            if (!allLeads.length) { alert('暂无线索可编辑'); return; }
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '批量编辑线索';
+            document.getElementById('addModalBody').innerHTML = `
+                <div style="padding:20px;">
+                    <div class="info-item">
+                        <label>选择要修改的字段</label>
+                        <select id="batchEditField" onchange="window.toggleBatchEditInput()">
+                            <option value="employee_count">参保人数</option>
+                            <option value="daily_deposit">日均存款</option>
+                            <option value="credit_exposure">授信敞口</option>
+                            <option value="is_visited">是否约访</option>
+                            <option value="visit_status">面访情况</option>
+                            <option value="manager_name">对公客户经理</option>
+                        </select>
+                    </div>
+                    <div id="batchEditInputContainer">
+                        <div class="info-item">
+                            <label>新值</label>
+                            <input type="text" id="batchEditValue" placeholder="输入新值">
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="window.doBatchEdit()">保存修改</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.toggleBatchEditInput = function() {
+            const field = document.getElementById('batchEditField').value;
+            const container = document.getElementById('batchEditInputContainer');
+            if (field === 'is_visited') {
+                container.innerHTML = `
+                    <div class="info-item">
+                        <label>新值</label>
+                        <select id="batchEditValue">
+                            <option value="0">❌ 未约访</option>
+                            <option value="1">✅ 已约访</option>
+                        </select>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="info-item">
+                        <label>新值</label>
+                        <input type="text" id="batchEditValue" placeholder="输入新值">
+                    </div>
+                `;
+            }
+        }
+
+        window.doBatchEdit = async function() {
+            const field = document.getElementById('batchEditField').value;
+            const value = document.getElementById('batchEditValue').value;
+            
+            if (!confirm(`确定要批量修改${allLeads.length}条线索的${document.getElementById('batchEditField').options[document.getElementById('batchEditField').selectedIndex].text}吗？`)) return;
+            
+            let success = 0, fail = 0;
+            for (const lead of allLeads) {
+                try {
+                    const data = {};
+                    data[field] = field === 'is_visited' ? parseInt(value) : value;
+                    await fetch(`${API_BASE}/leads/leads/${lead.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    success++;
+                } catch (e) { fail++; }
+            }
+            
+            alert(`✅ 批量修改完成！成功：${success} 失败：${fail}`);
+            closeAddModal();
+            window.viewLeadBoard(currentLeadBoardId);
+        }
+
+        async function loadLeads() {
+            if (!currentLeadBoardId) return;
+            await viewLeadBoard(currentLeadBoardId);
+        }
+        
+        // 显示线索列表（首页默认视图）
+        window.renderLeads = function() {
+            const container = document.getElementById('leadsTableContainer');
+            if (!container) return;
+            if (!allLeads.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无线索，点击"添加线索"开始</div>';
+                return;
+            }
+            let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>日均存款</th><th>授信敞口</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
+            html += allLeads.map(l => `<tr style="${l.status==='converted'?'opacity:0.6;background:#f0fdf4;':''}"><td style="text-align:center;"><input type="checkbox" class="lead-checkbox" value="${l.id}" ${l.status==='converted'?'disabled':''}></td><td style="font-weight:500;">${escapeHtml(l.company_name)||'-'}</td><td>${escapeHtml(l.employee_count)||'-'}</td><td>${escapeHtml(l.daily_deposit)||'-'}</td><td>${escapeHtml(l.credit_exposure)||'-'}</td><td>${l.is_visited?'✅ 已约访':'❌ 未约访'}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(l.visit_status)||''}">${escapeHtml(l.visit_status)||'-'}</td><td>${escapeHtml(l.manager_name)||'-'}</td><td>${l.status!=='converted'?`<button class="btn btn-sm btn-primary" onclick="window.convertLead(${l.id})">转为营销任务</button>`:'<span style="color:#22c55e;">✅ 已转化</span>'} <button class="btn btn-sm btn-secondary" onclick="window.editLead(${l.id})" style="margin-left:4px;">✏️</button> <button class="btn btn-sm btn-secondary" onclick="window.deleteLead(${l.id})" style="color:#ef4444;margin-left:4px;">🗑️</button></td></tr>`).join('');
+            html += '</tbody></table></div>';
+            html += '<div style="margin-top:16px;display:flex;gap:8px;align-items:center;"><label><input type="checkbox" id="selectConverted" onchange="window.toggleConvertedLeads()"> 显示已转化线索</label></div>';
+            container.innerHTML = html;
+        }
+
+        window.toggleAllLeads = function(checkbox) {
+            document.querySelectorAll('.lead-checkbox').forEach(cb => {
+                if (!cb.disabled) cb.checked = checkbox.checked;
+            });
+        }
+
+        window.toggleConvertedLeads = function() {
+            const showConverted = document.getElementById('selectConverted').checked;
+            document.querySelectorAll('tr').forEach(tr => {
+                if (tr.style.opacity === '0.6') {
+                    tr.style.display = showConverted ? '' : 'none';
+                }
+            });
+        }
+
+        window.openAddLeadBoardModal = function() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '新建线索板块';
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadBoardForm"><div class="info-item"><label>板块名称 *</label><input type="text" id="leadBoardName" required placeholder="如：2026 年 3 月线索"></div><div class="info-item"><label>描述</label><textarea id="leadBoardDesc" rows="3" placeholder="线索来源、跟进策略等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div></form>`;
+            document.getElementById('addLeadBoardForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/leads/boards`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('leadBoardName').value, description: document.getElementById('leadBoardDesc').value }) });
+                    if (res.ok) { alert('✅ 板块已创建'); closeAddModal(); loadLeadBoards(); } else { alert('创建失败'); }
+                } catch (e) { alert('网络错误'); }
+            };
+        }
+
+        window.deleteLeadBoard = async function(id) {
+            if (!confirm('确定删除？该板块下的所有线索也会被删除')) return;
+            try {
+                await fetch(`${API_BASE}/leads/boards/${id}`, { method: 'DELETE' });
+                loadLeadBoards();
+                document.getElementById('leadsContent').style.display = 'none';
+            } catch (e) { alert('删除失败'); }
+        }
+
+        window.openAddLeadModal = function() {
+            if (!currentLeadBoardId) { 
+                if (!allLeadBoards.length) {
+                    alert('请先创建线索板块');
+                    return;
+                }
+                // 如果没有选择板块，提示用户点击板块卡片
+                alert('请点击线索板块卡片进入，然后点击"添加线索"按钮');
+                return; 
+            }
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '添加线索';
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>日均存款</label><input type="text" id="leadDailyDeposit" placeholder="如：500 万"></div><div class="info-item"><label>授信敞口</label><input type="text" id="leadCreditExposure" placeholder="如：300 万"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
+            document.getElementById('addLeadForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/leads/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board_id: currentLeadBoardId, company_name: document.getElementById('leadCompany').value, employee_count: document.getElementById('leadEmployee').value, daily_deposit: document.getElementById('leadDailyDeposit').value, credit_exposure: document.getElementById('leadCreditExposure').value, is_visited: parseInt(document.getElementById('leadVisited').value), visit_status: document.getElementById('leadVisitStatus').value, manager_name: document.getElementById('leadManager').value }) });
+                    if (res.ok) { alert('✅ 线索已添加'); closeAddModal(); loadLeads(); } else { alert('添加失败'); }
+                } catch (e) { alert('网络错误'); }
+            };
+        }
+
+        window.editLead = async function(id) {
+            const lead = allLeads.find(l => l.id === id);
+            if (!lead) return;
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '编辑线索';
+            document.getElementById('addModalBody').innerHTML = `<form id="editLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="editLeadCompany" value="${lead.company_name||''}" required></div><div class="info-item"><label>参保人数</label><input type="text" id="editLeadEmployee" value="${lead.employee_count||''}"></div><div class="info-item"><label>日均存款</label><input type="text" id="editLeadDailyDeposit" value="${lead.daily_deposit||''}"></div><div class="info-item"><label>授信敞口</label><input type="text" id="editLeadCreditExposure" value="${lead.credit_exposure||''}"></div><div class="info-item"><label>是否约访</label><select id="editLeadVisited"><option value="0" ${!lead.is_visited?'selected':''}>未约访</option><option value="1" ${lead.is_visited?'selected':''}>已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="editLeadManager" value="${lead.manager_name||''}"></div></div><div class="info-item"><label>面访情况</label><textarea id="editLeadVisitStatus" rows="3">${lead.visit_status||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('editLeadForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company_name: document.getElementById('editLeadCompany').value, employee_count: document.getElementById('editLeadEmployee').value, daily_deposit: document.getElementById('editLeadDailyDeposit').value, credit_exposure: document.getElementById('editLeadCreditExposure').value, is_visited: parseInt(document.getElementById('editLeadVisited').value), visit_status: document.getElementById('editLeadVisitStatus').value, manager_name: document.getElementById('editLeadManager').value }) });
+                    if (res.ok) { alert('✅ 已更新'); closeAddModal(); loadLeads(); } else { alert('更新失败'); }
+                } catch (e) { alert('网络错误'); }
+            };
+        }
+
+        window.deleteLead = async function(id) {
+            if (!confirm('确定删除？')) return;
+            try { await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'DELETE' }); loadLeads(); } catch (e) { alert('删除失败'); }
+        }
+
+        window.convertLead = async function(id) {
+            const lead = allLeads.find(l => l.id === id);
+            if (!lead) return;
+            try {
+                const res = await fetch(`${API_BASE}/marketing-tasks`);
+                const tasks = await res.json();
+                if (!tasks.length) { alert('请先创建营销任务'); return; }
+                const taskOptions = tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                document.getElementById('addModal').classList.add('active');
+                document.getElementById('addModalTitle').textContent = '转为营销任务';
+                document.getElementById('addModalBody').innerHTML = `<div style="padding:20px;"><p style="margin-bottom:16px;">将 <strong>${lead.company_name}</strong> 添加到哪个营销任务？</p><div class="info-item"><label>选择营销任务</label><select id="convertTaskSelect">${taskOptions}</select></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:16px 0;font-size:13px;color:#0369a1;">💡 企业信息将自动填入：<br>- 企业名称：${lead.company_name}<br>- 对公客户经理：${lead.manager_name||'（空）'}<br>- 备注：${lead.visit_status||'（空）'}</div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="button" class="btn btn-primary" onclick="doConvertLead(${id})">确认转换</button></div></div>`;
+            } catch (e) { alert('加载失败'); }
+        }
+
+        window.doConvertLead = async function(id) {
+            const taskId = document.getElementById('convertTaskSelect').value;
+            const lead = allLeads.find(l => l.id === id);
+            if (!lead || !taskId) return;
+            try {
+                const res = await fetch(`${API_BASE}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: lead.company_name, manager_name: lead.manager_name, remarks: lead.visit_status, task_id: taskId }) });
+                if (res.ok) {
+                    await fetch(`${API_BASE}/leads/leads/${id}/convert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task_id: taskId }) });
+                    alert('✅ 已转为营销任务'); closeAddModal(); loadLeads(); loadData();
+                } else { alert('转换失败'); }
+            } catch (e) { alert('网络错误'); }
+        }
+
+        // 协同融合模块
+        let allReferrals = [];
+        let allReferralCharts = {};
+
+        async function loadReferrals() {
+            const month = document.getElementById('referralMonthFilter').value;
+            const status = document.getElementById('referralStatusFilter').value;
+            const params = new URLSearchParams();
+            if (month) params.append('month', month);
+            if (status) params.append('status', status);
+            const url = `${API_BASE}/referrals?${params.toString()}`;
+            console.log('🔍 月份筛选:', { month, status, url });
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const rows = data.rows || data;
+                console.log('📊 后端返回数据:', rows.length, '条记录');
+                allReferrals = rows;
+                renderReferralsTable();
+                updateReferralStats();
+                loadReferralCharts(month);
+            } catch (e) { 
+                console.error('❌ 加载失败:', e); 
+            }
+        }
+
+        function renderReferralsTable() {
+            const tbody = document.getElementById('referralsTable');
+            if (!allReferrals.length) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:#999;">暂无转介记录</td></tr>';
+                return;
+            }
+            const statusColors = { completed: '#dcfce7', pending: '#fef3c7', invalid: '#fee2e2' };
+            const statusLabels = { completed: '✅ 已落地', pending: '📞 跟进中', invalid: '❌ 无效' };
+            const pointsRules = { high: '1 分', standard: '1 分', low: '1 分' };
+            tbody.innerHTML = allReferrals.map(r => `<tr style="background:${statusColors[r.business_status] || '#fff'}"><td>${escapeHtml(r.referral_date)}</td><td>${escapeHtml(r.from_department)}</td><td>${escapeHtml(r.from_person)}</td><td>${escapeHtml(r.to_department)}</td><td>${escapeHtml(r.to_person)}</td><td>${escapeHtml(r.customer_name)}</td><td>${statusLabels[r.business_status] || escapeHtml(r.business_status)}</td><td>¥${(r.amount || 0).toLocaleString()}</td><td>${(r.points_calculate !== 0) ? '✅ 核算积分' : '❌ 不核算积分'}</td><td style="font-weight:bold;color:#667eea;">${r.final_points || 0}</td><td><button class="btn btn-sm btn-secondary" onclick="editReferral(${r.id})">✏️</button><button class="btn btn-sm btn-secondary" onclick="deleteReferral(${r.id})" style="color:#ef4444;">🗑️</button></td></tr>`).join('');
+        }
+
+        function updateReferralStats() {
+            document.getElementById('refTotalCount').textContent = allReferrals.length;
+            document.getElementById('refCompletedCount').textContent = allReferrals.filter(r => r.business_status === 'completed').length;
+            document.getElementById('refTotalAmount').textContent = '¥' + allReferrals.reduce((sum, r) => sum + (r.amount || 0), 0).toLocaleString();
+            document.getElementById('refTotalPoints').textContent = allReferrals.reduce((sum, r) => sum + (r.final_points || 0), 0);
+        }
+
+        async function loadReferralCharts(month) {
+            try {
+                const res = await fetch(`${API_BASE}/referrals/flow/sankey${month ? '?month=' + month : ''}`);
+                renderSankeyChart(await res.json());
+            } catch (e) { console.error(e); }
+            try {
+                const res = await fetch(`${API_BASE}/referrals/ranking/personal${month ? '?month=' + month + '&limit=10' : '?limit=10'}`);
+                renderRankingChart(await res.json());
+            } catch (e) { console.error(e); }
+            try {
+                const res = await fetch(`${API_BASE}/referrals/dashboard/gauge${month ? '?month=' + month : ''}`);
+                renderGaugeChart(await res.json());
+            } catch (e) { console.error(e); }
+            try {
+                const res = await fetch(`${API_BASE}/referrals/dashboard/bullet${month ? '?month=' + month : ''}`);
+                renderBulletChart(await res.json());
+            } catch (e) { console.error(e); }
+        }
+
+        function renderSankeyChart(data) {
+            const container = document.getElementById('sankeyChart');
+            if (!data || !data.length) { container.innerHTML = '<div style="text-align:center;padding:100px;color:#999;">暂无转介流向数据</div>'; return; }
+            let html = '<div style="font-size:12px;line-height:2;">';
+            data.forEach(d => {
+                const width = Math.max(2, Math.min(10, d.value / 10000));
+                html += `<div style="display:flex;align-items:center;margin:8px 0;"><span style="width:100px;text-align:right;">${d.source}</span><div style="flex:1;height:${width}px;background:linear-gradient(90deg,#667eea,#764ba2);margin:0 12px;border-radius:2px;"></div><span style="width:100px;">${d.target}</span><span style="width:80px;color:#667eea;font-weight:600;">¥${(d.value/10000).toFixed(1)}万</span></div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderRankingChart(data) {
+            const container = document.getElementById('rankingChart');
+            if (!data || !data.length) { container.innerHTML = '<div style="text-align:center;padding:100px;color:#999;">暂无积分排行榜数据</div>'; return; }
+            let html = '<div style="font-size:12px;">';
+            data.forEach((d, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                html += `<div style="display:flex;align-items:center;margin:8px 0;padding:8px;background:${i<3?'#fef3c7':'#f9fafb'};border-radius:6px;"><span style="width:40px;font-size:16px;">${medal}</span><div style="flex:1;"><div style="font-weight:600;">${d.person_name}</div><div style="font-size:11px;color:#666;">${d.department} | ${'⭐'.repeat(d.stars || 1)}</div></div><div style="text-align:right;"><div style="font-size:18px;font-weight:bold;color:#667eea;">${d.total_points}</div><div style="font-size:11px;color:#666;">积分 | 成功${d.success_count}单</div></div></div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderGaugeChart(data) {
+            const container = document.getElementById('gaugeChart');
+            if (!data || !data.current) { container.innerHTML = '<div style="text-align:center;padding:100px;color:#999;">暂无积分达成数据</div>'; return; }
+            const percentage = Math.min(100, data.percentage || 0);
+            container.innerHTML = `<div style="text-align:center;padding:20px;"><div style="width:150px;height:75px;margin:0 auto;overflow:hidden;position:relative;"><div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(from 180deg,#667eea 0deg,#667eea ${percentage*1.8}deg,#e5e7eb ${percentage*1.8}deg,#e5e7eb 180deg);position:absolute;bottom:0;"></div><div style="width:120px;height:120px;border-radius:50%;background:#fff;position:absolute;bottom:15px;left:15px;"></div></div><div style="font-size:24px;font-weight:bold;color:#667eea;margin-top:-30px;">${data.current.toLocaleString()}</div><div style="color:#666;font-size:12px;">当前积分 / 目标 ${data.target.toLocaleString()}</div><div style="color:#667eea;font-size:14px;font-weight:600;margin-top:8px;">达成率 ${percentage}%</div></div>`;
+        }
+
+        function renderBulletChart(data) {
+            const container = document.getElementById('bulletChart');
+            if (!data.data || !data.data.length) { container.innerHTML = '<div style="text-align:center;padding:100px;color:#999;">暂无条线转介量数据</div>'; return; }
+            let html = '<div style="font-size:11px;padding:10px;">';
+            // 按转介量排序
+            const sorted = [...data.data].sort((a, b) => (b.total || 0) - (a.total || 0));
+            const maxCount = Math.max(...sorted.map(d => d.total || 0), 1);
+            sorted.forEach(d => {
+                const width = ((d.total || 0) / maxCount) * 100;
+                const color = '#667eea';
+                html += `<div style="margin:12px 0;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:600;">${d.department}</span><span style="color:#667eea;font-weight:bold;">${d.total} 单</span></div><div style="height:24px;background:#e5e7eb;border-radius:4px;overflow:hidden;"><div style="width:${width}%;height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:4px;display:flex;align-items:center;padding:0 8px;"><span style="color:#fff;font-size:10px;">转出 ${d.from_count||0} | 接收 ${d.to_count||0}</span></div></div></div>`;
+            });
+            html += `<div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;"><span style="color:#666;">总转介量：</span><span style="font-weight:600;color:#667eea;">${sorted.reduce((sum,d)=>sum+(d.total||0),0)} 单</span></div></div>`;
+            container.innerHTML = html;
+        }
+
+        window.openAddReferralModal = function() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '新建转介业务';
+            document.getElementById('addModalBody').innerHTML = `<form id="addReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="refDate" required value="${new Date().toISOString().split('T')[0]}"></div><div class="info-item"><label>客户名称 *</label><input type="text" id="refCustomer" required placeholder="客户企业/个人名称"></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><select id="refFromDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>转出人员 *</label><input type="text" id="refFromPerson" required placeholder="您的姓名"></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><select id="refToDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>接收人员 *</label><input type="text" id="refToPerson" required placeholder="接收方姓名"></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="refAmount" placeholder="预计或实际成交金额" step="1000"></div><div class="info-item"><label>积分规则</label><select id="refPointsCalculate"><option value="1">✅ 核算积分</option><option value="0">❌ 不核算积分</option></select></div></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:8px 0;font-size:12px;color:#0369a1;">💡 说明：<strong>核算积分</strong>时，已落地转介核算 1 个积分；<strong>不核算积分</strong>时，已落地转介不核算积分</div><div class="info-item"><label>业务状态</label><select id="refStatus"><option value="pending">📞 跟进中</option><option value="completed">✅ 已落地</option><option value="invalid">❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="refRemarks" rows="3" placeholder="备注信息"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('addReferralForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/referrals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('refDate').value, customer_name: document.getElementById('refCustomer').value, from_department: document.getElementById('refFromDept').value, from_person: document.getElementById('refFromPerson').value, to_department: document.getElementById('refToDept').value, to_person: document.getElementById('refToPerson').value, amount: parseFloat(document.getElementById('refAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('refPointsCalculate').value), business_status: document.getElementById('refStatus').value, remarks: document.getElementById('refRemarks').value }) });
+                    if (res.ok) { const data = await res.json(); alert(`✅ 已创建！自动计算积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('创建失败'); }
+                } catch (e) { alert('网络错误'); }
+            };
+        };
+
+        window.editReferral = async function(id) {
+            const r = allReferrals.find(x => x.id === id);
+            if (!r) return;
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModalTitle').textContent = '编辑转介业务';
+            document.getElementById('addModalBody').innerHTML = `<form id="editReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="editRefDate" value="${r.referral_date}" required></div><div class="info-item"><label>客户名称 *</label><input type="text" id="editRefCustomer" value="${r.customer_name||''}" required></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><input type="text" id="editRefFromDept" value="${r.from_department||''}" required></div><div class="info-item"><label>转出人员 *</label><input type="text" id="editRefFromPerson" value="${r.from_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><input type="text" id="editRefToDept" value="${r.to_department||''}" required></div><div class="info-item"><label>接收人员 *</label><input type="text" id="editRefToPerson" value="${r.to_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="editRefAmount" value="${r.amount||0}" step="1000"></div><div class="info-item"><label>积分规则</label><select id="editRefPointsCalculate"><option value="1" ${(r.points_calculate !== 0)?'selected':''}>✅ 核算积分</option><option value="0" ${(r.points_calculate === 0)?'selected':''}>❌ 不核算积分</option></select></div></div><div class="info-item"><label>业务状态</label><select id="editRefStatus"><option value="pending" ${r.business_status==='pending'?'selected':''}>📞 跟进中</option><option value="completed" ${r.business_status==='completed'?'selected':''}>✅ 已落地</option><option value="invalid" ${r.business_status==='invalid'?'selected':''}>❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="editRefRemarks" rows="3">${r.remarks||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存修改</button></div></form>`;
+            document.getElementById('editReferralForm').onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const res = await fetch(`${API_BASE}/referrals/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('editRefDate').value, customer_name: document.getElementById('editRefCustomer').value, from_department: document.getElementById('editRefFromDept').value, from_person: document.getElementById('editRefFromPerson').value, to_department: document.getElementById('editRefToDept').value, to_person: document.getElementById('editRefToPerson').value, amount: parseFloat(document.getElementById('editRefAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('editRefPointsCalculate').value), business_status: document.getElementById('editRefStatus').value, remarks: document.getElementById('editRefRemarks').value }) });
+                    if (res.ok) { const data = await res.json(); alert(`✅ 已更新！积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('更新失败'); }
+                } catch (e) { alert('网络错误'); }
+            };
+        };
+
+        window.deleteReferral = async function(id) {
+            if (!confirm('确定删除这条转介记录？')) return;
+            try { await fetch(`${API_BASE}/referrals/${id}`, { method: 'DELETE' }); alert('✅ 已删除'); loadReferrals(); } catch (e) { alert('删除失败'); }
+        };
+
+        function initReferralMonths() {
+            const select = document.getElementById('referralMonthFilter');
+            if (!select) return;
+            const months = [];
+            const now = new Date();
+            for (let i = 0; i < 12; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push(d.toISOString().slice(0, 7));
+            }
+            select.innerHTML = '<option value="">全部月份</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+            console.log('📅 月份选项已初始化:', months.length, '个月份');
+        }
+
+        // 确保页面加载时初始化月份选项
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initReferralMonths);
+        } else {
+            setTimeout(initReferralMonths, 100);
+        }
+    
+
+        // ========== 融合攻坚目标追踪 ==========
+        var allFusionTargets = [];
+
+function loadFusionData() {
+            var lineFilter = (document.getElementById("fusionLineFilter") || {}).value || "";
+            var followUrl = "/api/fusion/followup" + (lineFilter ? "?line=" + encodeURIComponent(lineFilter) : "");
+            Promise.all([
+                fetch("/api/fusion/dashboard").then(function(r) { return r.json(); }),
+                fetch(followUrl).then(function(r) { return r.json(); })
+            ]).then(function(results) {
+                renderFusionDashboard(results[0]);
+                allFusionTargets = results[1];
+                renderFusionContent();
+            }).catch(function(e) { console.error(e); });
+        }
+
+        function renderFusionDashboard(data) {
+            var container = document.getElementById("fusionDashboard");
+            if (!container) return;
+            var typeMap = {
+                "B2C保险": { color: "#f59e0b", bg: "#fef3c3" },
+                "B2C小微贷": { color: "#f59e0b", bg: "#fef3c3" },
+                "B2C百人代发": { color: "#f59e0b", bg: "#fef3c3" },
+                "C2B授信": { color: "#3b82f6", bg: "#dbeafe" },
+                "C2B高质量开户": { color: "#3b82f6", bg: "#dbeafe" },
+                "B2B百人代发": { color: "#8b5cf6", bg: "#ede9fe" }
+            };
+            container.innerHTML = data.map(function(d) {
+                var style = typeMap[d.target_type] || { color: "#6b7280", bg: "#f3f4f6" };
+                var rate = d.completion_rate || 0;
+                var rateColor = rate >= 50 ? "#22c55e" : rate > 0 ? "#f59e0b" : "#ef4444";
+                return '<div style="background:' + style.bg + ';border-left:4px solid ' + style.color + ';padding:10px 12px;border-radius:8px;cursor:pointer;" onclick="scrollToManager(\'' + d.target_type + '\')">' +
+                    '<div style="font-size:12px;font-weight:600;color:' + style.color + ';margin-bottom:4px;">' + d.target_type + '</div>' +
+                    '<div style="font-size:20px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div>' +
+                    '<div style="font-size:11px;color:#666;">' + (d.total_completed || 0) + '/' + (d.total_task || 0) + ' · ' + (d.manager_count || 0) + '人</div></div>';
+            }).join("");
+        }
+
+        function scrollToManager(targetType) {
+            var el = document.getElementById('fusion_type_' + targetType);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function getStatusIcon(mg) {
+            if (mg.completed_count >= mg.task_count && mg.task_count > 0) return '<span style="color:#22c55e;font-size:13px;" title="已完成">●</span>';
+            var hasAny = mg.completed_count > 0;
+            var allEmpty = mg.completed_count === 0;
+            if (allEmpty) return '<span style="color:#d1d5db;font-size:13px;" title="未开始">○</span>';
+            return '<span style="color:#f59e0b;font-size:13px;" title="进行中">◐</span>';
+        }
+
+        function renderFusionContent() {
+            var container = document.getElementById("fusionContent");
+            if (!container) return;
+
+            var statusFilter = (document.getElementById("fusionStatusFilter") || {}).value || '';
+            var searchText = (document.getElementById("fusionSearch") || {}).value || '';
+
+            if (!allFusionTargets || !allFusionTargets.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
+                return;
+            }
+
+            var typeGroups = {};
+            allFusionTargets.forEach(function(r) {
+                var type = r.target_type || r.task_category || '未知';
+                if (!typeGroups[type]) typeGroups[type] = [];
+                typeGroups[type].push(r);
+            });
+
+            // Update count
+            var totalMgrs = Object.values(typeGroups).reduce(function(acc, recs) {
+                var seen = {};
+                recs.forEach(function(r) {
+                    var key = r.manager_name + '||' + r.line;
+                    if (!seen[key]) { seen[key] = true; acc.push(key); }
+                });
+                return acc;
+            }, []).length;
+            var cntEl = document.getElementById('fusionCount');
+            if (cntEl) cntEl.textContent = totalMgrs;
+
+            if (currentFusionView === 'kanban') {
+                container.innerHTML = renderKanbanView(typeGroups);
+                return;
+            }
+
+            var html = '';
+
+            Object.keys(typeGroups).sort().forEach(function(type) {
+                var records = typeGroups[type];
+
+                // Filter by status and search
+                var managerGroups = {};
+                records.forEach(function(r) {
+                    var key = r.manager_name + '||' + r.line;
+                    if (!managerGroups[key]) {
+                        managerGroups[key] = { manager_name: r.manager_name, line: r.line, companies: {}, task_count: 0, completed_count: 0, records: [] };
+                    }
+                    var co = r.target_company || '未命名企业';
+                    if (!managerGroups[key].companies[co]) {
+                        managerGroups[key].companies[co] = { name: co, records: [], task_count: 0, completed_count: 0 };
+                    }
+                    managerGroups[key].companies[co].records.push(r);
+                    managerGroups[key].companies[co].task_count += r.task_count || 0;
+                    managerGroups[key].companies[co].completed_count += r.completed_count || 0;
+                    managerGroups[key].task_count += r.task_count || 0;
+                    managerGroups[key].completed_count += r.completed_count || 0;
+                    managerGroups[key].records.push(r);
+                });
+
+                var typeColors = {
+                    "B2C保险": { header: "#92400e", headerBg: "#fef3c3" },
+                    "B2C小微贷": { header: "#92400e", headerBg: "#fef3c3" },
+                    "B2C百人代发": { header: "#92400e", headerBg: "#fef3c3" },
+                    "C2B授信": { header: "#1e40af", headerBg: "#dbeafe" },
+                    "C2B高质量开户": { header: "#1e40af", headerBg: "#dbeafe" },
+                    "B2B百人代发": { header: "#6d28d9", headerBg: "#ede9fe" }
+                };
+                var colors = typeColors[type] || { header: "#374151", headerBg: "#f3f4f6" };
+                var coCount = Object.keys(managerGroups).length;
+
+                html += '<div id="fusion_type_' + type + '" style="margin-bottom:20px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:' + colors.headerBg + ';border-radius:8px 8px 0 0;border-bottom:2px solid ' + (colors.headerBg === "#fef3c3" ? "#fde68a" : colors.headerBg === "#dbeafe" ? "#bfdbfe" : "#ddd6fe") + ';">';
+                html += '<span style="font-size:13px;font-weight:600;color:' + colors.header + ';">📋 ' + type + '</span>';
+                html += '<div style="display:flex;align-items:center;gap:8px;">';
+                html += '<span style="font-size:11px;color:' + colors.header + ';opacity:0.7;">' + coCount + ' 位客户经理</span>';
+                html += '<button onclick="addFusionManagerInline(\'' + type + '\')" style="padding:2px 10px;font-size:11px;background:white;color:' + colors.header + ';border:1px solid ' + (colors.headerBg === "#fef3c3" ? "#fde68a" : colors.headerBg === "#dbeafe" ? "#bfdbfe" : "#ddd6fe") + ';border-radius:20px;cursor:pointer;">+ 添加客户经理</button>';
+                html += '</div></div>';
+
+                filteredManagers.forEach(function(mg) {
+                    var totalRate = mg.task_count > 0 ? Math.round(mg.completed_count / mg.task_count * 100) : 0;
+                    var rateColor = totalRate >= 50 ? "#22c55e" : totalRate > 0 ? "#f59e0b" : "#ef4444";
+                    var lineBadge = mg.line === '批发'
+                        ? '<span style="color:#1e40af;background:#dbeafe;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">批发</span>'
+                        : '<span style="color:#92400e;background:#fef3c3;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">零售</span>';
+
+                    var statusIcon = getStatusIcon(mg);
+                    var companyList = Object.values(mg.companies);
+                    var coDots = companyList.map(function(co) {
+                        return co.records.length > 0
+                            ? '<span style="color:#22c55e;" title="' + co.name + ' 已跟进">●</span>'
+                            : '<span style="color:#fbbf24;" title="' + co.name + ' 待跟进">○</span>';
+                    }).join('');
+
+                    var lastFollow = '';
+                    var allEmpty = mg.completed_count === 0;
+                    var allDone = mg.completed_count >= mg.task_count && mg.task_count > 0;
+                    var statusLabel = allDone ? '<span style="color:#22c55e;font-size:11px;font-weight:500;">已完成</span>'
+                        : allEmpty ? '<span style="color:#d1d5db;font-size:11px;font-weight:500;">未开始</span>'
+                        : '<span style="color:#f59e0b;font-size:11px;font-weight:500;">进行中</span>';
+
+                    if (mg.records.length > 0) {
+                        var sortedRecs = mg.records.slice().sort(function(a, b) { return (b.updated_at||'').localeCompare(a.updated_at||''); });
+                        var lastRec = sortedRecs[0];
+                        lastFollow = lastRec && lastRec.updated_at ? lastRec.updated_at.substr(0, 16).replace('T', ' ') : '';
+                    }
+
+                    html += '<div class="fusion-row" style="display:flex;align-items:center;padding:10px 14px;background:white;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background 0.12s;" onmouseenter="showFusionActions(this)" onmouseleave="hideFusionActions(this)" onclick="toggleFusionManagerRow(this)">';
+
+                    // Status icon
+                    html += '<div style="font-size:16px;margin-right:10px;width:20px;text-align:center;">' + statusIcon + '</div>';
+
+                    // Manager name + badge
+                    html += '<div style="min-width:80px;flex:1;">';
+                    html += '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + mg.manager_name + '</div>';
+                    html += lineBadge;
+                    html += '</div>';
+
+                    // Company dots + names preview
+                    html += '<div style="flex:2;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;">';
+                    companyList.slice(0, 5).forEach(function(co, ci) {
+                        var coR = co.task_count > 0 ? Math.round(co.completed_count / co.task_count * 100) : 0;
+                        var coColor = coR >= 50 ? "#22c55e" : coR > 0 ? "#f59e0b" : "#ef4444";
+                        var hasF = co.records.length > 0;
+                        html += '<div onclick="event.stopPropagation(); toggleFusionCompanyPreview(this)" style="display:flex;align-items:center;gap:3px;padding:2px 7px;background:' + (hasF ? '#f0fdf4' : '#fffbeb') + ';border:1px solid ' + (hasF ? '#bbf7d0' : '#fde68a') + ';border-radius:20px;font-size:11px;cursor:pointer;max-width:120px;" title="' + co.name + ' - 点击查看跟进">';
+                        html += '<span style="color:' + (hasF ? '#22c55e' : '#fbbf24') + ';font-size:9px;">' + (hasF ? '●' : '○') + '</span>';
+                        html += '<span style="color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px;">' + co.name.substring(0, 6) + '</span>';
+                        html += '<span style="color:' + coColor + ';font-weight:600;">' + coR + '%</span>';
+                        html += '</div>';
+                    });
+                    if (companyList.length > 5) {
+                        html += '<span style="font-size:10px;color:#9ca3af;padding:2px 6px;background:#f3f4f6;border-radius:20px;">+' + (companyList.length - 5) + '</span>';
+                    }
+                    html += '</div>';
+
+                    // Task/completed
+                    html += '<div onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:60px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改任务/完成数">';
+                    html += '<div style="font-size:11px;color:#9ca3af;margin-bottom:1px;">任务/完成</div>';
+                    html += '<div style="font-size:13px;font-weight:600;color:#374151;">' + mg.completed_count + ' / ' + mg.task_count + '</div>';
+                    html += '</div>';
+
+                    // Progress
+                    html += '<div onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:70px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击+1完成数">';
+                    html += '<div style="font-size:14px;font-weight:bold;color:' + rateColor + ';">' + totalRate + '%</div>';
+                    html += '<div style="width:60px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-top:2px;"><div style="width:' + totalRate + '%;height:100%;background:' + rateColor + ';border-radius:2px;"></div></div>';
+                    html += '</div>';
+
+                    // Status label
+                    html += '<div style="min-width:55px;text-align:center;">' + statusLabel + '</div>';
+
+                    // Last follow time
+                    html += '<div style="min-width:85px;text-align:right;font-size:11px;color:#9ca3af;">' + (lastFollow ? lastFollow.replace(' ', '<br>') : '-') + '</div>';
+
+                    // Arrow
+                    html += '<div class="fusion-row-arrow" style="font-size:11px;color:#667eea;margin-left:10px;width:16px;text-align:center;">▶</div>';
+
+                    // Hover action bar (hidden by default)
+                    html += '<div class="fusion-actions" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);gap:6px;background:white;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;">';
+                    html += '<button onclick="event.stopPropagation(); addFusionFollowForManager(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">+ 跟进</button>';
+                    html += '<button onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#22c55e;border:1px solid #22c55e;border-radius:6px;cursor:pointer;">+1完成</button>';
+                    html += '<button onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;">✏️ 编辑</button>';
+                    html += '<button onclick="event.stopPropagation(); deleteFusionManager(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#ef4444;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">🗑️</button>';
+                    html += '</div>';
+
+                    html += '</div>';
+
+                    // Detail section (hidden)
+                    html += '<div class="fusion-detail" style="display:none;background:#fafafa;padding:12px 14px;border-bottom:1px solid #e5e7eb;">';
+                    companyList.forEach(function(co) {
+                        var coTask = co.task_count, coComp = co.completed_count;
+                        var coRate = coTask > 0 ? Math.round(coComp / coTask * 100) : 0;
+                        var coRateColor = coRate >= 50 ? "#22c55e" : coRate > 0 ? "#f59e0b" : "#ef4444";
+                        var hasFollow = co.records.length > 0;
+                        var borderLeft = hasFollow ? "3px solid #22c55e" : "3px solid #fbbf24";
+                        var cardBg = hasFollow ? "#f0fdf4" : "#fffbeb";
+
+                        html += '<div style="border:' + borderLeft + ';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:' + cardBg + ';position:relative;">';
+                        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+                        html += '<div onclick="event.stopPropagation(); editFusionCompanyName(this, \'' + co.name.replace(/'/g, "\\'") + '\', ' + co.records[0].id + ')" style="font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;flex:1;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#fef3c3\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改企业名称">' + co.name + ' <span style="font-size:10px;color:#9ca3af;">✏️</span></div>';
+                        html += '<div onclick="event.stopPropagation(); editFusionRecordCounts(this, ' + co.records[0].id + ')" style="cursor:pointer;padding:2px 6px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改">';
+                        html += '<span style="color:#22c55e;font-weight:600;font-size:13px;">' + coComp + '</span>';
+                        html += '<span style="color:#d1d5db;margin:0 2px;">/</span>';
+                        html += '<span style="color:#6b7280;font-size:13px;">' + coTask + '</span>';
+                        html += '</div>';
+                        html += '<div onclick="event.stopPropagation(); incFusionRecordCompleted(' + co.records[0].id + ', ' + coTask + ', ' + coComp + ')" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击+1完成">';
+                        html += '<div style="width:44px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:' + coRate + '%;height:100%;background:' + coRateColor + ';border-radius:2px;"></div></div>';
+                        html += '<span style="font-size:12px;font-weight:bold;color:' + coRateColor + ';">' + coRate + '%</span>';
+                        html += '</div>';
+                        html += '<button onclick="event.stopPropagation(); addFusionFollowInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\', \'' + co.name.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;transition:background 0.12s;" onmouseenter="this.style.background=\'#5a67d8\'" onmouseleave="this.style.background=\'#667eea\'">+ 跟进</button>';
+                        html += '</div>';
+
+                        // Follow-up section
+                        html += '<div class="fusion-follow-section">';
+                        if (hasFollow) {
+                            html += '<div onclick="event.stopPropagation(); toggleFollowTimeline(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 6px;border-radius:4px;font-size:11px;color:#6b7280;transition:background 0.12s;" onmouseenter="this.style.background=\'#e5e7eb\'" onmouseleave="this.style.background=\'transparent\'">';
+                            html += '<span style="color:#22c55e;">●</span>';
+                            html += '<span>查看 ' + co.records.length + ' 条跟进记录</span>';
+                            html += '<span class="fusion-follow-arrow" style="font-size:10px;transition:transform 0.2s;">▶</span>';
+                            html += '</div>';
+                            html += '<div class="fusion-timeline" style="display:none;padding-left:10px;border-left:2px solid #bbf7d0;margin-top:6px;">';
+                            co.records.slice().reverse().forEach(function(rec) {
+                                var recDate = rec.updated_at ? rec.updated_at.substr(0, 16).replace('T', ' ') : '无时间';
+                                var recContent = rec.follow_record || '';
+                                var displayContent = recContent ? recContent.substring(0, 200) + (recContent.length > 200 ? '...' : '') : '<span style="color:#d1d5db;font-style:italic;">暂无内容</span>';
+                                html += '<div style="margin-bottom:8px;" onmouseenter="this.querySelector(\'.f-op\').style.opacity=\'1\'" onmouseleave="this.querySelector(\'.f-op\').style.opacity=\'0\'">';
+                                html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+                                html += '<span style="color:#9ca3af;font-size:10px;">' + recDate + '</span>';
+                                html += '<span class="f-op" style="margin-left:auto;display:flex;gap:3px;opacity:0;transition:opacity 0.12s;">';
+                                html += '<button onclick="event.stopPropagation(); editFusionFollowInline(this, ' + rec.id + ', \'' + escapeHtmlForAttr(recContent) + '\')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;color:#6b7280;">编辑</button>';
+                                html += '<button onclick="event.stopPropagation(); deleteFusionFollow(' + rec.id + ')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;">删除</button>';
+                                html += '</span></div>';
+                                html += '<div onclick="event.stopPropagation(); editFusionFollowInline(this, ' + rec.id + ', \'' + escapeHtmlForAttr(recContent) + '\')" style="font-size:12px;color:#374151;line-height:1.5;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击编辑">' + displayContent + '</div>';
+                                html += '</div>';
+                            });
+                            html += '</div>';
+                        } else {
+                            html += '<div onclick="event.stopPropagation(); addFusionFollowInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\', \'' + co.name.replace(/'/g, "\\'") + '\')" style="text-align:center;padding:6px;background:#fef3c3;border-radius:4px;font-size:11px;color:#f59e0b;cursor:pointer;transition:background 0.12s;" onmouseenter="this.style.background=\'#fde68a\'" onmouseleave="this.style.background=\'#fef3c3\'">⚠️ 暂无跟进，点击添加第一条</div>';
+                        }
+                        html += '</div></div>';
+                    });
+
+                    html += '<div style="text-align:center;margin-top:4px;">';
+                    html += '<button onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:5px 14px;font-size:11px;background:#f9fafb;color:#9ca3af;border:1px dashed #d1d5db;border-radius:20px;cursor:pointer;transition:all 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\';this.style.color=\'#6b7280\'" onmouseleave="this.style.background=\'#f9fafb\';this.style.color=\'#9ca3af\'">+ 添加目标企业</button>';
+                    html += '</div></div>';
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function showFusionActions(row) {
+            var actions = row.querySelector('.fusion-actions');
+            if (actions) actions.style.display = 'flex';
+        }
+
+        function hideFusionActions(row) {
+            var actions = row.querySelector('.fusion-actions');
+            if (actions) actions.style.display = 'none';
+        }
+
+        function toggleFusionManagerRow(row) {
+            var detail = row.nextElementSibling;
+            var arrow = row.querySelector('.fusion-row-arrow');
+            if (!detail || !detail.classList.contains('fusion-detail')) return;
+            var isOpen = detail.style.display !== 'none';
+            if (isOpen) {
+                detail.style.display = 'none';
+                arrow.textContent = '▶';
+            } else {
+                detail.style.display = 'block';
+                arrow.textContent = '▼';
+            }
+        }
+
+        function toggleFollowTimeline(el) {
+            var timeline = el.nextElementSibling;
+            var arrow = el.querySelector('.fusion-follow-arrow');
+            if (!timeline) return;
+            var isOpen = timeline.style.display !== 'none';
+            timeline.style.display = isOpen ? 'none' : 'block';
+            if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+        }
+
+        function toggleFusionCompanyPreview(el) {
+            el.closest('.fusion-detail').style.display = 'block';
+            var row = el.closest('.fusion-row');
+            var arrow = row.querySelector('.fusion-row-arrow');
+            if (arrow) arrow.textContent = '▼';
+        }
+
+        function escapeHtmlForAttr(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, ' ');
+        }
+
+        function editFusionCounts(el, managerName, line, targetType) {
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            if (!records.length) return;
+            var r = records[0];
+            var newTask = prompt('\u4fee\u6539\u4efb\u52a1\u6570:', r.task_count);
+            if (newTask === null) return;
+            var newCompleted = prompt('\u4fee\u6539\u5b8c\u6210\u6570:', r.completed_count);
+            if (newCompleted === null) return;
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_count: parseInt(newTask)||0, completed_count: parseInt(newCompleted)||0 })
+                });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function incFusionCompleted(managerName, line, targetType) {
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            if (!records.length) return;
+            var r = records[0];
+            var newCompleted = (r.completed_count || 0) + 1;
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed_count: newCompleted })
+                });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function editFusionCompanyName(el, oldName, followId) {
+            var newName = prompt('\u4fee\u6539\u4f01\u4e1a\u540d\u79f0:', oldName);
+            if (newName === null || !newName.trim() || newName.trim() === oldName) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_company: newName.trim() })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function editFusionRecordCounts(el, followId) {
+            var rec = allFusionTargets.find(function(r) { return r.id === followId; });
+            if (!rec) return;
+            var newTask = prompt('\u4fee\u6539\u4efb\u52a1\u6570:', rec.task_count);
+            if (newTask === null) return;
+            var newCompleted = prompt('\u4fee\u6539\u5b8c\u6210\u6570:', rec.completed_count);
+            if (newCompleted === null) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_count: parseInt(newTask)||0, completed_count: parseInt(newCompleted)||0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function incFusionRecordCompleted(followId, taskCount, currentCompleted) {
+            if (currentCompleted >= taskCount) {
+                alert('\u5df2\u5b8c\u6210\u6570\u5df2\u8fbe\u5230\u4efb\u52a1\u6570\u4e0a\u9650');
+                return;
+            }
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed_count: currentCompleted + 1 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function addFusionFollowInline(el, managerName, line, targetType, companyName) {
+            var content = prompt('\u6dfb\u52a0\u8ddf\u8fdb\u8bb0\u5f55:', '');
+            if (!content) return;
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName, follow_record: content, task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function addFusionFollowForManager(el, managerName, line, targetType) {
+            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0(\u4f1a\u81ea\u52a8\u521b\u5efa\u4e00\u4e2a\u65b0\u4f01\u4e1a\u8bb0\u5f55):', '');
+            if (!companyName || !companyName.trim()) return;
+            var content = prompt('\u8ddf\u8fdb\u5185\u5bb9:', '');
+            if (!content) {
+                // Still create company even if no follow content
+                fetch('/api/fusion/followup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
+                }).then(function() { loadFusionData(); });
+                return;
+            }
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: content, task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function editFusionFollowInline(el, followId, currentContent) {
+            var decoded = currentContent.replace(/&quot;/g, '"').replace(/\\'/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<br>/g, '\n');
+            var newContent = prompt('\u7f16\u8f91\u8ddf\u8fdb\u8bb0\u5f55:', decoded);
+            if (newContent === null) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ follow_record: newContent })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function deleteFusionFollow(followId) {
+            if (!confirm('\u786e\u5b9a\u5220\u9669\u8fd9\u6761\u8ddf\u8fdb\u8bb0\u5f55\uff1f')) return;
+            fetch('/api/fusion/followup/' + followId, { method: 'DELETE' }).then(function() { loadFusionData(); });
+        }
+
+        function deleteFusionManager(managerName, line, targetType) {
+            if (!confirm('\u786e\u5b9a\u5220\u9669\u8be5\u5ba2\u6237\u7ecf\u7406\u6240\u6709\u8bb0\u5f55\uff1f')) return;
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, { method: 'DELETE' });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function addFusionCompanyInline(el, managerName, line, targetType) {
+            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0:', '');
+            if (!companyName || !companyName.trim()) return;
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function addFusionManagerInline(targetType) {
+            var managerName = prompt('\u8f93\u5165\u5ba2\u6237\u7ecf\u7406\u59d4\u5458\u540d\u79f0:', '');
+            if (!managerName || !managerName.trim()) return;
+            var line = prompt('\u8f93\u5165\u6761\u7ebf(\u96f6\u552e/\u6279\u53d1,\u9ed8\u8ba4\u96f6\u552e):', '\u96f6\u552e');
+            line = line || '\u96f6\u552e';
+            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0:', '');
+            if (!companyName || !companyName.trim()) return;
+            var content = prompt('\u8ddf\u8fdb\u5185\u5bb9(\u53ef\u7a7a):', '');
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName.trim(), line: line, target_type: targetType, target_company: companyName.trim(), follow_record: content || '', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+

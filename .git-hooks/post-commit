@@ -1,0 +1,8 @@
+#!/bin/bash
+# Auto backup workspace to GitHub
+cd /home/admin/.openclaw/workspace
+
+git add -A
+git commit -m "Auto backup $(date '+%Y-%m-%d %H:%M')" --allow-empty
+
+GIT_SSH_COMMAND="ssh -i /home/admin/.ssh/id_ed25519" git push -u origin workspace-backup
