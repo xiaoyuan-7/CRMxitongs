@@ -4780,6 +4780,61 @@ var currentFusionView = 'table';
         function getFollowTypeLabel(t) { return getFollowTypeCfg(t).label; }
         function getFollowTypeStyle(t) { var c = getFollowTypeCfg(t); return 'color:' + c.color + ';background:' + c.bg + ';border:1px solid ' + c.border + ';padding:1px 5px;border-radius:4px;font-size:10px;display:inline-block;'; }
 
+
+        function makeFollowRow(rec, managerName, line, targetType, companyName) {
+            var rid = rec && rec.id ? rec.id : 'new_' + Date.now();
+            var rType = (rec && rec.follow_type) || 'phone';
+            var rDate = rec && rec.updated_at ? rec.updated_at.substr(0, 16) : new Date().toISOString().substr(0, 16);
+            var rContent = rec && rec.follow_record ? rec.follow_record.replace(/"/g, '&quot;') : '';
+            var html = '<div class="f-row" data-rid="' + rid + '" data-mgr="' + managerName.replace(/"/g, '&quot;') + '" data-line="' + (line||'').replace(/"/g, '&quot;') + '" data-type="' + targetType.replace(/"/g, '&quot;') + '" data-co="' + companyName.replace(/"/g, '&quot;') + '" style="display:flex;align-items:center;gap:5px;padding:4px 6px;background:white;border-radius:6px;margin-bottom:3px;border:1px solid #e5e7eb;">';
+            html += '<input type="datetime-local" value="' + rDate + '" data-date style="font-size:11px;color:#374151;border:1px solid #e5e7eb;border-radius:5px;padding:3px 5px;width:145px;background:#f9fafb;cursor:pointer;">';
+            html += '<div style="display:flex;gap:2px;flex-shrink:0;">';
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var cfg = FOLLOW_TYPES[t];
+                var isActive = rType === t;
+                html += '<span data-ft="' + t + '" onclick="switchFollowType(this)" style="padding:2px 6px;border-radius:5px;font-size:10px;cursor:pointer;' + (isActive ? 'opacity:1;box-shadow:0 0 0 2px ' + cfg.border + ';' : 'opacity:0.5;') + getFollowTypeStyle(t).replace('display:inline-block;', '') + '" title="' + cfg.label + '">' + cfg.label + '</span>';
+            });
+            html += '</div>';
+            html += '<input type="text" value="' + rContent + '" placeholder="跟进内容..." data-content onfocus="this.style.borderColor=&#39;#667eea&#39;;this.style.boxShadow=&#39;0 0 0 2px #c4b5fd&#39;;this.style.width=&#39;220px&#39;;" onblur="saveFollowRecInput(this)" style="flex:1;min-width:80px;max-width:200px;font-size:11px;color:#374151;border:1px solid #e5e7eb;border-radius:5px;padding:3px 6px;background:white;transition:all 0.15s;">';
+            html += '<button onclick="deleteFollowRow(this,' + (rec && rec.id ? rec.id : 0) + ')" style="padding:2px 6px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;flex-shrink:0;">🗑️</button>';
+            html += '</div>';
+            return html;
+        }
+        function switchFollowType(el) {
+            var par = el.closest('.f-row');
+            par.querySelectorAll('[data-ft]').forEach(function(s) { s.style.opacity = '0.5'; s.style.boxShadow = 'none'; });
+            el.style.opacity = '1';
+            el.style.boxShadow = '0 0 0 2px ' + FOLLOW_TYPES[el.getAttribute('data-ft')].border + ';';
+        }
+        function saveFollowRecInput(el) {
+            var par = el.closest('.f-row');
+            var content = par.querySelector('[data-content]').value.trim();
+            if (!content) { el.style.borderColor = '#e5e7eb'; return; }
+            var ftEl = par.querySelector('[data-ft][style*="opacity:1"]') || par.querySelector('[data-ft]');
+            var fd = par.querySelector('[data-date]').value;
+            var rid = par.getAttribute('data-rid');
+            var isNew = rid.startsWith('new_');
+            var body = { follow_record: content, follow_type: ftEl ? ftEl.getAttribute('data-ft') : 'phone' };
+            if (fd) body.updated_at = fd + ':00';
+            if (!isNew) {
+                fetch('/api/fusion/followup/' + rid, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function() { loadFusionData(); });
+            } else {
+                var payload = { manager_name: par.getAttribute('data-mgr'), line: par.getAttribute('data-line'), target_type: par.getAttribute('data-type'), target_company: par.getAttribute('data-co'), follow_record: content, follow_type: ftEl ? ftEl.getAttribute('data-ft') : 'phone', task_count: 1, completed_count: 0 };
+                if (fd) payload.updated_at = fd + ':00';
+                fetch('/api/fusion/followup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function() { loadFusionData(); });
+            }
+            el.style.borderColor = '#e5e7eb';
+        }
+        function deleteFollowRow(el, recordId) {
+            var par = el.closest('.f-row');
+            if (recordId > 0) {
+                if (!confirm('删除此条跟进记录？')) return;
+                fetch('/api/fusion/followup/' + recordId, { method: 'DELETE' }).then(function() { loadFusionData(); });
+            } else {
+                par.remove();
+            }
+        }
+
         function showAddFollowModal(managerName, line, targetType, companyName) {
             var ov = document.createElement('div');
             ov.id = 'followModalOverlay';
@@ -5064,41 +5119,12 @@ function loadFusionData() {
                         html += '</div>';
 
 
-var latestRec = co.records.length > 0 ? co.records.slice().sort(function(a,b){return (b.updated_at||'').localeCompare(a.updated_at||'')})[0] : null;
-if (hasFollow) {
-    var ltType = latestRec.follow_type || 'phone';
-    var ltCfg = getFollowTypeCfg(ltType);
-    var ltDate = latestRec.updated_at ? latestRec.updated_at.substr(0,16).replace('T',' ') : '';
-    var ltContent = latestRec.follow_record ? latestRec.follow_record.substring(0,50) : '';
-    if (latestRec.follow_record && latestRec.follow_record.length > 50) ltContent += '...';
-    html += '<div onclick="event.stopPropagation(); toggleFollowTimeline(this)" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#f9fafb;border-radius:6px;font-size:11px;margin-bottom:5px;cursor:pointer;" title="点击查看全部跟进">';
-    html += '<span style="' + getFollowTypeStyle(ltType) + '">' + ltCfg.label + '</span>';
-    html += '<span style="color:#9ca3af;font-size:10px;">' + ltDate + '</span>';
-    html += '<span style="color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (ltContent||'无内容') + '</span>';
-    html += '<span style="color:#667eea;font-size:10px;">' + co.records.length + ' 条 ▶</span>';
-    html += '</div>';
-    html += '<div class="fusion-timeline" style="display:none;">';
-    co.records.slice().reverse().forEach(function(rec) {
-        var rType = rec.follow_type || 'phone';
-        var rCfg = getFollowTypeCfg(rType);
-        var rDate = rec.updated_at ? rec.updated_at.substr(0,16).replace('T',' ') : '';
-        var rContent = rec.follow_record || '';
-        var rDisplay = rContent ? rContent.substring(0,100) + (rContent.length>100?'...':'') : '<span style="color:#d1d5db;font-style:italic;">暂无内容</span>';
-        html += '<div style="margin-bottom:5px;padding:6px 8px;background:white;border-radius:6px;border-left:3px solid ' + rCfg.border + ';" onmouseenter="this.querySelector(\'.f-op\').style.opacity=\'1\'" onmouseleave="this.querySelector(\'.f-op\').style.opacity=\'0\'">';
-        html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">';
-        html += '<span style="' + getFollowTypeStyle(rType) + '">' + rCfg.label + '</span>';
-        html += '<span style="color:#9ca3af;font-size:10px;">' + rDate + '</span>';
-        html += '<span class="f-op" style="margin-left:auto;display:flex;gap:3px;opacity:0;transition:opacity 0.12s;">';
-        html += '<button onclick="event.stopPropagation(); editFusionFollowInline(this,' + rec.id + ',\'' + escapeHtmlForAttr(rContent) + '\')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;color:#6b7280;">✏️</button>';
-        html += '<button onclick="event.stopPropagation(); deleteFusionFollow(' + rec.id + ')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;">🗑️</button>';
-        html += '</span></div>';
-        html += '<div style="font-size:11px;color:#374151;line-height:1.5;">' + rDisplay + '</div>';
-        html += '</div>';
-    });
-    html += '</div>';
-} else {
-    html += '<div onclick="event.stopPropagation(); showAddFollowModal(\'' + mg.manager_name.replace(/\'/g, "\\'") + '\',\'' + (mg.line||'') + '\',\'' + type + '\',\'' + co.name.replace(/\'/g, "\\'") + '\')" style="text-align:center;padding:6px;background:#fef3c3;border-radius:4px;font-size:11px;color:#f59e0b;cursor:pointer;">⚠️ 暂无跟进，点击添加</div>';
-}
+
+// Follow-up section - 单行内联编辑
+co.records.slice().reverse().forEach(function(rec) {
+    html += makeFollowRow(rec, mg.manager_name, mg.line, type, co.name);
+});
+html += '<div onclick="var n=makeFollowRow(null,mg.manager_name,mg.line,type,co.name);this.insertAdjacentHTML(\'beforebegin\',n);this.style.display=\'none\';" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px dashed #c4b5fd;border-radius:6px;color:#7c3aed;font-size:11px;cursor:pointer;background:#f5f3ff;margin-top:4px;" onmouseenter="this.style.background=\'#ede9fe\'" onmouseleave="this.style.background=\'#f5f3ff\'">➕ 添加跟进记录</div>';
 
                         html += '</div></div>';
                     });
