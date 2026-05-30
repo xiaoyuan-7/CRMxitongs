@@ -54,17 +54,17 @@ router.post('/followup', (req, res) => {
     const sql = `UPDATE fusion_targets SET 
       manager_name=?, task_category=?, target_type=?, line=?,
       task_count=?, completed_count=?, open_red_task=?, open_red_completed=?,
-      status=?, follow_record=?, target_company=?, updated_at=CURRENT_TIMESTAMP
+      status=?, follow_record=?, target_company=?, follow_type=?, updated_at=CURRENT_TIMESTAMP
       WHERE id=?`;
-    db.run(sql, [manager_name, task_category, target_type, line, task_count||0, completed_count||0, open_red_task||0, open_red_completed||0, status||'进行中', follow_record||'', target_company||'', id], (err) => {
+    db.run(sql, [manager_name, task_category, target_type, line, task_count||0, completed_count||0, open_red_task||0, open_red_completed||0, status||'进行中', follow_record||'', target_company||'', req.body.follow_type||'', id], (err) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true, id });
     });
   } else {
     const sql = `INSERT INTO fusion_targets 
-      (manager_name, task_category, target_type, line, task_count, completed_count, open_red_task, open_red_completed, status, follow_record, target_company)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const params = [manager_name, task_category, target_type, line, task_count||0, completed_count||0, open_red_task||0, open_red_completed||0, status||'进行中', follow_record||'', target_company||''];
+      (manager_name, task_category, target_type, line, task_count, completed_count, open_red_task, open_red_completed, status, follow_record, target_company, follow_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [manager_name, task_category, target_type, line, task_count||0, completed_count||0, open_red_task||0, open_red_completed||0, status||'进行中', follow_record||'', target_company||'', req.body.follow_type||''];
     console.log('=== INSERT PARAMS ===');
     console.log('target_company value:', target_company);
     console.log('params[10]:', params[10]);
@@ -95,7 +95,7 @@ router.delete('/followup/:id', (req, res) => {
 
 // 局部更新目标记录（支持单个或多个字段）
 router.patch('/followup/:id', (req, res) => {
-  const allowed = ['manager_name','task_category','target_type','line','task_count','completed_count','open_red_task','open_red_completed','status','follow_record','target_company','contact_manager'];
+  const allowed = ['manager_name','task_category','target_type','line','task_count','completed_count','open_red_task','open_red_completed','status','follow_record','target_company','contact_manager','follow_type'];
   const fields = [];
   const values = [];
   for (const key of allowed) {
