@@ -138,11 +138,11 @@
         .progress-section { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
         .progress-section h3 { font-size: 15px; margin-bottom: 12px; color: #333; }
         .progress-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .progress-item { text-align: center; }
+        .progress-item { text-align: center; display: flex; flex-direction: column; align-items: center; }
         .progress-item .label { font-size: 11px; color: #666; margin-bottom: 6px; }
-        .progress-item .circle { width: 60px; height: 60px; border-radius: 50%; background: conic-gradient(#667eea 0%, #e5e7eb 0%); margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; }
+        .progress-item .circle { width: 60px; height: 60px; border-radius: 50%; background: conic-gradient(#667eea 0%, #e5e7eb 0%); margin-bottom: 6px; display: flex; align-items: center; justify-content: center; }
         .progress-item .circle-inner { width: 45px; height: 45px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #333; }
-        .progress-item .value { font-size: 14px; color: #667eea; font-weight: 600; margin-top: 8px; min-width: 100px; text-align: center; display: block; letter-spacing: 1px; }
+        .progress-item .value { font-size: 14px; color: #667eea; font-weight: 600; margin-top: 8px; text-align: center; white-space: nowrap; }
         .number-input { width: 60px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 13px; }
         .number-input:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 2px rgba(102,126,234,0.2); }
         .select-inline { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; cursor: pointer; background: white; }
@@ -403,7 +403,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;position:relative;">
                 <div>
                     <h1>📊 客户管理系统</h1>
-                    <p>线索挖掘 · 营销任务 · 企业列表 · 协同融合 · 待办清单 · 每周计划 · 智能提醒</p>
+                    <p>待办清单 · 每周计划 · 线索挖掘 · 营销任务 · 企业列表 · 协同融合 · 智能提醒</p>
                 </div>
                 <div id="weekTaskSummary" style="background:rgba(255,255,255,0.2);padding:12px 16px;border-radius:8px;min-width:200px;cursor:pointer;" onclick="toggleTodoDropdown()"></div>
                 
@@ -504,18 +504,52 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('leads')">线索挖掘</button>
+            <button class="tab active" onclick="switchTab('todo')">待办清单</button>
+            <button class="tab" onclick="switchTab('weekly')">每周计划</button>
+            <button class="tab" onclick="switchTab('leads')">线索挖掘</button>
             <button class="tab" onclick="switchTab('tasks')">营销任务</button>
             <button class="tab" onclick="switchTab('companies')">企业列表</button>
             <button class="tab" onclick="switchTab('referrals')">协同融合</button>
-            <button class="tab" onclick="switchTab('weekly')">每周计划</button>
-            <button class="tab" onclick="switchTab('todo')
-                <button class="tab" onclick="switchTab('fusion')">融合攻坚</button>">待办清单</button>
             <button class="tab" onclick="switchTab('reminders')">智能提醒</button>
-            <button class="tab" onclick="switchTab('fusion')">融合攻坚</button>
         </div>
 
-        <div class="content-card" id="tasksTab"><div class="search-box"><button class="btn btn-primary" onclick="createNewTask()">+ 新建营销任务</button></div><div id="tasksList"></div></div>
+        <div class="content-card" id="todoTab" style="display:block;">
+            <div class="todo-input-row">
+                <input type="text" id="newTodoInput" placeholder="输入待办事项..." onkeypress="if(event.keyCode===13){event.preventDefault();addTodo();}"/>
+                <select id="newTodoDate"><option value="">不安排日期</option><option value="today">今天</option><option value="tomorrow">明天</option></select>
+                <button class="btn btn-primary" onclick="addTodo()">添加</button>
+            </div>
+            
+            <!-- 筛选和统计栏 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="todoFilterStatus" onchange="renderTodos()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+                        <option value="all">全部</option>
+                        <option value="pending">未完成</option>
+                        <option value="completed">已完成</option>
+                    </select>
+                    <select id="todoFilterDate" onchange="renderTodos()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+                        <option value="">全部日期</option>
+                        <option value="today">今天</option>
+                        <option value="tomorrow">明天</option>
+                        <option value="week">本周</option>
+                        <option value="overdue">已过期</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span id="todoCount" style="font-size:12px;color:#666;"></span>
+                    <button class="btn btn-sm btn-secondary" onclick="toggleCompleted()" id="toggleCompletedBtn">折叠已完成</button>
+                </div>
+            </div>
+            
+            <!-- 分页控制 -->
+            <div id="todoPagination" style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;"></div>
+            
+            <div class="todo-list" id="todoList"></div>
+            
+            <!-- 底部分页 -->
+            <div id="todoPaginationBottom" style="display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>
+        </div>
         <div class="content-card" id="weeklyTab" style="display:none;">
             <div class="filter-bar" style="margin-bottom:12px;">
                 <h2 style="margin:0;">📅 每周工作安排</h2>
@@ -524,7 +558,42 @@
                 <button class="btn btn-secondary" onclick="loadWeekPlan()">🔄 刷新</button>
             </div>
             <div class="week-plan" id="weekPlan"></div>
+            
+            <div style="margin-top:20px;padding-top:20px;border-top:2px solid #e5e7eb;">
+                <div class="filter-bar" style="margin-bottom:12px;">
+                    <h2 style="margin:0;">📋 每周待办清单</h2>
+                    <select id="weekListFilter" onchange="renderWeekTaskList()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+                        <option value="all">全部待办</option>
+                        <option value="pending">待处理</option>
+                        <option value="completed">已完成</option>
+                        <option value="company">企业相关</option>
+                        <option value="other">其他事项</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="openAddWeekTask('other')">+ 添加其他事项</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">状态</th>
+                                <th>日期</th>
+                                <th>时间</th>
+                                <th>事项</th>
+                                <th>企业/描述</th>
+                                <th style="width:80px;">优先级</th>
+                                <th style="width:120px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weekTaskList"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+        <div class="content-card" id="leadsTab" style="display:none;">
+            <div id="leadBoardsList"></div>
+            <div id="leadsContent" style="display:none;"></div>
+        </div>
+        <div class="content-card" id="tasksTab" style="display:none;"><div class="search-box"><button class="btn btn-primary" onclick="createNewTask()">+ 新建营销任务</button></div><div id="tasksList"></div></div>
         <div class="content-card" id="companiesTab" style="display:none;">
             <div class="filter-bar" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                 <span style="font-size:12px;color:#666;">🔍 筛选：</span>
@@ -540,8 +609,9 @@
                     <option value="">客户经理</option>
                 </select>
                 <select id="sortSelect" onchange="sortCompanies()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+                    <option value="landing_cycle_desc" selected>🎯 落地周期 ↓</option>
+                    <option value="landing_cycle_asc">🎯 落地周期 ↑</option>
                     <option value="default">📅 更新时间</option>
-                    <option value="landing_cycle">🎯 落地周期</option>
                     <option value="active_count_desc">有效户数 ↓</option>
                     <option value="active_count_asc">有效户数 ↑</option>
                     <option value="hq_count_desc">高质量数 ↓</option>
@@ -570,10 +640,6 @@
                     <tbody id="companiesTable"></tbody>
                 </table>
             </div>
-        </div>
-        <div class="content-card" id="leadsTab" style="display:block;">
-            <div id="leadBoardsList"></div>
-            <div id="leadsContent" style="display:none;"></div>
         </div>
         
         <div class="content-card" id="referralsTab" style="display:none;">
@@ -655,132 +721,7 @@
             </div>
         </div>
         
-        <div class="content-card" id="weeklyTab" style="display:none;">
-            <div class="filter-bar" style="margin-bottom:12px;">
-                <h2 style="margin:0;">📅 每周工作安排</h2>
-                <select id="weekSelect" onchange="loadWeekPlan()"></select>
-                <button class="btn btn-primary" onclick="openAddWeekTask()">+ 添加待办</button>
-                <button class="btn btn-secondary" onclick="loadWeekPlan()">🔄 刷新</button>
-            </div>
-            <div class="week-plan" id="weekPlan"></div>
-            
-            <div style="margin-top:20px;padding-top:20px;border-top:2px solid #e5e7eb;">
-                <div class="filter-bar" style="margin-bottom:12px;">
-                    <h2 style="margin:0;">📋 每周待办清单</h2>
-                    <select id="weekListFilter" onchange="renderWeekTaskList()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-                        <option value="all">全部待办</option>
-                        <option value="pending">待处理</option>
-                        <option value="completed">已完成</option>
-                        <option value="company">企业相关</option>
-                        <option value="other">其他事项</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="openAddWeekTask('other')">+ 添加其他事项</button>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:40px;">状态</th>
-                                <th>日期</th>
-                                <th>时间</th>
-                                <th>事项</th>
-                                <th>企业/描述</th>
-                                <th style="width:80px;">优先级</th>
-                                <th style="width:120px;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="weekTaskList"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="content-card"     <div id="fusionTab" style="display:none;">
-        <div style="background:white;border-radius:12px;padding:14px;margin-bottom:12px;">
-            <h2 style="font-size:16px;font-weight:600;color:#374151;margin-bottom:8px;">融合攻坚目标追踪</h2>
-            <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-                <select id="fusionLineFilter" onchange="loadFusionData()" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;min-width:120px;">
-                    <option value="">全部条线</option>
-                    <option value="批发">批发</option>
-                    <option value="零售">零售</option>
-                </select>
-                <button onclick="loadFusionData()" style="padding:5px 10px;font-size:12px;background:white;color:#666;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;">刷新</button>
-            </div>
-            <div id="fusionDashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;"></div>
-        </div>
-        
-        <div id="fusionTablesContainer">
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:12px;">
-                <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:#92400e;">B2C保险</div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;min-width:500px;">
-                        <thead><tr style="background:#fef3c3;">
-                            <th style="padding:8px 10px;text-align:left;font-size:12px;color:#92400e;">客户经理 · 企业（点击展开）</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">任务/完成/率</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">操作</th>
-                        </tr></thead>
-                        <tbody id="fusionB2CInsurance"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:12px;">
-                <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:#92400e;">B2C小微贷</div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;min-width:500px;">
-                        <thead><tr style="background:#fef3c3;">
-                            <th style="padding:8px 10px;text-align:left;font-size:12px;color:#92400e;">客户经理 · 企业（点击展开）</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">任务/完成/率</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">操作</th>
-                        </tr></thead>
-                        <tbody id="fusionB2CLoan"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:12px;">
-                <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:#92400e;">B2C百人代发</div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;min-width:500px;">
-                        <thead><tr style="background:#fef3c3;">
-                            <th style="padding:8px 10px;text-align:left;font-size:12px;color:#92400e;">客户经理 · 企业（点击展开）</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">任务/完成/率</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#92400e;">操作</th>
-                        </tr></thead>
-                        <tbody id="fusionB2CPayroll"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;margin-bottom:12px;">
-                <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:#1e40af;">C2B授信</div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;min-width:500px;">
-                        <thead><tr style="background:#dbeafe;">
-                            <th style="padding:8px 10px;text-align:left;font-size:12px;color:#1e40af;">客户经理 · 企业（点击展开）</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#1e40af;">任务/完成/率</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#1e40af;">操作</th>
-                        </tr></thead>
-                        <tbody id="fusionC2BCredit"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;">
-                <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:#1e40af;">C2B高质量开户</div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;min-width:500px;">
-                        <thead><tr style="background:#dbeafe;">
-                            <th style="padding:8px 10px;text-align:left;font-size:12px;color:#1e40af;">客户经理 · 企业（点击展开）</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#1e40af;">任务/完成/率</th>
-                            <th style="padding:8px;text-align:center;font-size:12px;color:#1e40af;">操作</th>
-                        </tr></thead>
-                        <tbody id="fusionC2BAccount"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-id="remindersTab" style="display:none;">
+        <div class="content-card" id="remindersTab" style="display:none;">
             <div class="filter-bar"><h2 style="margin:0;">📌 智能提醒</h2><button class="btn btn-secondary" onclick="loadReminders()">🔄 刷新</button></div>
             <div id="remindersList"></div>
         </div>
@@ -1165,6 +1106,7 @@ id="remindersTab" style="display:none;">
                         element.textContent = newValue || '-';
                         element.classList.add('editable');
                         element.onclick = () => makeEditable(element, id, field, newValue);
+                        apiCache.clear('/companies');
                         refreshCurrentView();
                     } else {
                         alert('更新失败');
@@ -1197,6 +1139,7 @@ id="remindersTab" style="display:none;">
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: parseInt(value) || 0 }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 } else {
                     alert('更新失败');
@@ -1213,6 +1156,7 @@ id="remindersTab" style="display:none;">
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: c[field] ? 0 : 1 }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {}
@@ -1223,6 +1167,7 @@ id="remindersTab" style="display:none;">
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {}
@@ -1244,6 +1189,7 @@ id="remindersTab" style="display:none;">
                 });
                 const result = await res.json();
                 if (res.ok && result.message) {
+                    apiCache.clear('/companies');
                     refreshCurrentView();
                 }
             } catch (e) {
@@ -1394,16 +1340,16 @@ id="remindersTab" style="display:none;">
             // 统一格式，确保对齐（固定宽度）
             const formatNumber = (num, target) => {
                 if (target > 0) {
-                    return `${String(num).padStart(3, ' ')} / ${String(target).padStart(3, ' ')}`;
+                    return `${num} / ${target}`;
                 }
-                return `${String(num).padStart(3, ' ')}`;
+                return `${num}`;
             };
-            document.getElementById('activeProgress').textContent = formatNumber(completedCount, activeTarget);
-            document.getElementById('hqProgress').textContent = formatNumber(completedCount, hqTarget);
+            document.getElementById('activeProgress').textContent = formatNumber(dataManager.getActiveCount(), activeTarget);
+            document.getElementById('hqProgress').textContent = formatNumber(dataManager.getHqCount(), hqTarget);
             
             // 更新圆形进度（基于已落地企业数除以目标数）
-            updateCircleProgressWithTarget('active', completedCount, activeTarget);
-            updateCircleProgressWithTarget('hq', completedCount, hqTarget);
+            updateCircleProgressWithTarget('active', dataManager.getActiveCount(), activeTarget);
+            updateCircleProgressWithTarget('hq', dataManager.getHqCount(), hqTarget);
             
             // 储备进度 = 本月落地 + 三个月落地
             const monthCompanies = list.filter(c => c.landing_cycle === 'month');
@@ -1416,11 +1362,11 @@ id="remindersTab" style="display:none;">
             const reserveHq = monthCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0) + 
                               quarterCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0);
             
-            document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+activeTarget : ''}`;
-            document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+hqTarget : ''}`;
+            document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+Math.max(0, activeTarget - dataManager.getActiveCount()) : ''}`;
+            document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+Math.max(0, hqTarget - dataManager.getHqCount()) : ''}`;
             
-            updateCircleProgressWithTarget('reserveActive', reserveActive, activeTarget);
-            updateCircleProgressWithTarget('reserveHq', reserveHq, hqTarget);
+            updateCircleProgressWithTarget('reserveActive', reserveActive, Math.max(0, activeTarget - dataManager.getActiveCount()));
+            updateCircleProgressWithTarget('reserveHq', reserveHq, Math.max(0, hqTarget - dataManager.getHqCount()));
         }
         
         function updateCircleProgressSimple(type, current) {
@@ -1559,8 +1505,12 @@ id="remindersTab" style="display:none;">
             else if (value === 'name_desc') sorted.sort((a,b) => (b.name||'').localeCompare(a.name||''));
             else if (value === 'manager_asc') sorted.sort((a,b) => (a.manager_name||'').localeCompare(b.manager_name||''));
             else if (value === 'manager_desc') sorted.sort((a,b) => (b.manager_name||'').localeCompare(a.manager_name||''));
-            else if (value === 'landing_cycle') {
-                const order = { 'month': 1, 'quarter': 2, 'year': 3, 'completed': 4, 'ongoing': 5 };
+            else if (value === 'landing_cycle_desc') {
+                const orderD = { 'month': 1, 'quarter': 2, 'year': 3, 'ongoing': 4, 'completed': 5 };
+                sorted.sort((a,b) => (orderD[a.landing_cycle]||99) - (orderD[b.landing_cycle]||99));
+            }
+            else if (value === 'landing_cycle_asc') {
+                const order = { 'completed': 1, 'ongoing': 2, 'year': 3, 'quarter': 4, 'month': 5 };
                 sorted.sort((a,b) => (order[a.landing_cycle]||99) - (order[b.landing_cycle]||99));
             }
             // default: 按创建顺序（数据库返回顺序）
@@ -2092,7 +2042,7 @@ id="remindersTab" style="display:none;">
                 'active_count': { asc: 'active_count_asc', desc: 'active_count_desc' },
                 'hq_count': { asc: 'hq_count_asc', desc: 'hq_count_desc' },
                 'is_account_opened': { asc: 'default', desc: 'default' },
-                'landing_cycle': { asc: 'landing_cycle', desc: 'landing_cycle' }
+                'landing_cycle': { asc: 'landing_cycle_asc', desc: 'landing_cycle_desc' }
             };
             
             const fieldMap = sortMap[field];
@@ -3502,6 +3452,7 @@ id="remindersTab" style="display:none;">
                         
                         alert('✅ 已保存');
                         closeXinfutongModal();
+                        apiCache.clear('/companies');
                         refreshCurrentView();
                     } catch (e) {
                         alert('保存失败');
@@ -3541,7 +3492,19 @@ id="remindersTab" style="display:none;">
             const headers = {
                 name: '企业名称', manager_name: '对公客户经理', active_count: '有效户数',
                 hq_count: '高质量数', is_account_opened: '开户状态', landing_cycle: '落地周期',
-                xinfutong_status: '薪福通状态', contact_names: '关键人', remarks: '备注'
+                xinfutong_status: '薪福通状态', contact_names: '关键人', remarks: '备注',
+                industry: '行业', introduction: '企业简介', annual_revenue: '年营业额',
+                contact_frequency: '联系频次', progress_status: '进度状态',
+                is_payroll_service: '是否代发', is_active_customer: '有效户标识',
+                is_high_quality: '高质量标识', financial_info: '财务信息',
+                upstream_info: '上游信息', downstream_info: '下游信息',
+                main_product: '主营产品', top5_customers: '前五大下游客户',
+                revenue_range: '营收范围', net_profit: '净利润',
+                vat_tax: '增值税纳税额', income_tax: '所得税纳税额',
+                domestic_settlement: '境内业务结算', cross_border: '跨境业务',
+                main_banks: '主要合作银行', personal_cards: '个人持卡情况',
+                asset_status: '资产情况', family_status: '家庭情况',
+                venture_status: '风投情况', executive_stock: '高管持股', listing_plan: '上市计划'
             };
             
             // 使用标准 CSV 格式
@@ -3552,6 +3515,10 @@ id="remindersTab" style="display:none;">
                 if (f === 'is_account_opened') val = c.is_account_opened ? '已开户' : '未开户';
                 else if (f === 'landing_cycle') val = c.landing_cycle === 'month' ? '本月落地' : c.landing_cycle === 'quarter' ? '3 个月落地' : c.landing_cycle === 'year' ? '本年落地' : '持续跟进';
                 else if (f === 'xinfutong_status') val = c.xinfutong_status === 'applicable' ? '适用' : c.xinfutong_status === 'not_applicable' ? '不适用' : '未设置';
+                else if (f === 'is_payroll_service') val = c.is_payroll_service ? '是' : '否';
+                else if (f === 'is_active_customer') val = c.is_active_customer ? '是' : '否';
+                else if (f === 'is_high_quality') val = c.is_high_quality ? '是' : '否';
+                else if (f === 'executive_stock') val = c.executive_stock ? '是' : '否';
                 else val = c[f] || '';
                 
                 const str = String(val);
@@ -3588,6 +3555,32 @@ id="remindersTab" style="display:none;">
                                 <label><input type="checkbox" checked value="xinfutong_status"> 薪福通状态</label>
                                 <label><input type="checkbox" checked value="contact_names"> 关键人</label>
                                 <label><input type="checkbox" checked value="remarks"> 备注</label>
+                                <label><input type="checkbox" value="industry"> 行业</label>
+                                <label><input type="checkbox" value="introduction"> 企业简介</label>
+                                <label><input type="checkbox" value="annual_revenue"> 年营业额</label>
+                                <label><input type="checkbox" value="contact_frequency"> 联系频次</label>
+                                <label><input type="checkbox" value="progress_status"> 进度状态</label>
+                                <label><input type="checkbox" value="is_payroll_service"> 是否代发</label>
+                                <label><input type="checkbox" value="is_active_customer"> 有效户标识</label>
+                                <label><input type="checkbox" value="is_high_quality"> 高质量标识</label>
+                                <label><input type="checkbox" value="financial_info"> 财务信息</label>
+                                <label><input type="checkbox" value="upstream_info"> 上游信息</label>
+                                <label><input type="checkbox" value="downstream_info"> 下游信息</label>
+                                <label><input type="checkbox" value="main_product"> 主营产品</label>
+                                <label><input type="checkbox" value="top5_customers"> 前五大下游客户</label>
+                                <label><input type="checkbox" value="revenue_range"> 营收范围</label>
+                                <label><input type="checkbox" value="net_profit"> 净利润</label>
+                                <label><input type="checkbox" value="vat_tax"> 增值税纳税额</label>
+                                <label><input type="checkbox" value="income_tax"> 所得税纳税额</label>
+                                <label><input type="checkbox" value="domestic_settlement"> 境内业务结算</label>
+                                <label><input type="checkbox" value="cross_border"> 跨境业务</label>
+                                <label><input type="checkbox" value="main_banks"> 主要合作银行</label>
+                                <label><input type="checkbox" value="personal_cards"> 个人持卡情况</label>
+                                <label><input type="checkbox" value="asset_status"> 资产情况</label>
+                                <label><input type="checkbox" value="family_status"> 家庭情况</label>
+                                <label><input type="checkbox" value="venture_status"> 风投情况</label>
+                                <label><input type="checkbox" value="executive_stock"> 高管持股</label>
+                                <label><input type="checkbox" value="listing_plan"> 上市计划</label>
                             </div>
                         </div>
                         <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
@@ -4203,6 +4196,7 @@ id="remindersTab" style="display:none;">
                             <li><strong>方法 2：</strong>直接粘贴整个 Excel 工作表</li>
                             <li><strong>列顺序：</strong>企业名称 | 参保人数 | 是否约访 | 面访情况 | 对公客户经理</li>
                             <li><strong>是否约访：</strong>填写"是/1/✅"表示已约访，其他表示未约访</li>
+                            <li><strong>日均存款/授信敞口：</strong>在 Excel 中对应第 7-8 列（导入后手动补充）</li>
                         </ul>
                     </div>
                     <div class="info-item">
@@ -4278,6 +4272,8 @@ id="remindersTab" style="display:none;">
                         <label>选择要修改的字段</label>
                         <select id="batchEditField" onchange="window.toggleBatchEditInput()">
                             <option value="employee_count">参保人数</option>
+                            <option value="daily_deposit">日均存款</option>
+                            <option value="credit_exposure">授信敞口</option>
                             <option value="is_visited">是否约访</option>
                             <option value="visit_status">面访情况</option>
                             <option value="manager_name">对公客户经理</option>
@@ -4358,8 +4354,8 @@ id="remindersTab" style="display:none;">
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无线索，点击"添加线索"开始</div>';
                 return;
             }
-            let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
-            html += allLeads.map(l => `<tr style="${l.status==='converted'?'opacity:0.6;background:#f0fdf4;':''}"><td style="text-align:center;"><input type="checkbox" class="lead-checkbox" value="${l.id}" ${l.status==='converted'?'disabled':''}></td><td style="font-weight:500;">${escapeHtml(l.company_name)||'-'}</td><td>${escapeHtml(l.employee_count)||'-'}</td><td>${l.is_visited?'✅ 已约访':'❌ 未约访'}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(l.visit_status)||''}">${escapeHtml(l.visit_status)||'-'}</td><td>${escapeHtml(l.manager_name)||'-'}</td><td>${l.status!=='converted'?`<button class="btn btn-sm btn-primary" onclick="window.convertLead(${l.id})">转为营销任务</button>`:'<span style="color:#22c55e;">✅ 已转化</span>'} <button class="btn btn-sm btn-secondary" onclick="window.editLead(${l.id})" style="margin-left:4px;">✏️</button> <button class="btn btn-sm btn-secondary" onclick="window.deleteLead(${l.id})" style="color:#ef4444;margin-left:4px;">🗑️</button></td></tr>`).join('');
+            let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>日均存款</th><th>授信敞口</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
+            html += allLeads.map(l => `<tr style="${l.status==='converted'?'opacity:0.6;background:#f0fdf4;':''}"><td style="text-align:center;"><input type="checkbox" class="lead-checkbox" value="${l.id}" ${l.status==='converted'?'disabled':''}></td><td style="font-weight:500;">${escapeHtml(l.company_name)||'-'}</td><td>${escapeHtml(l.employee_count)||'-'}</td><td>${escapeHtml(l.daily_deposit)||'-'}</td><td>${escapeHtml(l.credit_exposure)||'-'}</td><td>${l.is_visited?'✅ 已约访':'❌ 未约访'}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(l.visit_status)||''}">${escapeHtml(l.visit_status)||'-'}</td><td>${escapeHtml(l.manager_name)||'-'}</td><td>${l.status!=='converted'?`<button class="btn btn-sm btn-primary" onclick="window.convertLead(${l.id})">转为营销任务</button>`:'<span style="color:#22c55e;">✅ 已转化</span>'} <button class="btn btn-sm btn-secondary" onclick="window.editLead(${l.id})" style="margin-left:4px;">✏️</button> <button class="btn btn-sm btn-secondary" onclick="window.deleteLead(${l.id})" style="color:#ef4444;margin-left:4px;">🗑️</button></td></tr>`).join('');
             html += '</tbody></table></div>';
             html += '<div style="margin-top:16px;display:flex;gap:8px;align-items:center;"><label><input type="checkbox" id="selectConverted" onchange="window.toggleConvertedLeads()"> 显示已转化线索</label></div>';
             container.innerHTML = html;
@@ -4414,11 +4410,11 @@ id="remindersTab" style="display:none;">
             }
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '添加线索';
-            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>日均存款</label><input type="text" id="leadDailyDeposit" placeholder="如：500 万"></div><div class="info-item"><label>授信敞口</label><input type="text" id="leadCreditExposure" placeholder="如：300 万"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
             document.getElementById('addLeadForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/leads/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board_id: currentLeadBoardId, company_name: document.getElementById('leadCompany').value, employee_count: document.getElementById('leadEmployee').value, is_visited: parseInt(document.getElementById('leadVisited').value), visit_status: document.getElementById('leadVisitStatus').value, manager_name: document.getElementById('leadManager').value }) });
+                    const res = await fetch(`${API_BASE}/leads/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board_id: currentLeadBoardId, company_name: document.getElementById('leadCompany').value, employee_count: document.getElementById('leadEmployee').value, daily_deposit: document.getElementById('leadDailyDeposit').value, credit_exposure: document.getElementById('leadCreditExposure').value, is_visited: parseInt(document.getElementById('leadVisited').value), visit_status: document.getElementById('leadVisitStatus').value, manager_name: document.getElementById('leadManager').value }) });
                     if (res.ok) { alert('✅ 线索已添加'); closeAddModal(); loadLeads(); } else { alert('添加失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4429,11 +4425,11 @@ id="remindersTab" style="display:none;">
             if (!lead) return;
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '编辑线索';
-            document.getElementById('addModalBody').innerHTML = `<form id="editLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="editLeadCompany" value="${lead.company_name||''}" required></div><div class="info-item"><label>参保人数</label><input type="text" id="editLeadEmployee" value="${lead.employee_count||''}"></div><div class="info-item"><label>是否约访</label><select id="editLeadVisited"><option value="0" ${!lead.is_visited?'selected':''}>未约访</option><option value="1" ${lead.is_visited?'selected':''}>已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="editLeadManager" value="${lead.manager_name||''}"></div></div><div class="info-item"><label>面访情况</label><textarea id="editLeadVisitStatus" rows="3">${lead.visit_status||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="editLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="editLeadCompany" value="${lead.company_name||''}" required></div><div class="info-item"><label>参保人数</label><input type="text" id="editLeadEmployee" value="${lead.employee_count||''}"></div><div class="info-item"><label>日均存款</label><input type="text" id="editLeadDailyDeposit" value="${lead.daily_deposit||''}"></div><div class="info-item"><label>授信敞口</label><input type="text" id="editLeadCreditExposure" value="${lead.credit_exposure||''}"></div><div class="info-item"><label>是否约访</label><select id="editLeadVisited"><option value="0" ${!lead.is_visited?'selected':''}>未约访</option><option value="1" ${lead.is_visited?'selected':''}>已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="editLeadManager" value="${lead.manager_name||''}"></div></div><div class="info-item"><label>面访情况</label><textarea id="editLeadVisitStatus" rows="3">${lead.visit_status||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
             document.getElementById('editLeadForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company_name: document.getElementById('editLeadCompany').value, employee_count: document.getElementById('editLeadEmployee').value, is_visited: parseInt(document.getElementById('editLeadVisited').value), visit_status: document.getElementById('editLeadVisitStatus').value, manager_name: document.getElementById('editLeadManager').value }) });
+                    const res = await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ company_name: document.getElementById('editLeadCompany').value, employee_count: document.getElementById('editLeadEmployee').value, daily_deposit: document.getElementById('editLeadDailyDeposit').value, credit_exposure: document.getElementById('editLeadCreditExposure').value, is_visited: parseInt(document.getElementById('editLeadVisited').value), visit_status: document.getElementById('editLeadVisitStatus').value, manager_name: document.getElementById('editLeadManager').value }) });
                     if (res.ok) { alert('✅ 已更新'); closeAddModal(); loadLeads(); } else { alert('更新失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4486,8 +4482,9 @@ id="remindersTab" style="display:none;">
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                console.log('📊 后端返回数据:', data.length, '条记录');
-                allReferrals = data;
+                const rows = data.rows || data;
+                console.log('📊 后端返回数据:', rows.length, '条记录');
+                allReferrals = rows;
                 renderReferralsTable();
                 updateReferralStats();
                 loadReferralCharts(month);
@@ -4505,7 +4502,7 @@ id="remindersTab" style="display:none;">
             const statusColors = { completed: '#dcfce7', pending: '#fef3c7', invalid: '#fee2e2' };
             const statusLabels = { completed: '✅ 已落地', pending: '📞 跟进中', invalid: '❌ 无效' };
             const pointsRules = { high: '1 分', standard: '1 分', low: '1 分' };
-            tbody.innerHTML = allReferrals.map(r => `<tr style="background:${statusColors[r.business_status] || '#fff'}"><td>${escapeHtml(r.referral_date)}</td><td>${escapeHtml(r.from_department)}</td><td>${escapeHtml(r.from_person)}</td><td>${escapeHtml(r.to_department)}</td><td>${escapeHtml(r.to_person)}</td><td>${escapeHtml(r.customer_name)}</td><td>${statusLabels[r.business_status] || escapeHtml(r.business_status)}</td><td>¥${(r.amount || 0).toLocaleString()}</td><td>${pointsRules[r.points_rule] || escapeHtml(r.points_rule)}</td><td style="font-weight:bold;color:#667eea;">${r.final_points || 0}</td><td><button class="btn btn-sm btn-secondary" onclick="editReferral(${r.id})">✏️</button><button class="btn btn-sm btn-secondary" onclick="deleteReferral(${r.id})" style="color:#ef4444;">🗑️</button></td></tr>`).join('');
+            tbody.innerHTML = allReferrals.map(r => `<tr style="background:${statusColors[r.business_status] || '#fff'}"><td>${escapeHtml(r.referral_date)}</td><td>${escapeHtml(r.from_department)}</td><td>${escapeHtml(r.from_person)}</td><td>${escapeHtml(r.to_department)}</td><td>${escapeHtml(r.to_person)}</td><td>${escapeHtml(r.customer_name)}</td><td>${statusLabels[r.business_status] || escapeHtml(r.business_status)}</td><td>¥${(r.amount || 0).toLocaleString()}</td><td>${(r.points_calculate !== 0) ? '✅ 核算积分' : '❌ 不核算积分'}</td><td style="font-weight:bold;color:#667eea;">${r.final_points || 0}</td><td><button class="btn btn-sm btn-secondary" onclick="editReferral(${r.id})">✏️</button><button class="btn btn-sm btn-secondary" onclick="deleteReferral(${r.id})" style="color:#ef4444;">🗑️</button></td></tr>`).join('');
         }
 
         function updateReferralStats() {
@@ -4584,11 +4581,11 @@ id="remindersTab" style="display:none;">
         window.openAddReferralModal = function() {
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '新建转介业务';
-            document.getElementById('addModalBody').innerHTML = `<form id="addReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="refDate" required value="${new Date().toISOString().split('T')[0]}"></div><div class="info-item"><label>客户名称 *</label><input type="text" id="refCustomer" required placeholder="客户企业/个人名称"></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><select id="refFromDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>转出人员 *</label><input type="text" id="refFromPerson" required placeholder="您的姓名"></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><select id="refToDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>接收人员 *</label><input type="text" id="refToPerson" required placeholder="接收方姓名"></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="refAmount" placeholder="预计或实际成交金额" step="1000"></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:8px 0;font-size:12px;color:#0369a1;">💡 积分规则：<strong>每落地 1 单积 1 分</strong>（仅"已落地"状态计分）</div></div><div class="info-item"><label>业务状态</label><select id="refStatus"><option value="pending">📞 跟进中</option><option value="completed">✅ 已落地</option><option value="invalid">❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="refRemarks" rows="3" placeholder="备注信息"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="refDate" required value="${new Date().toISOString().split('T')[0]}"></div><div class="info-item"><label>客户名称 *</label><input type="text" id="refCustomer" required placeholder="客户企业/个人名称"></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><select id="refFromDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>转出人员 *</label><input type="text" id="refFromPerson" required placeholder="您的姓名"></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><select id="refToDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>接收人员 *</label><input type="text" id="refToPerson" required placeholder="接收方姓名"></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="refAmount" placeholder="预计或实际成交金额" step="1000"></div><div class="info-item"><label>积分规则</label><select id="refPointsCalculate"><option value="1">✅ 核算积分</option><option value="0">❌ 不核算积分</option></select></div></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:8px 0;font-size:12px;color:#0369a1;">💡 说明：<strong>核算积分</strong>时，已落地转介核算 1 个积分；<strong>不核算积分</strong>时，已落地转介不核算积分</div><div class="info-item"><label>业务状态</label><select id="refStatus"><option value="pending">📞 跟进中</option><option value="completed">✅ 已落地</option><option value="invalid">❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="refRemarks" rows="3" placeholder="备注信息"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
             document.getElementById('addReferralForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/referrals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('refDate').value, customer_name: document.getElementById('refCustomer').value, from_department: document.getElementById('refFromDept').value, from_person: document.getElementById('refFromPerson').value, to_department: document.getElementById('refToDept').value, to_person: document.getElementById('refToPerson').value, amount: parseFloat(document.getElementById('refAmount').value) || 0, points_rule: 'standard', business_status: document.getElementById('refStatus').value, remarks: document.getElementById('refRemarks').value }) });
+                    const res = await fetch(`${API_BASE}/referrals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('refDate').value, customer_name: document.getElementById('refCustomer').value, from_department: document.getElementById('refFromDept').value, from_person: document.getElementById('refFromPerson').value, to_department: document.getElementById('refToDept').value, to_person: document.getElementById('refToPerson').value, amount: parseFloat(document.getElementById('refAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('refPointsCalculate').value), business_status: document.getElementById('refStatus').value, remarks: document.getElementById('refRemarks').value }) });
                     if (res.ok) { const data = await res.json(); alert(`✅ 已创建！自动计算积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('创建失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4599,11 +4596,11 @@ id="remindersTab" style="display:none;">
             if (!r) return;
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '编辑转介业务';
-            document.getElementById('addModalBody').innerHTML = `<form id="editReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="editRefDate" value="${r.referral_date}" required></div><div class="info-item"><label>客户名称 *</label><input type="text" id="editRefCustomer" value="${r.customer_name||''}" required></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><input type="text" id="editRefFromDept" value="${r.from_department||''}" required></div><div class="info-item"><label>转出人员 *</label><input type="text" id="editRefFromPerson" value="${r.from_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><input type="text" id="editRefToDept" value="${r.to_department||''}" required></div><div class="info-item"><label>接收人员 *</label><input type="text" id="editRefToPerson" value="${r.to_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="editRefAmount" value="${r.amount||0}" step="1000"></div><div class="info-item"><label>积分规则</label><select id="editRefPointsRule"><option value="high" ${r.points_rule==='high'?'selected':''}>高 (2%)</option><option value="standard" ${r.points_rule==='standard'?'selected':''}>标准 (1%)</option><option value="low" ${r.points_rule==='low'?'selected':''}>低 (0.5%)</option></select></div></div><div class="info-item"><label>业务状态</label><select id="editRefStatus"><option value="pending" ${r.business_status==='pending'?'selected':''}>📞 跟进中</option><option value="completed" ${r.business_status==='completed'?'selected':''}>✅ 已落地</option><option value="invalid" ${r.business_status==='invalid'?'selected':''}>❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="editRefRemarks" rows="3">${r.remarks||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存修改</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="editReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="editRefDate" value="${r.referral_date}" required></div><div class="info-item"><label>客户名称 *</label><input type="text" id="editRefCustomer" value="${r.customer_name||''}" required></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><input type="text" id="editRefFromDept" value="${r.from_department||''}" required></div><div class="info-item"><label>转出人员 *</label><input type="text" id="editRefFromPerson" value="${r.from_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><input type="text" id="editRefToDept" value="${r.to_department||''}" required></div><div class="info-item"><label>接收人员 *</label><input type="text" id="editRefToPerson" value="${r.to_person||''}" required></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="editRefAmount" value="${r.amount||0}" step="1000"></div><div class="info-item"><label>积分规则</label><select id="editRefPointsCalculate"><option value="1" ${(r.points_calculate !== 0)?'selected':''}>✅ 核算积分</option><option value="0" ${(r.points_calculate === 0)?'selected':''}>❌ 不核算积分</option></select></div></div><div class="info-item"><label>业务状态</label><select id="editRefStatus"><option value="pending" ${r.business_status==='pending'?'selected':''}>📞 跟进中</option><option value="completed" ${r.business_status==='completed'?'selected':''}>✅ 已落地</option><option value="invalid" ${r.business_status==='invalid'?'selected':''}>❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="editRefRemarks" rows="3">${r.remarks||''}</textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存修改</button></div></form>`;
             document.getElementById('editReferralForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
-                    const res = await fetch(`${API_BASE}/referrals/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('editRefDate').value, customer_name: document.getElementById('editRefCustomer').value, from_department: document.getElementById('editRefFromDept').value, from_person: document.getElementById('editRefFromPerson').value, to_department: document.getElementById('editRefToDept').value, to_person: document.getElementById('editRefToPerson').value, amount: parseFloat(document.getElementById('editRefAmount').value) || 0, points_rule: document.getElementById('editRefPointsRule').value, business_status: document.getElementById('editRefStatus').value, remarks: document.getElementById('editRefRemarks').value }) });
+                    const res = await fetch(`${API_BASE}/referrals/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('editRefDate').value, customer_name: document.getElementById('editRefCustomer').value, from_department: document.getElementById('editRefFromDept').value, from_person: document.getElementById('editRefFromPerson').value, to_department: document.getElementById('editRefToDept').value, to_person: document.getElementById('editRefToPerson').value, amount: parseFloat(document.getElementById('editRefAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('editRefPointsCalculate').value), business_status: document.getElementById('editRefStatus').value, remarks: document.getElementById('editRefRemarks').value }) });
                     if (res.ok) { const data = await res.json(); alert(`✅ 已更新！积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('更新失败'); }
                 } catch (e) { alert('网络错误'); }
             };
@@ -4633,411 +4630,6 @@ id="remindersTab" style="display:none;">
         } else {
             setTimeout(initReferralMonths, 100);
         }
-    
-        // ========== 融合攻坚目标追踪 ==========
-        var allFusionTargets = [];
-        function loadFusionData() {
-            var lineFilter = (document.getElementById('fusionLineFilter') || {}).value || '';
-            var followUrl = '/api/fusion/followup' + (lineFilter ? '?line=' + encodeURIComponent(lineFilter) : '');
-            Promise.all([
-                fetch('/api/fusion/dashboard').then(function(r) { return r.json(); }),
-                fetch(followUrl).then(function(r) { return r.json(); })
-            ]).then(function(results) {
-                renderFusionDashboard(results[0]);
-                allFusionTargets = results[1];
-                renderAllTables();
-            }).catch(function(e) { console.error(e); });
-        }
-        function renderFusionDashboard(data) {
-            var container = document.getElementById('fusionDashboard');
-            if (!container) return;
-            var typeMap = {
-                'B2C保险': { color: '#f59e0b', bg: '#fef3c3' },
-                'B2C小微贷': { color: '#f59e0b', bg: '#fef3c3' },
-                'B2C百人代发': { color: '#f59e0b', bg: '#fef3c3' },
-                'C2B高质量开户': { color: '#3b82f6', bg: '#dbeafe' },
-                'C2B授信': { color: '#3b82f6', bg: '#dbeafe' }
-            };
-            container.innerHTML = data.map(function(d) {
-                var style = typeMap[d.target_type] || { color: '#6b7280', bg: '#f3f4f6' };
-                var rate = d.completion_rate || 0;
-                var rateColor = rate >= 50 ? '#22c55e' : rate > 0 ? '#f59e0b' : '#ef4444';
-                return '<div style="background:' + style.bg + ';border-left:4px solid ' + style.color + ';padding:12px;border-radius:8px;">' +
-                    '<div style="font-size:13px;font-weight:600;color:' + style.color + ';margin-bottom:4px;">' + d.target_type + '</div>' +
-                    '<div style="font-size:22px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div>' +
-                    '<div style="font-size:12px;color:#666;">' + d.total_completed + '/' + d.total_task + ' · ' + d.manager_count + '人</div>' +
-                    '</div>';
-            }).join('');
-        }
-        function renderAllTables() {
-            var types = ['B2C保险','B2C小微贷','B2C百人代发','C2B高质量开户','C2B授信'];
-            var ids = ['fusionB2CInsurance','fusionB2CLoan','fusionB2CPayroll','fusionC2BAccount','fusionC2BCredit'];
-            types.forEach(function(t, i) {
-                var el = document.getElementById(ids[i]);
-                if (el) renderFusionTableByType(t, el);
-            });
-        }
-        function renderFusionTableByType(targetType, tbody) {
-            var rows = allFusionTargets.filter(function(r) { return r.target_type === targetType; });
-            if (!rows.length) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#999;">暂无数据</td></tr>';
-                return;
-            }
-            // Group by manager_name + line
-            var groups = {};
-            rows.forEach(function(r) {
-                var key = r.manager_name + '||' + r.line;
-                if (!groups[key]) {
-                    groups[key] = { manager_name: r.manager_name, line: r.line, task_count: 0, completed_count: 0, records: [] };
-                }
-                groups[key].task_count += r.task_count || 0;
-                groups[key].completed_count += r.completed_count || 0;
-                groups[key].records.push(r);
-            });
-            
-            tbody.innerHTML = Object.values(groups).map(function(g) {
-                var rate = g.task_count > 0 ? Math.round(g.completed_count / g.task_count * 100) : 0;
-                var rateColor = rate >= 50 ? '#22c55e' : rate > 0 ? '#f59e0b' : '#ef4444';
-                var lineBadge = g.line === '批发'
-                    ? '<span style="color:#1e40af;background:#dbeafe;padding:1px 6px;border-radius:4px;font-size:11px;">批发</span>'
-                    : '<span style="color:#92400e;background:#fef3c3;padding:1px 6px;border-radius:4px;font-size:11px;">零售</span>';
-                
-                var expandBtnId = 'expandBtn_' + g.manager_name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + g.line;
-                var cardContainerId = 'cards_' + g.manager_name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + g.line;
-                
-                // Build company cards with follow-up timelines
-                var companyCardsHtml = g.records.filter(function(r) { return r.target_company && r.target_company.trim(); }).map(function(r) {
-                    var companyName = r.target_company;
-                    var followText = r.follow_record && r.follow_record.trim() ? r.follow_record : '';
-                    var time = (r.updated_at || r.created_at) ? new Date(r.updated_at || r.created_at).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-                    var recordProgress = g.task_count > 0 ? Math.round((r.completed_count || 0) / g.task_count * 100) : 0;
-                    var progressColor = recordProgress >= 50 ? '#22c55e' : recordProgress > 0 ? '#f59e0b' : '#ef4444';
-                    
-                    var timelineHtml = '';
-                    if (followText) {
-                        timelineHtml = '<div style="margin-top:8px;padding:6px 8px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;font-size:11px;color:#065f46;">' +
-                            '<div style="font-size:9px;color:#059669;font-weight:600;margin-bottom:3px;">' + companyName + ' · ' + time + '</div>' +
-                            '<div style="font-size:12px;color:#374151;line-height:1.4;">' + followText + '</div>' +
-                            '<button onclick="openFollowEdit(' + r.id + ')" style="margin-top:6px;font-size:10px;padding:2px 8px;border:1px solid #d1d5db;border-radius:4px;background:white;cursor:pointer;color:#666;">编辑</button>' +
-                            '</div>';
-                    } else {
-                        timelineHtml = '<div style="margin-top:8px;padding:6px 8px;background:#fef3c3;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#92400e;">' +
-                            '<div style="font-size:10px;">暂无跟进记录</div>' +
-                            '<button onclick="openFollowAdd(\'' + g.manager_name + '\x27,\'' + g.line + '\x27,\'' + r.target_type + '\')" style="margin-top:4px;font-size:10px;padding:2px 8px;border:1px dashed #f59e0b;border-radius:4px;background:#fff;cursor:pointer;color:#92400e;">+ 添加跟进</button>' +
-                            '</div>';
-                    }
-                    
-                    return '<div style="margin-bottom:10px;background:white;border:1px solid #e5e7eb;border-radius:8px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
-                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-                        '<span style="font-weight:600;color:#374151;font-size:13px;">' + companyName + '</span>' +
-                        '<div style="display:flex;align-items:center;gap:8px;">' +
-                        '<div style="width:60px;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;"><div style="width:' + recordProgress + '%;height:100%;background:' + progressColor + ';"></div></div>' +
-                        '<span style="font-size:11px;color:' + progressColor + ';font-weight:600;">' + recordProgress + '%</span>' +
-                        '</div></div>' + timelineHtml + '</div>';
-                }).join('');
-                
-                var emptyCardsHtml = g.records.filter(function(r) { return !r.target_company || !r.target_company.trim(); }).map(function(r) {
-                    return '<div style="margin-bottom:8px;padding:8px;background:#f9f9f9;border:1px dashed #d1d5db;border-radius:6px;text-align:center;color:#9ca3af;font-size:12px;">' +
-                        '（未填写企业）' +
-                        '<button onclick="editFusionTarget(' + r.id + ')" style="margin-left:8px;font-size:10px;padding:2px 6px;border:1px solid #e5e7eb;border-radius:4px;background:white;cursor:pointer;color:#666;">添加</button>' +
-                        '</div>';
-                }).join('');
-                
-                var totalCompanies = g.records.filter(function(r) { return r.target_company && r.target_company.trim(); }).length;
-                var headerHtml = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleCompanyCards(\'' + expandBtnId + '\x27,\'' + cardContainerId + '\x27)">' +
-                    '<span style="font-size:16px;">▸</span>' +
-                    '<span style="font-weight:600;color:#374151;font-size:14px;">' + g.manager_name + '</span>' +
-                    lineBadge +
-                    '<span style="font-size:11px;color:#6b7280;">（' + totalCompanies + '家企业）</span></div>';
-                
-                var addCompanyBtn = '<button onclick="addCompanyForGroup(\'' + g.manager_name + '\x27,\'' + g.line + '\x27,\'' + targetType + '\')" style="margin-top:8px;font-size:11px;padding:4px 10px;border:1px dashed #667eea;border-radius:6px;background:#f5f3ff;color:#667eea;cursor:pointer;font-weight:500;width:100%;">+ 添加目标企业</button>';
-                var cardsContainer = '<div id="' + cardContainerId + '" style="display:none;margin-top:10px;">' + companyCardsHtml + emptyCardsHtml + addCompanyBtn + '</div>';
-                
-                var summaryHtml = '<div style="display:flex;gap:16px;align-items:center;">' +
-                    '<div style="text-align:center;"><div style="font-size:16px;font-weight:700;color:#374151;">' + g.task_count + '</div><div style="font-size:10px;color:#6b7280;">任务数</div></div>' +
-                    '<div style="text-align:center;"><div style="font-size:16px;font-weight:700;color:#22c55e;">' + g.completed_count + '</div><div style="font-size:10px;color:#6b7280;">完成数</div></div>' +
-                    '<div style="text-align:center;"><div style="font-size:16px;font-weight:700;color:' + rateColor + ';">' + rate + '%</div><div style="font-size:10px;color:#6b7280;">完成率</div></div></div>';
-                
-                return '<tr style="border-bottom:1px solid #f3f4f6;">' +
-                    '<td style="padding:12px 8px;vertical-align:top;">' + headerHtml + cardsContainer + '</td>' +
-                    '<td style="padding:12px 8px;vertical-align:top;">' + summaryHtml + '</td>' +
-                    '<td style="padding:12px 8px;white-space:nowrap;vertical-align:top;">' +
-                    '<button onclick="editGroupField(\'' + g.manager_name + '\x27,\'' + g.line + '\x27,\'' + targetType + '\x27,\'task_count\',\'' + g.task_count + '\')" style="padding:4px 8px;font-size:12px;background:white;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-right:4px;">编辑</button>' +
-                    '<button onclick="deleteManagerGroup(\'' + g.manager_name + '\x27,\'' + g.line + '\x27,\'' + targetType + '\')" style="padding:4px 8px;font-size:12px;background:white;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;color:#dc2626;">删除</button></td></tr>';
-            }).join('');
-        }
-        
-        // 展开/收起企业卡片
-        function toggleCompanyCards(btnId, cardsId) {
-            var btn = document.getElementById(btnId);
-            var cards = document.getElementById(cardsId);
-            if (!btn || !cards) return;
-            var isOpen = cards.style.display !== 'none';
-            cards.style.display = isOpen ? 'none' : 'block';
-            if (btn.innerHTML.indexOf('▸') > -1) {
-                btn.innerHTML = '<span style="font-size:16px;">▾</span> ' + btn.innerHTML.replace('<span style="font-size:16px;">▸</span> ', '');
-            } else {
-                btn.innerHTML = '<span style="font-size:16px;">▸</span> ' + btn.innerHTML.replace('<span style="font-size:16px;">▾</span> ', '');
-            }
-        }
-        
-        // 打开跟进记录编辑弹窗
-        function openFollowEdit(id) {
-            var record = allFusionTargets.find(function(r) { return r.id === id; });
-            if (!record) return;
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + (record.target_company || '(未填写)') + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进记录</label><textarea id="fusionModalInput" rows="4" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;" placeholder="请输入跟进记录...">' + (record.follow_record || '') + '</textarea></div>';
-            openFusionModal('编辑跟进记录', bodyHtml, function() {
-                var newRecord = document.getElementById('fusionModalInput').value.trim();
-                fetch('/api/fusion/followup/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ follow_record: newRecord }) }).then(function(res) { return res.json(); }).then(function() { loadFusionData(); });
-            });
-        }
-        
-        function openFollowAdd(managerName, line, targetType) {
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业（选填）</label><input id="fusionModalCompany" type="text" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" placeholder="输入企业名称"/></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进记录</label><textarea id="fusionModalInput" rows="3" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;" placeholder="输入跟进内容..."></textarea></div>';
-            openFusionModal('添加跟进记录', bodyHtml, function() {
-                var company = document.getElementById('fusionModalCompany').value.trim();
-                var record = document.getElementById('fusionModalInput').value.trim();
-                if (!record) { alert('请输入跟进记录'); return; }
-                var data = { manager_name: managerName, task_category: targetType, target_type: targetType, line: line, task_count: 0, completed_count: 0, target_company: company, follow_record: record, status: '进行中' };
-                fetch('/api/fusion/followup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(res) { return res.json(); }).then(function(result) { if (result.id) loadFusionData(); });
-            });
-        }
-        
-        function addCompanyForGroup(managerName, line, targetType) {
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业名称</label><input id="fusionModalCompany" type="text" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" placeholder="输入目标企业名称"/></div>';
-            openFusionModal('添加目标企业', bodyHtml, function() {
-                var company = document.getElementById('fusionModalCompany').value.trim();
-                if (!company) { alert('请输入企业名称'); return; }
-                var data = { manager_name: managerName, line: line, target_type: targetType, task_category: targetType, task_count: 0, completed_count: 0, target_company: company, follow_record: '', status: '进行中' };
-                fetch('/api/fusion/followup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(res) { return res.json(); }).then(function(result) { if (result.id) loadFusionData(); });
-            });
-        }
-        
-        function editGroupField(managerName, line, targetType, field, currentVal) {
-            var fieldLabel = field === 'task_count' ? '任务数' : field === 'completed_count' ? '完成数' : field;
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">新' + fieldLabel + '</label><input id="fusionModalNumber" type="number" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" value="' + currentVal + '"/></div>';
-            openFusionModal('修改' + fieldLabel, bodyHtml, function() {
-                var newVal = parseInt(document.getElementById('fusionModalNumber').value) || 0;
-                var groupRecords = allFusionTargets.filter(function(r) { return r.manager_name === managerName && r.line === line && r.target_type === targetType; });
-                Promise.all(groupRecords.map(function(r) {
-                    var body = {}; body[field] = newVal;
-                    return fetch('/api/fusion/followup/' + r.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-                })).then(function() { loadFusionData(); });
-            });
-        }
-        
-        // 删除整个客户经理组
-        function deleteManagerGroup(managerName, line, targetType) {
-            if (!confirm('确定要删除 ' + managerName + ' 的所有记录吗？')) return;
-            var groupRecords = allFusionTargets.filter(function(r) {
-                return r.manager_name === managerName && r.line === line && r.target_type === targetType;
-            });
-            var ids = groupRecords.map(function(r) { return r.id; });
-            if (!ids.length) return;
-            Promise.all(ids.map(function(id) {
-                return fetch('/api/fusion/followup/' + id, { method: 'DELETE' });
-            })).then(function() { loadFusionData(); });
-        }
-        
-        // 编辑单条目标记录
-        function editFusionTarget(id) {
-            var record = allFusionTargets.find(function(r) { return r.id === id; });
-            if (!record) return;
-            var modal = document.createElement('div');
-            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
-            var typeColor = record.target_type.startsWith('B2C') ? '#92400e' : '#1e40af';
-            var lineColor = record.line === '批发' ? '#1e40af' : '#92400e';
-            var typeBg = record.target_type.startsWith('B2C') ? '#fef3c3' : '#dbeafe';
-            var lineBg = record.line === '批发' ? '#dbeafe' : '#fef3c3';
-            modal.innerHTML = '<div style="background:white;border-radius:12px;padding:24px;width:90%;max-width:420px;">' +
-                '<h3 style="margin-bottom:16px;">编辑目标</h3>' +
-                '<div style="display:flex;gap:12px;margin-bottom:12px;">' +
-                '<div style="flex:1;padding:8px;background:' + lineBg + ';border:1px solid ' + lineColor + ';border-radius:8px;text-align:center;"><div style="font-size:11px;color:#666;">条线</div><div style="font-weight:600;color:' + lineColor + ';font-size:13px;">' + record.line + '</div></div>' +
-                '<div style="flex:1;padding:8px;background:' + typeBg + ';border:1px solid ' + typeColor + ';border-radius:8px;text-align:center;"><div style="font-size:11px;color:#666;">类型</div><div style="font-weight:600;color:' + typeColor + ';font-size:13px;">' + record.target_type + '</div></div>' +
-                '</div>' +
-                '<div style="display:flex;flex-direction:column;gap:10px;">' +
-                '<div><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">客户经理</label>' +
-                '<input type="text" id="editManager" value="' + record.manager_name + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;box-sizing:border-box;font-size:14px;" /></div>' +
-                '<div style="display:flex;gap:8px;">' +
-                '<div style="flex:1;"><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">任务数</label>' +
-                '<input type="number" id="editTaskCount" value="' + record.task_count + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;" /></div>' +
-                '<div style="flex:1;"><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">完成数</label>' +
-                '<input type="number" id="editCompleted" value="' + record.completed_count + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;" /></div>' +
-                '</div>' +
-                '<div><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">目标企业</label>' +
-                '<input type="text" id="editCompany" value="' + (record.target_company || '') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;" /></div>' +
-                '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">' +
-                '<button onclick="this.closest(\'div\').remove()" style="padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;">取消</button>' +
-                '<button onclick="saveEditFusion(' + id + ')" style="padding:8px 16px;border:none;border-radius:8px;background:#667eea;color:white;cursor:pointer;font-weight:600;">保存</button>' +
-                '</div></div></div>';
-            document.body.appendChild(modal);
-        }
-        
-        function saveEditFusion(id) {
-            var data = {
-                manager_name: (document.getElementById('editManager') || {}).value.trim(),
-                task_count: parseInt((document.getElementById('editTaskCount') || {}).value) || 0,
-                completed_count: parseInt((document.getElementById('editCompleted') || {}).value) || 0,
-                target_company: (document.getElementById('editCompany') || {}).value.trim()
-            };
-            if (!data.manager_name) { alert('请输入客户经理'); return; }
-            fetch('/api/fusion/followup/' + id, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            }).then(function(res) {
-                if (res.ok) {
-                    document.querySelector('[style*="fixed"]').remove();
-                    loadFusionData();
-                }
-            });
-        }
-
-
-        <!-- Fusion Module Modals -->
-        <div id="fusionModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
-            <div style="background:white;border-radius:12px;padding:24px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <h3 id="fusionModalTitle" style="margin:0;font-size:16px;color:#111827;"></h3>
-                    <span onclick="closeFusionModal()" style="cursor:pointer;font-size:20px;color:#9ca3af;line-height:1;">&times;</span>
-                </div>
-                <div id="fusionModalBody" style="margin-bottom:16px;"></div>
-                <div style="display:flex;gap:10px;justify-content:flex-end;">
-                    <button onclick="closeFusionModal()" style="padding:8px 16px;border:1px solid #e5e7eb;border-radius:6px;background:white;color:#6b7280;cursor:pointer;font-size:13px;">取消</button>
-                    <button id="fusionModalConfirm" onclick="confirmFusionModal()" style="padding:8px 16px;border:none;border-radius:6px;background:#667eea;color:white;cursor:pointer;font-size:13px;font-weight:500;">确定</button>
-                </div>
-            </div>
-        </div>
-
-        <script>
-        var fusionModalCallback = null;
-
-        function openFusionModal(title, bodyHtml, onConfirm) {
-            document.getElementById('fusionModalTitle').textContent = title;
-            document.getElementById('fusionModalBody').innerHTML = bodyHtml;
-            document.getElementById('fusionModal').style.display = 'flex';
-            fusionModalCallback = onConfirm;
-        }
-
-        function closeFusionModal() {
-            document.getElementById('fusionModal').style.display = 'none';
-            fusionModalCallback = null;
-        }
-
-        function confirmFusionModal() {
-            if (fusionModalCallback) fusionModalCallback();
-            closeFusionModal();
-        }
-
-        // Replace openFollowEdit - edit follow record
-        function openFollowEdit(id) {
-            var record = allFusionTargets.find(function(r) { return r.id === id; });
-            if (!record) return;
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + (record.target_company || '(未填写)') + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进记录</label><textarea id="fusionModalInput" rows="4" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;" placeholder="请输入跟进记录...">' + (record.follow_record || '') + '</textarea></div>';
-            openFusionModal('编辑跟进记录', bodyHtml, function() {
-                var newRecord = document.getElementById('fusionModalInput').value.trim();
-                fetch('/api/fusion/followup/' + id, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ follow_record: newRecord })
-                }).then(function(res) { return res.json(); }).then(function(result) {
-                    loadFusionData();
-                });
-            });
-        }
-
-        // Replace openFollowAdd - add follow record for a manager
-        function openFollowAdd(managerName, line, targetType) {
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业（选填）</label><input id="fusionModalCompany" type="text" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" placeholder="输入企业名称"/></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进记录</label><textarea id="fusionModalInput" rows="3" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;" placeholder="输入跟进内容..."></textarea></div>';
-            openFusionModal('添加跟进记录', bodyHtml, function() {
-                var company = document.getElementById('fusionModalCompany').value.trim();
-                var record = document.getElementById('fusionModalInput').value.trim();
-                if (!record) { alert('请输入跟进记录'); return; }
-                var data = {
-                    manager_name: managerName,
-                    task_category: targetType,
-                    target_type: targetType,
-                    line: line,
-                    task_count: 0,
-                    completed_count: 0,
-                    target_company: company,
-                    follow_record: record,
-                    status: '进行中'
-                };
-                fetch('/api/fusion/followup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                }).then(function(res) { return res.json(); }).then(function(result) {
-                    if (result.id) loadFusionData();
-                });
-            });
-        }
-
-        // Replace addCompanyForGroup - add target company
-        function addCompanyForGroup(managerName, line, targetType) {
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业名称</label><input id="fusionModalCompany" type="text" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" placeholder="输入目标企业名称"/></div>';
-            openFusionModal('添加目标企业', bodyHtml, function() {
-                var company = document.getElementById('fusionModalCompany').value.trim();
-                if (!company) { alert('请输入企业名称'); return; }
-                var data = {
-                    manager_name: managerName,
-                    line: line,
-                    target_type: targetType,
-                    task_category: targetType,
-                    task_count: 0,
-                    completed_count: 0,
-                    target_company: company,
-                    follow_record: '',
-                    status: '进行中'
-                };
-                fetch('/api/fusion/followup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                }).then(function(res) { return res.json(); }).then(function(result) {
-                    if (result.id) loadFusionData();
-                });
-            });
-        }
-
-        // Replace editGroupField - edit task/completed count
-        function editGroupField(managerName, line, targetType, field, currentVal) {
-            var fieldLabel = field === 'task_count' ? '任务数' : field === 'completed_count' ? '完成数' : field;
-            var bodyHtml = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + managerName + '</div></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务类型</label><div style="padding:8px;background:#f9fafb;border-radius:6px;color:#374151;font-size:14px;">' + targetType + '</div></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">新' + fieldLabel + '</label><input id="fusionModalNumber" type="number" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;" value="' + currentVal + '"/></div>';
-            openFusionModal('修改' + fieldLabel, bodyHtml, function() {
-                var newVal = parseInt(document.getElementById('fusionModalNumber').value) || 0;
-                var groupRecords = allFusionTargets.filter(function(r) {
-                    return r.manager_name === managerName && r.line === line && r.target_type === targetType;
-                });
-                Promise.all(groupRecords.map(function(r) {
-                    var body = {};
-                    body[field] = newVal;
-                    return fetch('/api/fusion/followup/' + r.id, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                })).then(function() { loadFusionData(); });
-            });
-        }
-        </script>
-</script>
+    </script>
 </body>
 </html>

@@ -340,6 +340,31 @@ function initDatabase() {
       db.run(`CREATE INDEX IF NOT EXISTS idx_follow_ups_company ON follow_ups(company_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_week_tasks_company ON week_tasks(company_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_xinfutong_company ON xinfutong(company_id)`);
+      // 融合攻坚表
+      db.run(`
+        CREATE TABLE IF NOT EXISTS fusion_targets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_name VARCHAR(50) NOT NULL,
+          task_category VARCHAR(50) NOT NULL,
+          target_type VARCHAR(30) NOT NULL,
+          line VARCHAR(20) NOT NULL,
+          task_count INTEGER DEFAULT 0,
+          completed_count INTEGER DEFAULT 0,
+          target_companies TEXT,
+          potential_companies TEXT,
+          follow_record TEXT,
+          linked_marketing_task_id INTEGER,
+          status VARCHAR(20) DEFAULT '进行中',
+          open_red_task INTEGER DEFAULT 0,
+          open_red_completed INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      db.run(`CREATE INDEX IF NOT EXISTS idx_fusion_targets_manager ON fusion_targets(manager_name)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_fusion_targets_type ON fusion_targets(target_type)`);
+
 
       console.log('✅ 数据库表初始化完成');
       resolve();
