@@ -95,7 +95,7 @@ router.delete('/followup/:id', (req, res) => {
 
 // 局部更新目标记录（支持单个或多个字段）
 router.patch('/followup/:id', (req, res) => {
-  const allowed = ['manager_name','task_category','target_type','line','task_count','completed_count','open_red_task','open_red_completed','status','follow_record','target_company'];
+  const allowed = ['manager_name','task_category','target_type','line','task_count','completed_count','open_red_task','open_red_completed','status','follow_record','target_company','contact_manager'];
   const fields = [];
   const values = [];
   for (const key of allowed) {
