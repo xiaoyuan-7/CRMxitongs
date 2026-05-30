@@ -4769,6 +4769,63 @@ var currentFusionView = 'table';
             html += '</div>';
             return html;
         }
+
+        var FOLLOW_TYPES = {
+            'phone':  { label: '📞 电话', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+            'visit':  { label: '🏢 面访', color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
+            'wechat': { label: '💬 微信', color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0' },
+            'docs':   { label: '📋 资料', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' }
+        };
+        function getFollowTypeCfg(t) { return FOLLOW_TYPES[t] || FOLLOW_TYPES['phone']; }
+        function getFollowTypeLabel(t) { return getFollowTypeCfg(t).label; }
+        function getFollowTypeStyle(t) { var c = getFollowTypeCfg(t); return 'color:' + c.color + ';background:' + c.bg + ';border:1px solid ' + c.border + ';padding:1px 5px;border-radius:4px;font-size:10px;display:inline-block;'; }
+
+        function showAddFollowModal(managerName, line, targetType, companyName) {
+            var ov = document.createElement('div');
+            ov.id = 'followModalOverlay';
+            ov.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            var h = '<div style="background:white;border-radius:12px;padding:20px;width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);">';
+            h += '<div style="font-size:15px;font-weight:600;margin-bottom:14px;color:#374151;">➕ 添加跟进记录</div>';
+            h += '<div style="margin-bottom:14px;"><div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:500;">跟进方式</div><div style="display:flex;gap:8px;flex-wrap:wrap;">';
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var c = FOLLOW_TYPES[t];
+                h += '<div id="ftypebtn_' + t + '" onclick="selectFollowType(\' + t + \')" style="padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;' + getFollowTypeStyle(t) + '">' + c.label + '</div>';
+            });
+            h += '</div></div>';
+            h += '<div style="margin-bottom:14px;"><div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:500;">跟进内容</div>';
+            h += '<textarea id="followContentInput" placeholder="输入跟进内容..." style="width:100%;height:80px;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea></div>';
+            h += '<div style="display:flex;gap:10px;">';
+            h += '<button onclick="confirmAddFollow(managerName,line,targetType,companyName)" style="flex:1;padding:9px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;">保存</button>';
+            h += '<button onclick="closeFollowModal()" style="flex:1;padding:9px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer;">取消</button>';
+            h += '</div></div>';
+            ov.innerHTML = h;
+            document.body.appendChild(ov);
+            ov.onclick = function(e) { if(e.target === ov) closeFollowModal(); };
+            window._selFollowType = 'phone';
+            document.getElementById('ftypebtn_phone').style.outline = '2px solid #667eea';
+        }
+        function selectFollowType(type) {
+            window._selFollowType = type;
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var el = document.getElementById('ftypebtn_' + t);
+                if (el) el.style.outline = t === type ? '2px solid #667eea' : 'none';
+            });
+        }
+        function confirmAddFollow(managerName, line, targetType, companyName) {
+            var content = document.getElementById('followContentInput').value.trim();
+            if (!content) { alert('请输入跟进内容'); return; }
+            closeFollowModal();
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName, follow_record: content, follow_type: window._selFollowType || 'phone', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+        function closeFollowModal() {
+            var el = document.getElementById('followModalOverlay');
+            if (el) el.remove();
+        }
+
 function loadFusionData() {
             var lineFilter = (document.getElementById("fusionLineFilter") || {}).value || "";
             var followUrl = "/api/fusion/followup" + (lineFilter ? "?line=" + encodeURIComponent(lineFilter) : "");
@@ -5003,36 +5060,46 @@ function loadFusionData() {
                         html += '<div style="width:44px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:' + coRate + '%;height:100%;background:' + coRateColor + ';border-radius:2px;"></div></div>';
                         html += '<span style="font-size:12px;font-weight:bold;color:' + coRateColor + ';">' + coRate + '%</span>';
                         html += '</div>';
-                        html += '<button onclick="event.stopPropagation(); addFusionFollowInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\', \'' + co.name.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;transition:background 0.12s;" onmouseenter="this.style.background=\'#5a67d8\'" onmouseleave="this.style.background=\'#667eea\'">+ 跟进</button>';
+                        html += '<button onclick="event.stopPropagation(); showAddFollowModal( \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\', \'' + co.name.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;transition:background 0.12s;" onmouseenter="this.style.background=\'#5a67d8\'" onmouseleave="this.style.background=\'#667eea\'">+ 跟进</button>';
                         html += '</div>';
 
-                        // Follow-up section
-                        html += '<div class="fusion-follow-section">';
-                        if (hasFollow) {
-                            html += '<div onclick="event.stopPropagation(); toggleFollowTimeline(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 6px;border-radius:4px;font-size:11px;color:#6b7280;transition:background 0.12s;" onmouseenter="this.style.background=\'#e5e7eb\'" onmouseleave="this.style.background=\'transparent\'">';
-                            html += '<span style="color:#22c55e;">●</span>';
-                            html += '<span>查看 ' + co.records.length + ' 条跟进记录</span>';
-                            html += '<span class="fusion-follow-arrow" style="font-size:10px;transition:transform 0.2s;">▶</span>';
-                            html += '</div>';
-                            html += '<div class="fusion-timeline" style="display:none;padding-left:10px;border-left:2px solid #bbf7d0;margin-top:6px;">';
-                            co.records.slice().reverse().forEach(function(rec) {
-                                var recDate = rec.updated_at ? rec.updated_at.substr(0, 16).replace('T', ' ') : '无时间';
-                                var recContent = rec.follow_record || '';
-                                var displayContent = recContent ? recContent.substring(0, 200) + (recContent.length > 200 ? '...' : '') : '<span style="color:#d1d5db;font-style:italic;">暂无内容</span>';
-                                html += '<div style="margin-bottom:8px;" onmouseenter="this.querySelector(\'.f-op\').style.opacity=\'1\'" onmouseleave="this.querySelector(\'.f-op\').style.opacity=\'0\'">';
-                                html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
-                                html += '<span style="color:#9ca3af;font-size:10px;">' + recDate + '</span>';
-                                html += '<span class="f-op" style="margin-left:auto;display:flex;gap:3px;opacity:0;transition:opacity 0.12s;">';
-                                html += '<button onclick="event.stopPropagation(); editFusionFollowInline(this, ' + rec.id + ', \'' + escapeHtmlForAttr(recContent) + '\')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;color:#6b7280;">编辑</button>';
-                                html += '<button onclick="event.stopPropagation(); deleteFusionFollow(' + rec.id + ')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;">删除</button>';
-                                html += '</span></div>';
-                                html += '<div onclick="event.stopPropagation(); editFusionFollowInline(this, ' + rec.id + ', \'' + escapeHtmlForAttr(recContent) + '\')" style="font-size:12px;color:#374151;line-height:1.5;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击编辑">' + displayContent + '</div>';
-                                html += '</div>';
-                            });
-                            html += '</div>';
-                        } else {
-                            html += '<div onclick="event.stopPropagation(); addFusionFollowInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\', \'' + co.name.replace(/'/g, "\\'") + '\')" style="text-align:center;padding:6px;background:#fef3c3;border-radius:4px;font-size:11px;color:#f59e0b;cursor:pointer;transition:background 0.12s;" onmouseenter="this.style.background=\'#fde68a\'" onmouseleave="this.style.background=\'#fef3c3\'">⚠️ 暂无跟进，点击添加第一条</div>';
-                        }
+
+var latestRec = co.records.length > 0 ? co.records.slice().sort(function(a,b){return (b.updated_at||'').localeCompare(a.updated_at||'')})[0] : null;
+if (hasFollow) {
+    var ltType = latestRec.follow_type || 'phone';
+    var ltCfg = getFollowTypeCfg(ltType);
+    var ltDate = latestRec.updated_at ? latestRec.updated_at.substr(0,16).replace('T',' ') : '';
+    var ltContent = latestRec.follow_record ? latestRec.follow_record.substring(0,50) : '';
+    if (latestRec.follow_record && latestRec.follow_record.length > 50) ltContent += '...';
+    html += '<div onclick="event.stopPropagation(); toggleFollowTimeline(this)" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#f9fafb;border-radius:6px;font-size:11px;margin-bottom:5px;cursor:pointer;" title="点击查看全部跟进">';
+    html += '<span style="' + getFollowTypeStyle(ltType) + '">' + ltCfg.label + '</span>';
+    html += '<span style="color:#9ca3af;font-size:10px;">' + ltDate + '</span>';
+    html += '<span style="color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (ltContent||'无内容') + '</span>';
+    html += '<span style="color:#667eea;font-size:10px;">' + co.records.length + ' 条 ▶</span>';
+    html += '</div>';
+    html += '<div class="fusion-timeline" style="display:none;">';
+    co.records.slice().reverse().forEach(function(rec) {
+        var rType = rec.follow_type || 'phone';
+        var rCfg = getFollowTypeCfg(rType);
+        var rDate = rec.updated_at ? rec.updated_at.substr(0,16).replace('T',' ') : '';
+        var rContent = rec.follow_record || '';
+        var rDisplay = rContent ? rContent.substring(0,100) + (rContent.length>100?'...':'') : '<span style="color:#d1d5db;font-style:italic;">暂无内容</span>';
+        html += '<div style="margin-bottom:5px;padding:6px 8px;background:white;border-radius:6px;border-left:3px solid ' + rCfg.border + ';" onmouseenter="this.querySelector(\'.f-op\').style.opacity=\'1\'" onmouseleave="this.querySelector(\'.f-op\').style.opacity=\'0\'">';
+        html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">';
+        html += '<span style="' + getFollowTypeStyle(rType) + '">' + rCfg.label + '</span>';
+        html += '<span style="color:#9ca3af;font-size:10px;">' + rDate + '</span>';
+        html += '<span class="f-op" style="margin-left:auto;display:flex;gap:3px;opacity:0;transition:opacity 0.12s;">';
+        html += '<button onclick="event.stopPropagation(); editFusionFollowInline(this,' + rec.id + ',\'' + escapeHtmlForAttr(rContent) + '\')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;color:#6b7280;">✏️</button>';
+        html += '<button onclick="event.stopPropagation(); deleteFusionFollow(' + rec.id + ')" style="padding:1px 5px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;">🗑️</button>';
+        html += '</span></div>';
+        html += '<div style="font-size:11px;color:#374151;line-height:1.5;">' + rDisplay + '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+} else {
+    html += '<div onclick="event.stopPropagation(); showAddFollowModal(\'' + mg.manager_name.replace(/\'/g, "\\'") + '\',\'' + (mg.line||'') + '\',\'' + type + '\',\'' + co.name.replace(/\'/g, "\\'") + '\')" style="text-align:center;padding:6px;background:#fef3c3;border-radius:4px;font-size:11px;color:#f59e0b;cursor:pointer;">⚠️ 暂无跟进，点击添加</div>';
+}
+
                         html += '</div></div>';
                     });
 
@@ -5173,26 +5240,12 @@ function loadFusionData() {
             }).then(function() { loadFusionData(); });
         }
 
-        function addFusionFollowForManager(el, managerName, line, targetType) {
-            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0(\u4f1a\u81ea\u52a8\u521b\u5efa\u4e00\u4e2a\u65b0\u4f01\u4e1a\u8bb0\u5f55):', '');
-            if (!companyName || !companyName.trim()) return;
-            var content = prompt('\u8ddf\u8fdb\u5185\u5bb9:', '');
-            if (!content) {
-                // Still create company even if no follow content
-                fetch('/api/fusion/followup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
-                }).then(function() { loadFusionData(); });
-                return;
-            }
-            fetch('/api/fusion/followup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: content, task_count: 1, completed_count: 0 })
-            }).then(function() { loadFusionData(); });
-        }
 
+        function addFusionFollowForManager(el, managerName, line, targetType) {
+            var companyName = prompt('输入目标企业名称(会自动创建新企业记录):', '');
+            if (!companyName || !companyName.trim()) return;
+            showAddFollowModal(managerName, line, targetType, companyName.trim());
+        }
         function editFusionFollowInline(el, followId, currentContent) {
             var decoded = currentContent.replace(/&quot;/g, '"').replace(/\\'/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<br>/g, '\n');
             var newContent = prompt('\u7f16\u8f91\u8ddf\u8fdb\u8bb0\u5f55:', decoded);
