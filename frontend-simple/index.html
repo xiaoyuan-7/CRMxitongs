@@ -5308,8 +5308,11 @@ co.records.slice().reverse().forEach(function(rec) {
             fetch('/api/fusion/followup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
-            }).then(function() { loadFusionData(); });
+                body: JSON.stringify({ manager_name: managerName, task_category: targetType, target_type: targetType, line: line || '\u96f6\u552e', target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
+            }).then(function(r) { 
+                if (!r.ok) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + r.status); return; }
+                loadFusionData(); 
+            }).catch(function(e) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + e); });
         }
         function deleteFusionCompany(el, followId, companyName) {
             if (!confirm('确认删除目标企业「' + companyName + '」吗？')) return;
