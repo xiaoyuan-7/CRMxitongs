@@ -5144,20 +5144,31 @@ co.records.slice().reverse().forEach(function(rec) {
 
         function toggleFusionManagerRow(row) {
             var arrow = row.querySelector('.fusion-row-arrow');
-            var allDetails = row.parentElement.querySelectorAll('.fusion-detail');
+            var details = [];
+            var sibling = row.nextElementSibling;
+            while (sibling) {
+                if (sibling.classList && sibling.classList.contains('fusion-detail')) {
+                    details.push(sibling);
+                    // Only look for siblings that are direct children of the manager section
+                    // Stop if we hit another fusion-row (next manager)
+                    if (sibling.nextElementSibling && sibling.nextElementSibling.classList.contains('fusion-row')) {
+                        break;
+                    }
+                }
+                sibling = sibling.nextElementSibling;
+            }
             var anyOpen = false;
-            for (var i = 0; i < allDetails.length; i++) {
-                if (allDetails[i].style.display !== 'none') {
+            for (var i = 0; i < details.length; i++) {
+                if (details[i].style.display !== 'none') {
                     anyOpen = true;
                     break;
                 }
             }
-            for (var i = 0; i < allDetails.length; i++) {
-                allDetails[i].style.display = anyOpen ? 'none' : 'block';
+            for (var i = 0; i < details.length; i++) {
+                details[i].style.display = anyOpen ? 'none' : 'block';
             }
             if (arrow) arrow.textContent = anyOpen ? '▶' : '▼';
         }
-
         function toggleFollowTimeline(el) {
             var timeline = el.nextElementSibling;
             var arrow = el.querySelector('.fusion-follow-arrow');
