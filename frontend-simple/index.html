@@ -5104,9 +5104,9 @@ function loadFusionData() {
                         html += '<div style="border:' + borderLeft + ';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:' + cardBg + ';position:relative;">';
                         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
                         html += '<div onclick="event.stopPropagation(); editFusionCompanyName(this, \'' + co.name.replace(/'/g, "\\'") + '\', ' + co.records[0].id + ')" style="font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#fef3c3\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改企业名称">' + co.name + ' <span style="font-size:10px;color:#9ca3af;">✏️</span></div>';
-                        html += '<div style="flex:1;min-width:0;">';
                         html += '<div onclick="event.stopPropagation(); editFusionContactMgr(this, ' + co.records[0].id + ', \'' + (contactMgr||'').replace(/'/g, "\\'") + '\')" style="font-size:11px;color:#7c3aed;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;margin-top:2px;" onmouseenter="this.style.background=\'#ede9fe\'" onmouseleave="this.style.background=\'#f3f4f6\'" title="点击修改对接客户经理">' + (contactMgr ? '👤 ' + contactMgr : '➕ 添加对接客户经理') + '</div>';
-                        html += '</div>';
+                        html += '<input type="text" value="' + (contactMgr||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v&&v!==(contactMgr||\\'')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_manager:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f3f4f6;outline:none;font-size:11px;color:#7c3aed;padding:2px 6px;border-radius:4px;width:90px;" placeholder="客户经理" title="' + (contactMgr||'点击添加') + '">';
+                        html += '<input type="text" value="' + (co.records[0].contact_info||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(co.records[0].contact_info||'')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_info:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f9fafb;outline:none;font-size:11px;color:#6b7280;padding:2px 6px;border-radius:4px;flex:1;min-width:60px;" placeholder="客户简介" title="' + (co.records[0].contact_info||'点击添加简介') + '">';
                         html += '<div onclick="event.stopPropagation(); editFusionRecordCounts(this, ' + co.records[0].id + ')" style="cursor:pointer;padding:2px 6px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改">';
                         html += '<span style="color:#22c55e;font-weight:600;font-size:13px;">' + coComp + '</span>';
                         html += '<span style="color:#d1d5db;margin:0 2px;">/</span>';
@@ -5125,7 +5125,7 @@ function loadFusionData() {
 co.records.slice().reverse().forEach(function(rec) {
     html += makeFollowRow(rec, mg.manager_name, mg.line, type, co.name);
 });
-html += '<div onclick="var n=makeFollowRow(null,mg.manager_name,mg.line,type,co.name);this.insertAdjacentHTML(\'beforebegin\',n);this.style.display=\'none\';" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px dashed #c4b5fd;border-radius:6px;color:#7c3aed;font-size:11px;cursor:pointer;background:#f5f3ff;margin-top:4px;" onmouseenter="this.style.background=\'#ede9fe\'" onmouseleave="this.style.background=\'#f5f3ff\'">➕ 添加跟进记录</div>';
+
 
                         html += '</div></div>';
                     });
