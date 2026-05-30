@@ -5080,6 +5080,7 @@ function loadFusionData() {
 
                     // Arrow
                     html += '<div class="fusion-row-arrow" style="font-size:11px;color:#667eea;margin-left:10px;width:16px;text-align:center;">▶</div>';
+                    html += '<div onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="margin-left:6px;padding:2px 8px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;transition:background 0.12s;" onmouseenter=\"this.style.background=\'#5a67d8\'\" onmouseleave=\"this.style.background=\'#667eea\'\" title="添加目标企业">+ 企业</div>';
 
                     // Hover action bar (hidden by default)
                     html += '<div class="fusion-actions" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);gap:6px;background:white;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;">';
@@ -5103,6 +5104,7 @@ function loadFusionData() {
                         var cardBg = hasFollow ? "#f0fdf4" : "#fffbeb";
 
                         html += '<div style="border:' + borderLeft + ';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:' + cardBg + ';position:relative;">';
+                        html += '<div onclick="event.stopPropagation(); deleteFusionCompany(this, ' + co.records[0].id + ', \'' + co.name.replace(/'/g, "\\'") + '\')" style="position:absolute;top:6px;right:8px;padding:3px 6px;font-size:11px;cursor:pointer;color:#9ca3af;transition:color 0.15s;z-index:5;" onmouseenter=\"this.style.color=\'#ef4444\'\" onmouseleave=\"this.style.color=\'#9ca3af\'\" title="删除企业">🗑️</div>';
                         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
                         html += '<div onclick="event.stopPropagation(); editFusionCompanyName(this, \'' + co.name.replace(/'/g, "\\'") + '\', ' + co.records[0].id + ')" style="font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#fef3c3\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改企业名称">' + co.name + ' <span style="font-size:10px;color:#9ca3af;">✏️</span></div>';
                         html += '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">';
@@ -5121,9 +5123,6 @@ co.records.slice().reverse().forEach(function(rec) {
                     html += '</div>';
                     });
 
-                    html += '<div style="text-align:center;margin-top:4px;">';
-                    html += '<button onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:5px 14px;font-size:11px;background:#f9fafb;color:#9ca3af;border:1px dashed #d1d5db;border-radius:20px;cursor:pointer;transition:all 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\';this.style.color=\'#6b7280\'" onmouseleave="this.style.background=\'#f9fafb\';this.style.color=\'#9ca3af\'">+ 添加目标企业</button>';
-                    html += '</div></div>';
                 });
 
                 html += '</div>';
@@ -5310,6 +5309,13 @@ co.records.slice().reverse().forEach(function(rec) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+        function deleteFusionCompany(el, followId, companyName) {
+            if (!confirm('确认删除目标企业「' + companyName + '」吗？')) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
             }).then(function() { loadFusionData(); });
         }
         function editFusionContactMgr(el, followId, currentContact) {
