@@ -732,25 +732,34 @@
 
 
 
-        <div id="fusionTab" style="display:none;width:100%;">
+        <div id="fusionTab" style="display:none;width:100%;position:relative;">
             <div style="background:white;border-radius:12px;padding:16px;margin-bottom:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
                     <h2 style="font-size:16px;font-weight:600;color:#374151;margin:0;">融合攻坚目标追踪</h2>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input id="fusionSearch" oninput="fusionRender()" placeholder="搜索客户经理/企业" style="padding:6px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;width:160px;">
+                        <input id="fusionSearch" oninput="fusionRender()" placeholder="🔍 搜索客户经理/企业" style="padding:6px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;width:180px;">
                         <select id="fusionLineFilter" onchange="fusionLoad()" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
                             <option value="">全部条线</option>
                             <option value="批发">批发</option>
                             <option value="零售">零售</option>
                             <option value="运营">运营</option>
                         </select>
-                        <button onclick="fusionLoad()" style="padding:6px 14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">刷新</button>
-                        <button onclick="fusionShowAdd()" style="padding:6px 14px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">+ 新增</button>
+                        <button onclick="fusionLoad()" style="padding:6px 14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🔄 刷新</button>
+                        <button onclick="fusionShowAdd()" style="padding:6px 14px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">➕ 新增目标</button>
                     </div>
                 </div>
-                <div id="fusionStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;"></div>
-                <div id="fusionList"></div>
-            </div>
+                <div id="fusionStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;"></div>
+                <div style="display:grid;grid-template-columns:24px 90px minmax(0,1fr) 70px 70px 65px 90px 80px 24px;align-items:center;padding:6px 12px;background:#f8fafc;border-bottom:2px solid #e5e7eb;font-size:11px;color:#9ca3af;font-weight:600;gap:8px;">
+                    <div></div>
+                    <div>客户经理</div>
+                    <div style="min-width:0;">企业 / 进度</div>
+                    <div style="text-align:center;">任务/完成</div>
+                    <div style="text-align:center;">完成率</div>
+                    <div style="text-align:center;">状态</div>
+                    <div style="text-align:right;">最近跟进</div>
+                    <div style="text-align:center;">操作</div>
+                    <div></div>
+                </div>
         </div>
     <div id="globalLoading">
         <div class="loading-spinner"></div>
@@ -1073,14 +1082,14 @@
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
                     <td style="font-weight:600;">${escapeHtml(c.name)||'-'}</td>
                     <td>
-                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
                     </td>
                     <td>
-                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
-                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">📋 详情</button>` : ''}
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">📋 详情</button>` : ''}
                     </td>
-                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\'")}')" title="点击编辑">${escapeHtml(c.manager_name)||'-'}</span></td>
-                    <td style="font-size:13px;">${escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">管理</button></td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\'")}')" title="点击编辑">${escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">管理</button></td>
                     <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
                     <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
                     <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
@@ -2263,7 +2272,7 @@
             if (!query || query.length < 1) { resultsDiv.style.display = 'none'; return; }
             const filtered = allCompanies.filter(c => c.name.toLowerCase().includes(query)).slice(0, 10);
             if (!filtered.length) { resultsDiv.innerHTML = '<div style="padding:10px;color:#999;">未找到企业</div>'; resultsDiv.style.display = 'block'; return; }
-            resultsDiv.innerHTML = filtered.map(c => `<div class="company-search-result" onclick="selectCompanyForTask(${c.id}, '${c.name.replace(/'/g, "\'")}')">${c.name} ${c.contact_names ? '· ' + c.contact_names : ''}</div>`).join('');
+            resultsDiv.innerHTML = filtered.map(c => `<div class="company-search-result" onclick="selectCompanyForTask(${c.id}, '${c.name.replace(/'/g, "\\'")}')">${c.name} ${c.contact_names ? '· ' + c.contact_names : ''}</div>`).join('');
             resultsDiv.style.display = 'block';
         }
 
@@ -2396,7 +2405,7 @@
                         <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                                 <h3 style="font-size:16px;color:#333;">📝 跟进记录</h3>
-                                <button class="btn btn-sm btn-primary" onclick="openAddFollowUpModal(${c.id}, '${c.name.replace(/'/g, "\'")}')">+ 添加跟进</button>
+                                <button class="btn btn-sm btn-primary" onclick="openAddFollowUpModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')">+ 添加跟进</button>
                             </div>
                             <div id="followUpList_${c.id}" style="min-height:100px;">
                                 <p style="text-align:center;color:#999;">加载中...</p>
@@ -3699,9 +3708,9 @@
             }
 
             dropdown.innerHTML = history.map(item => `
-                <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\'")}')">
+                <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\\'")}')">
                     <span class="search-history-text">🔍 ${escapeHtml(item)}</span>
-                    <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\'")}', event)">✕</span>
+                    <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\\'")}', event)">✕</span>
                 </div>
             `).join('') + `<div class="search-history-clear" onclick="clearSearchHistory()">清空搜索历史</div>`;
 
@@ -3800,14 +3809,14 @@
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
                     <td style="font-weight:600;">${searchKeyword ? highlightText(c.name, searchKeyword) : escapeHtml(c.name)||'-'}</td>
                     <td>
-                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
                     </td>
                     <td>
-                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
-                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">📋 详情</button>` : ''}
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">📋 详情</button>` : ''}
                     </td>
-                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\\'")}')" title="点击编辑">${searchKeyword ? highlightText(c.manager_name, searchKeyword) : escapeHtml(c.manager_name)||'-'}</span></td>
-                    <td style="font-size:13px;">${searchKeyword ? highlightText(c.contact_names, searchKeyword) : escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">管理</button></td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\\\'")}')" title="点击编辑">${searchKeyword ? highlightText(c.manager_name, searchKeyword) : escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${searchKeyword ? highlightText(c.contact_names, searchKeyword) : escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">管理</button></td>
                     <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
                     <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
                     <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
@@ -4703,17 +4712,13 @@ function fusionRender() {
         statsContainer.innerHTML = fusionStats.map(function(s) {
             var c = typeColors[s.target_type] || { color: '#6b7280', bg: '#f3f4f6' };
             var rateColor = s.completion_rate >= 50 ? '#22c55e' : s.completion_rate > 0 ? '#f59e0b' : '#ef4444';
-            return '<div style="background:' + c.bg + ';border-radius:10px;padding:12px;border-left:4px solid ' + c.color + ';">' +
-                '<div style="font-size:11px;color:' + c.color + ';font-weight:600;margin-bottom:4px;">' + (s.target_type||'') + ' · ' + (s.line||'') + '</div>' +
-                '<div style="font-size:22px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + (s.completion_rate||0) + '%</div>' +
-                '<div style="font-size:11px;color:#666;">' + (s.total_completed||0) + '/' + (s.total_task||0) + ' · ' + (s.manager_count||0) + '人</div>' +
-            '</div>';
+            return '<div style="background:' + c.bg + ';border-radius:10px;padding:12px;border-left:4px solid ' + c.color + ';">                <div style="font-size:11px;color:' + c.color + ';font-weight:600;margin-bottom:4px;">' + (s.target_type||'') + ' · ' + (s.line||'') + '</div>                <div style="font-size:22px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + (s.completion_rate||0) + '%</div>                <div style="font-size:11px;color:#666;">' + (s.total_completed||0) + '/' + (s.total_task||0) + ' · ' + (s.manager_count||0) + '人</div>            </div>';
         }).join('');
     }
 
     var searchText = (document.getElementById('fusionSearch')||{}).value || '';
 
-    // Group: key = target_type||line, sub-key = manager_name
+    // Group data
     var groups = {};
     fusionData.forEach(function(r) {
         if (searchText) {
@@ -4722,7 +4727,7 @@ function fusionRender() {
         }
         var key = (r.target_type||'') + '||' + (r.line||'');
         if (!groups[key]) groups[key] = { target_type: r.target_type, line: r.line, managers: {} };
-        var mk = r.manager_name||'';
+        var mk = (r.manager_name||'') + '||' + (r.line||'');
         if (!groups[key].managers[mk]) {
             groups[key].managers[mk] = { manager_name: r.manager_name, line: r.line, records: [], task_count: 0, completed_count: 0 };
         }
@@ -4738,10 +4743,7 @@ function fusionRender() {
         var mgrList = Object.values(g.managers);
 
         html += '<div style="margin-bottom:16px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:' + colors.headerBg + ';border-radius:6px;margin-bottom:4px;">' +
-            '<span style="font-size:12px;font-weight:700;color:' + colors.header + ';">' + (g.target_type||'') + ' · ' + (g.line||'') + ' (' + mgrList.length + '人)</span>' +
-            '<button onclick="fusionShowAddType(\' + (g.target_type||\') + \',\' + (g.line||\') + \')" style="font-size:11px;padding:2px 8px;background:' + colors.header + ';color:white;border:none;border-radius:4px;cursor:pointer;">+ 添加客户经理</button>' +
-        '</div>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:' + colors.headerBg + ';border-radius:6px;margin-bottom:4px;">            <span style="font-size:12px;font-weight:700;color:' + colors.header + ';">' + (g.target_type||'') + ' · ' + (g.line||'') + ' (' + mgrList.length + '人)</span>            <button onclick="fusionShowAddType(\'' + (g.target_type||'') + '\',\'' + (g.line||'') + '\')" style="font-size:11px;padding:2px 8px;background:' + colors.header + ';color:white;border:none;border-radius:4px;cursor:pointer;">➕ 添加客户经理</button>        </div>';
 
         mgrList.forEach(function(mg) {
             var rate = mg.task_count > 0 ? Math.round(mg.completed_count / mg.task_count * 100) : 0;
@@ -4755,10 +4757,15 @@ function fusionRender() {
                 lastFollow = sorted[0] && sorted[0].updated_at ? sorted[0].updated_at.substr(0,10) : '';
             }
 
-            html += '<div style="display:grid;grid-template-columns:24px 90px 1fr 70px 70px 65px 90px 80px 24px;align-items:center;padding:8px 12px;border-bottom:1px solid #f3f4f6;gap:8px;" onmouseenter="this.style.background='#f9fafb'" onmouseleave="this.style.background='white'">';
-            html += '<div onclick="fusionToggleMgr(this,\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="cursor:pointer;font-size:12px;color:#9ca3af;width:24px;text-align:center;">&#9654;</div>';
+            html += '<div class="fusion-mgr-row" style="display:grid;grid-template-columns:24px 90px minmax(0,1fr) 70px 70px 65px 90px 80px 24px;align-items:center;padding:8px 12px;border-bottom:1px solid #f3f4f6;gap:8px;" onmouseenter="this.style.background=\'#f9fafb\'" onmouseleave="this.style.background=\'white\'">';
+
+            // Expand arrow
+            html += '<div onclick="fusionToggleMgr(this, \'' + mg.manager_name.replace(/\/g,'\\') + '\',\'' + mg.line + '\',\'' + (g.target_type||'') + '\')" style="cursor:pointer;font-size:12px;color:#9ca3af;width:24px;text-align:center;">▶</div>';
+
+            // Manager name
             html += '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + mg.manager_name + '</div>';
 
+            // Company dots
             var coPreview = mg.records.slice(0,5).map(function(rec) {
                 var co = rec.target_company || '未命名';
                 var cr = rec.task_count > 0 ? Math.round(rec.completed_count / rec.task_count * 100) : 0;
@@ -4768,16 +4775,25 @@ function fusionRender() {
             if (mg.records.length > 5) coPreview += '<span style="font-size:10px;color:#9ca3af;">+' + (mg.records.length - 5) + '</span>';
             html += '<div style="min-width:0;overflow:hidden;">' + coPreview + '</div>';
 
+            // Task/completed
             html += '<div style="text-align:center;font-size:12px;"><span style="font-weight:600;color:#374151;">' + mg.completed_count + '</span><span style="color:#9ca3af;">/' + mg.task_count + '</span></div>';
-            html += '<div style="text-align:center;"><div style="font-size:13px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + rate + '%;background:' + rateColor + ';border-radius:2px;"></div></div></div>';
-            html += '<div style="text-align:center;">' + statusLabel + '</div>';
-            html += '<div style="text-align:right;font-size:11px;color:#9ca3af;">' + lastFollow + '</div>';
-            html += '<div style="display:flex;gap:4px;justify-content:center;">' +
-                '<button onclick="fusionShowAddCompany(\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="font-size:11px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#20256;&#38144;</button>' +
-                '<button onclick="fusionDeleteMgr(\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="font-size:11px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-            '</div>';
-            html += '<div></div></div>';
 
+            // Progress
+            html += '<div style="text-align:center;">                <div style="font-size:13px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div>                <div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;">                    <div style="height:100%;width:' + rate + '%;background:' + rateColor + ';border-radius:2px;"></div>                </div>            </div>';
+
+            // Status
+            html += '<div style="text-align:center;">' + statusLabel + '</div>';
+
+            // Last follow
+            html += '<div style="text-align:right;font-size:11px;color:#9ca3af;">' + lastFollow + '</div>';
+
+            // Actions
+            html += '<div style="display:flex;gap:4px;justify-content:center;">                <button onclick="fusionShowAddCompany(\'' + mg.manager_name.replace(/\/g,'\\') + '\',\'' + mg.line + '\',\'' + (g.target_type||'') + '\')" style="font-size:11px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">企业</button>                <button onclick="fusionDeleteMgr(\'' + mg.manager_name.replace(/\/g,'\\') + '\',\'' + mg.line + '\',\'' + (g.target_type||'') + '\')" style="font-size:11px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">删除</button>            </div>';
+
+            html += '<div></div>';
+            html += '</div>';
+
+            // Detail area
             var detailId = 'fusion_detail_' + mg.manager_name.replace(/\s/g,'_') + '_' + mg.line + '_' + (g.target_type||'');
             html += '<div id="' + detailId + '" style="display:none;background:#fafafa;padding:10px 12px 10px 36px;border-bottom:1px solid #e5e7eb;"></div>';
         });
@@ -4786,7 +4802,7 @@ function fusionRender() {
     });
 
     if (!html) {
-        html = '<div style="text-align:center;padding:40px;color:#9ca3af;font-size:14px;">暂无数据，点击右上角「+ 新增」添加</div>';
+        html = '<div style="text-align:center;padding:40px;color:#9ca3af;font-size:14px;">暂无数据，点击右上角「➕ 新增目标」添加</div>';
     }
     container.innerHTML = html;
 }
@@ -4802,23 +4818,7 @@ function fusionToggleMgr(el, managerName, line, targetType) {
     } else {
         detail.style.display = 'block';
         el.textContent = '▼';
-        // 获取该经理所有目标ID并预加载接触记录
-        var recs = fusionData.filter(function(r){ return r.manager_name === managerName && r.line === line && r.target_type === targetType; });
-        var ids = recs.map(function(r){ return r.id; });
-        var loadPromises = ids.map(function(tid) {
-            return fetch('/api/contact-log/target/' + tid + '/logs')
-                .then(function(r){ return r.json(); })
-                .then(function(logs){ return { tid: tid, logs: logs || [] }; });
-        });
-        Promise.all(loadPromises).then(function(results) {
-            results.forEach(function(r) {
-                var rec = fusionData.find(function(d){ return d.id === r.tid; });
-                if (rec) rec._contactLogs = r.logs;
-            });
-            fusionRenderDetail(managerName, line, targetType, detail);
-        }).catch(function() {
-            fusionRenderDetail(managerName, line, targetType, detail);
-        });
+        fusionRenderDetail(managerName, line, targetType, detail);
     }
 }
 
@@ -4826,75 +4826,14 @@ function fusionRenderDetail(managerName, line, targetType, container) {
     var records = fusionData.filter(function(r) {
         return r.manager_name === managerName && r.line === line && r.target_type === targetType;
     });
-    if (records.length === 0) {
-        container.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px;">暂无企业目标，点击下方按钮添加</div>' +
-            '<button onclick="fusionShowAddCompany(\' + managerName + \',\' + line + \',\' + targetType + \')" style="font-size:12px;padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-top:4px;">&#21152;&#26032;&#20225;&#19994;</button>';
-        return;
-    }
-    container.innerHTML = records.map(function(rec) {
-        var logHtml = '';
-        var logs = [];
-        if (rec._contactLogs && rec._contactLogs.length > 0) {
-            logs = rec._contactLogs;
-        }
-        logHtml = '<div style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                '<span style="font-size:12px;font-weight:600;color:#374151;">&#36319;&#36817;&#35760;&#24405;</span>' +
-                '<button onclick="fusionInlineAddLog(' + (rec.id||0) + ', this)" style="font-size:11px;padding:2px 8px;background:#22c55e;color:white;border:none;border-radius:4px;cursor:pointer;">+ &#28155;&#21152;</button>' +
-            '</div>' +
-            '<div class="fusion-log-list" style="display:flex;flex-direction:column;gap:8px;">' +
-            logs.map(function(log) {
-                var methodColors = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6','其他':'#6b7280'};
-                var mColor = methodColors[log.contact_method] || '#6b7280';
-                return '<div class="fusion-log-item" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">' +
-                    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
-                        '<span style="font-size:11px;color:#9ca3af;min-width:120px;">' + (log.contact_time||'').substr(0,16) + '</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','电话' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='电话'?'#8b5cf6':'#e5e7eb') + ';color:' + (log.contact_method==='电话'?'white':'#374151') + ';">&#30005;&#35805;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','上门' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='上门'?'#10b981':'#e5e7eb') + ';color:' + (log.contact_method==='上门'?'white':'#374151') + ';">&#38754;&#35775;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','微信' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='微信'?'#06b6d4':'#e5e7eb') + ';color:' + (log.contact_method==='微信'?'white':'#374151') + ';">&#24494;&#20449;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','短信' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='短信'?'#f59e0b':'#e5e7eb') + ';color:' + (log.contact_method==='短信'?'white':'#374151') + ';">&#30701;&#20449;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','邮件' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='邮件'?'#3b82f6':'#e5e7eb') + ';color:' + (log.contact_method==='邮件'?'white':'#374151') + ';">&#37038;&#20214;</span>' +
-                        '<div style="flex:1;"></div>' +
-                        '<button onclick="fusionInlineDeleteLog(' + (log.id||0) + ',' + (rec.id||0) + ')" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-                    '</div>' +
-                    '<div style="position:relative;margin-bottom:4px;">' +
-                        '<textarea class="fusion-log-content" data-id="' + (log.id||0) + '" rows="2" placeholder="&#27880;&#26126;&#27880;&#26126;&#27880;&#26126;..." style="width:100%;padding:6px 30px 6px 6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;">' + (log.contact_content||'') + '</textarea>' +
-                        '<button onclick="fusionInlineSaveContent(' + (log.id||0) + ', this)" style="position:absolute;right:6px;top:6px;font-size:10px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#20445;&#23384;</button>' +
-                    '</div>' +
-                    (log.next_followup_time ? '<div style="font-size:11px;color:#f59e0b;">&#x1F4C5; &#35748;&#21010;&#19979;&#27425;&#36319;&#36827;: ' + log.next_followup_time.substr(0,16) + '</div>' : '') +
-                '</div>';
-            }).join('') +
-            (logs.length === 0 ? '<div style="text-align:center;color:#d1d5db;font-size:12px;padding:16px;">&#x270D; &#28857;&#20987;&#12290;&#28155;&#21152;&#36319;&#36827;&#35760;&#24405;</div>' : '') +
-            '</div>' +
-        '</div>';
-        return '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                '<div style="font-weight:600;font-size:14px;color:#1f2937;flex:1;">' + (rec.target_company||'&#26410;&#21629;&#21517;&#20225;&#19994;') + '</div>' +
-                '<div style="display:flex;gap:4px;">' +
-                    '<button onclick="fusionShowEditInline(' + (rec.id||0) + ', this)" style="font-size:11px;padding:2px 8px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#32534;&#36753;</button>' +
-                    '<button onclick="fusionDelete(' + (rec.id||0) + ')" style="font-size:11px;padding:2px 8px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-                '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;">' +
-                '<div style="flex:1;min-width:120px;">' +
-                    '<div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">&#23545;&#25509;&#20154;</div>' +
-                    '<div style="position:relative;">' +
-                        '<input type="text" class="fusion-inline-contact_mgr" data-id="' + (rec.id||0) + '" value="' + (rec.contact_manager||'') + '" placeholder="&#27809;&#22635;" style="width:100%;padding:5px 28px 5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;box-sizing:border-box;color:#374151;">' +
-                        '<button onclick="fusionInlineSave(' + (rec.id||0) + ','contact_manager' + ')" style="position:absolute;right:4px;top:4px;font-size:10px;padding:1px 4px;background:#667eea;color:white;border:none;border-radius:3px;cursor:pointer;">&#x2714;</button>' +
-                    '</div>' +
-                '</div>' +
-                '<div style="flex:2;min-width:180px;">' +
-                    '<div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">&#23458;&#25143;&#31684;&#20171;</div>' +
-                    '<div style="position:relative;">' +
-                        '<textarea class="fusion-inline-follow_record" data-id="' + (rec.id||0) + '" rows="2" placeholder="&#27809;&#22635;" style="width:100%;padding:5px 28px 5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;">' + (rec.follow_record||'') + '</textarea>' +
-                        '<button onclick="fusionInlineSave(' + (rec.id||0) + ','follow_record' + ')" style="position:absolute;right:4px;top:4px;font-size:10px;padding:1px 4px;background:#667eea;color:white;border:none;border-radius:3px;cursor:pointer;">&#x2714;</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            logHtml +
-        '</div>';
-    }).join('') +
-        '<button onclick="fusionShowAddCompany(\' + managerName + \',\' + line + \',\' + targetType + \')" style="font-size:12px;padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-top:4px;">&#21152;&#26032;&#20225;&#19994;</button>';
+    container.innerHTML = records.length === 0
+        ? '<div style="color:#9ca3af;font-size:12px;padding:8px;">暂无企业目标，点击下方按钮添加</div>'
+        : records.map(function(rec) {
+            var rate = rec.task_count > 0 ? Math.round(rec.completed_count / rec.task_count * 100) : 0;
+            var rateColor = rate >= 50 ? '#22c55e' : rate > 0 ? '#f59e0b' : '#ef4444';
+            return '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">                    <div style="font-weight:600;font-size:13px;color:#1f2937;">' + (rec.target_company||'未命名企业') + '</div>                    <div style="display:flex;gap:6px;align-items:center;">                        <span style="font-size:12px;">' + (rec.completed_count||0) + '/' + (rec.task_count||0) + ' 任务</span>                        <button onclick="fusionInc(' + (rec.id||0) + ')" style="font-size:11px;padding:2px 8px;background:#22c55e;color:white;border:none;border-radius:4px;cursor:pointer;">完成+1</button>                        <button onclick="fusionShowEdit(' + (rec.id||0) + ')" style="font-size:11px;padding:2px 8px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">编辑</button>                        <button onclick="fusionDelete(' + (rec.id||0) + ')" style="font-size:11px;padding:2px 8px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">删除</button>                    </div>                </div>                <div style="height:4px;background:#e5e7eb;border-radius:2px;margin-bottom:6px;overflow:hidden;">                    <div style="height:100%;width:' + rate + '%;background:' + rateColor + ';border-radius:2px;"></div>                </div>                <div style="font-size:11px;color:#9ca3af;">                    <span style="color:' + rateColor + ';font-weight:600;">' + rate + '%</span> 完成 ·                     对接人: ' + (rec.contact_manager||'未填') + ' ·                     跟进: ' + (rec.follow_record||'无') + '                </div>            </div>';
+        }).join('')
+        + '<button onclick="fusionShowAddCompany(\'' + managerName.replace(/\/g,'\\') + '\',\'' + line + '\',\'' + targetType + '\')" style="font-size:12px;padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-top:4px;">➕ 添加企业目标</button>';
 }
 
 function fusionInc(id) {
@@ -4909,40 +4848,7 @@ function fusionInc(id) {
 }
 
 function fusionShowAdd() {
-    var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">' +
-        '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-            '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">新增融合目标</h3>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标类型 *</label>' +
-                '<select id="fa_target_type" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                    '<option value="">请选择类型</option>' +
-                    '<option value="B2C保险">B2C保险</option>' +
-                    '<option value="B2C小微贷">B2C小微贷</option>' +
-                    '<option value="B2C百人代发">B2C百人代发</option>' +
-                    '<option value="C2B授信">C2B授信</option>' +
-                    '<option value="C2B高质量开户">C2B高质量开户</option>' +
-                    '<option value="B2B百人代发">B2B百人代发</option>' +
-                '</select></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">条线 *</label>' +
-                '<select id="fa_line" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                    '<option value="零售">零售</option><option value="批发">批发</option><option value="运营">运营</option>' +
-                '</select></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理姓名 *</label>' +
-                '<input id="fa_manager" type="text" placeholder="输入客户经理姓名" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业名称 *</label>' +
-                '<input id="fa_company" type="text" placeholder="输入目标企业名称" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>' +
-                    '<input id="fa_task" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>' +
-                    '<input id="fa_completed" type="number" value="0" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '</div>' +
-            '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>' +
-                '<input id="fa_record" type="text" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="display:flex;gap:10px;">' +
-                '<button onclick="fusionSubmitAdd()" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                '<button onclick="this.closest('div[style*="position:fixed"]')').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-            '</div>' +
-        '</div></div>';
+    var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">        <div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">            <h3 style="margin:0 0 16px;font-size:16px;color:#374151;">新增融合目标</h3>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标类型 *</label>                <select id="fa_target_type" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">                    <option value="">请选择类型</option>                    <option value="B2C保险">B2C保险</option>                    <option value="B2C小微贷">B2C小微贷</option>                    <option value="B2C百人代发">B2C百人代发</option>                    <option value="C2B授信">C2B授信</option>                    <option value="C2B高质量开户">C2B高质量开户</option>                    <option value="B2B百人代发">B2B百人代发</option>                </select>            </div>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">条线 *</label>                <select id="fa_line" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">                    <option value="零售">零售</option>                    <option value="批发">批发</option>                    <option value="运营">运营</option>                </select>            </div>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理姓名 *</label>                <input id="fa_manager" type="text" placeholder="输入客户经理姓名" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">            </div>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业名称 *</label>                <input id="fa_company" type="text" placeholder="输入目标企业名称" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">            </div>            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">                <div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>                    <input id="fa_task" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>                <div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>                    <input id="fa_completed" type="number" value="0" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>            </div>            <div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>                <input id="fa_record" type="text" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">            </div>            <div style="display:flex;gap:10px;">                <button onclick="fusionSubmitAdd()" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>                <button onclick="this.closest('div[style*="position:fixed"]').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>            </div>        </div>    </div>';
     document.body.insertAdjacentHTML('beforeend', html);
 }
 
@@ -4987,26 +4893,7 @@ function fusionShowEdit(id) {
     var ov = document.createElement('div');
     ov.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
     ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-    ov.innerHTML =
-        '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-            '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑目标</h3>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label>' +
-                '<input id="fe_company" type="text" value="' + (rec.target_company||'') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>' +
-                    '<input id="fe_task" type="number" value="' + (rec.task_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>' +
-                    '<input id="fe_completed" type="number" value="' + (rec.completed_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '</div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">对接客户经理</label>' +
-                '<input id="fe_contact_mgr" type="text" value="' + (rec.contact_manager||'') + '" placeholder="输入对接客户经理" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>' +
-                '<input id="fe_record" type="text" value="' + (rec.follow_record||'') + '" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="display:flex;gap:10px;">' +
-                '<button onclick="fusionSubmitEdit(' + id + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                '<button onclick="this.closest('div[style*="position:fixed"]')').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-            '</div>' +
-        '</div>';
+    ov.innerHTML = '        <div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">            <h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑目标</h3>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label>                <input id="fe_company" type="text" value="' + (rec.target_company||'') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>            </div>            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">                <div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>                    <input id="fe_task" type="number" value="' + (rec.task_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>                <div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>                    <input id="fe_completed" type="number" value="' + (rec.completed_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>            </div>            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">对接客户经理</label>                <input id="fe_contact_mgr" type="text" value="' + (rec.contact_manager||'') + '" placeholder="输入对接客户经理" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>            </div>            <div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>                <input id="fe_record" type="text" value="' + (rec.follow_record||'') + '" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>            </div>            <div style="display:flex;gap:10px;">                <button onclick="fusionSubmitEdit(' + id + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>                <button onclick="this.closest('div[style*="position:fixed"]').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>            </div>        </div>    </div>';
     document.body.appendChild(ov);
 }
 
@@ -5036,307 +4923,5 @@ function fusionDeleteMgr(managerName, line, targetType) {
     fetch('/api/fusion/manager/' + encodeURIComponent(managerName) + '/' + encodeURIComponent(targetType) + '/' + encodeURIComponent(line), { method: 'DELETE' }).then(function(){ fusionLoad(); });
 }
 
-// ========== 接触记录 ==========
-function fusionShowContactLog(targetId) {
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1001;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:600px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-            '<h3 style="margin:0;font-size:16px;color:#374151;">📋 接触记录</h3>' +
-            '<div style="display:flex;gap:8px;">' +
-                '<button onclick="fusionAddContactLog(' + targetId + ')" style="padding:6px 12px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:12px;cursor:pointer;">+ 新增记录</button>' +
-                '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).parentElement.remove()" style="padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;cursor:pointer;">关闭</button>' +
-            '</div>' +
-        '</div>' +
-        '<div id="fusionContactLogList" style="flex:1;overflow-y:auto;min-height:200px;"><p style="text-align:center;color:#999;padding:40px;">加载中...</p></div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-    fusionLoadContactLogs(targetId);
-}
-
-function fusionLoadContactLogs(targetId) {
-    var container = document.getElementById('fusionContactLogList');
-    if (!container) return;
-    fetch('/api/contact-log/target/' + targetId + '/logs')
-        .then(function(r){ return r.json(); })
-        .then(function(logs) {
-            if (!logs || logs.length === 0) {
-                container.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px;">暂无接触记录，点击「新增记录」开始添加</div>';
-                return;
-            }
-            container.innerHTML = logs.map(function(log) {
-                var methodColors = { '电话':'#8b5cf6', '上门':'#10b981', '微信':'#06b6d4', '短信':'#f59e0b', '邮件':'#3b82f6', '其他':'#6b7280' };
-                var color = methodColors[log.contact_method] || '#6b7280';
-                var nextInfo = log.next_followup_time ? '<span style="color:#f59e0b;font-size:11px;">📅 下次跟进: ' + log.next_followup_time.substr(0,16) + '</span>' : '';
-                return '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;">' +
-                    '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-                        '<div style="display:flex;gap:8px;align-items:center;">' +
-                            '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (log.contact_method||'其他') + '</span>' +
-                            '<span style="font-size:12px;color:#6b7280;">' + (log.contact_time||'').substr(0,16) + '</span>' +
-                            (log.created_by ? '<span style="font-size:11px;color:#9ca3af;">' + log.created_by + '</span>' : '') +
-                        '</div>' +
-                        '<div style="display:flex;gap:6px;">' +
-                            '<button onclick="fusionEditContactLog(' + log.id + ')" style="font-size:10px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">编辑</button>' +
-                            '<button onclick="fusionDeleteContactLog(' + log.id + ',' + targetId + ')" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">删除</button>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div style="font-size:13px;color:#374151;margin-bottom:6px;">' + (log.contact_content||'') + '</div>' +
-                    nextInfo +
-                '</div>';
-            }).join('');
-        })
-        .catch(function() {
-            container.innerHTML = '<div style="text-align:center;color:#ef4444;padding:40px;">加载失败</div>';
-        });
-}
-
-function fusionAddContactLog(targetId) {
-    var now = new Date();
-    var defaultTime = now.toISOString().substr(0,16);
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1002;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:480px;max-width:90vw;">' +
-        '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">新增接触记录</h3>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达时间 *</label>' +
-            '<input id="clog_time" type="datetime-local" value="' + defaultTime + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达方式 *</label>' +
-            '<select id="clog_method" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                '<option value="电话">电话</option>' +
-                '<option value="上门">上门</option>' +
-                '<option value="微信">微信</option>' +
-                '<option value="短信">短信</option>' +
-                '<option value="邮件">邮件</option>' +
-                '<option value="其他">其他</option>' +
-            '</select></div>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">沟通内容 *</label>' +
-            '<textarea id="clog_content" rows="3" placeholder="简要记录本次沟通内容..." style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;"></textarea></div>' +
-        '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">计划下次跟进时间</label>' +
-            '<input id="clog_next" type="datetime-local" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-        '<div style="display:flex;gap:10px;">' +
-            '<button onclick="fusionSubmitContactLog(' + targetId + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-            '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-        '</div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-}
-
-function fusionSubmitContactLog(targetId) {
-    var contact_time = (document.getElementById('clog_time')||{}).value;
-    var contact_method = (document.getElementById('clog_method')||{}).value;
-    var contact_content = (document.getElementById('clog_content')||{}).value.trim();
-    var next_followup_time = (document.getElementById('clog_next')||{}).value;
-    if (!contact_time || !contact_method || !contact_content) { alert('请填写必填字段'); return; }
-    fetch('/api/contact-log/logs', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_id: targetId, contact_time: contact_time, contact_method: contact_method, contact_content: contact_content, next_followup_time: next_followup_time || null })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    }).catch(function(e){ alert('添加失败'); });
-}
-
-function fusionEditContactLog(logId) {
-    fetch('/api/contact-log/target/0/logs')
-        .then(function(r){ return r.json(); })
-        .then(function(){});
-    fetch('/api/contact-log/logs/' + logId, { method: 'GET' })
-        .then(function(r){ return r.json(); })
-        .then(function(log) {
-            var overlay = document.createElement('div');
-            overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1003;display:flex;align-items:center;justify-content:center;';
-            overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-            overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:480px;max-width:90vw;">' +
-                '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑接触记录</h3>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达时间</label>' +
-                    '<input id="clog_time" type="datetime-local" value="' + ((log.contact_time||'').substr(0,16)) + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达方式</label>' +
-                    '<select id="clog_method" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                        '<option value="电话"' + (log.contact_method==='电话'?' selected':'') + '>电话</option>' +
-                        '<option value="上门"' + (log.contact_method==='上门'?' selected':'') + '>上门</option>' +
-                        '<option value="微信"' + (log.contact_method==='微信'?' selected':'') + '>微信</option>' +
-                        '<option value="短信"' + (log.contact_method==='短信'?' selected':'') + '>短信</option>' +
-                        '<option value="邮件"' + (log.contact_method==='邮件'?' selected':'') + '>邮件</option>' +
-                        '<option value="其他"' + (log.contact_method==='其他'?' selected':'') + '>其他</option>' +
-                    '</select></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">沟通内容</label>' +
-                    '<textarea id="clog_content" rows="3" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;">' + (log.contact_content||'') + '</textarea></div>' +
-                '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">计划下次跟进时间</label>' +
-                    '<input id="clog_next" type="datetime-local" value="' + ((log.next_followup_time||'').substr(0,16)) + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div style="display:flex;gap:10px;">' +
-                    '<button onclick="fusionSubmitEditContactLog(' + logId + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                    '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-                '</div>' +
-            '</div></div>';
-            document.body.appendChild(overlay);
-        });
-}
-
-function fusionSubmitEditContactLog(logId) {
-    var contact_time = (document.getElementById('clog_time')||{}).value;
-    var contact_method = (document.getElementById('clog_method')||{}).value;
-    var contact_content = (document.getElementById('clog_content')||{}).value.trim();
-    var next_followup_time = (document.getElementById('clog_next')||{}).value;
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_time: contact_time, contact_method: contact_method, contact_content: contact_content, next_followup_time: next_followup_time || null })
-    }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    });
-}
-
-function fusionDeleteContactLog(logId, targetId) {
-    if (!confirm('确认删除此接触记录？')) return;
-    fetch('/api/contact-log/logs/' + logId, { method: 'DELETE' }).then(function() {
-        var list = document.getElementById('fusionContactLogList');
-        if (list) fusionLoadContactLogs(targetId);
-        fusionLoad();
-    });
-}
-
-// ========== 内联编辑支持函数 ==========
-function fusionInlineSave(id, field) {
-    var el = document.querySelector('.fusion-inline-' + field + '[data-id="' + id + '"]');
-    if (!el) return;
-    var value = el.value;
-    var data = {};
-    data[field] = value;
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(data)
-    }).then(function(r){ return r.json(); }).then(function() {
-        // 更新本地缓存
-        var rec = fusionData.find(function(r){ return r.id === id; });
-        if (rec) rec[field] = value;
-        showToast('已保存', 1500);
-    }).catch(function(){ showToast('保存失败', 2000); });
-}
-
-function fusionShowEditInline(id, btn) {
-    var rec = fusionData.find(function(r){ return r.id === id; });
-    if (!rec) return;
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1005;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-        '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑目标企业</h3>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label>' +
-            '<input id="fei_company" type="text" value="' + (rec.target_company||'') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-        '<div style="display:flex;gap:10px;">' +
-            '<button onclick="fusionSubmitEditInline(' + id + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-            '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-        '</div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-}
-
-function fusionSubmitEditInline(id) {
-    var target_company = (document.getElementById('fei_company')||{}).value.trim();
-    if (!target_company) { alert('企业名称不能为空'); return; }
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_company: target_company })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    });
-}
-
-function fusionInlineAddLog(targetId, btn) {
-    // 在触发按钮上方插入新记录输入行
-    var now = new Date();
-    var defaultTime = now.toISOString().substr(0,16);
-    var logList = btn.closest('.fusion-log-list');
-    var emptyMsg = logList.querySelector('.fusion-log-empty-hint');
-    if (emptyMsg) emptyMsg.remove();
-    var newEl = document.createElement('div');
-    newEl.className = 'fusion-log-item fusion-log-new';
-    newEl.style = 'background:#f0fdf4;border:2px solid #22c55e;border-radius:8px;padding:10px;';
-    newEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
-        '<span style="font-size:11px;color:#9ca3af;min-width:120px;">' + defaultTime + '</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'电话')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#8b5cf6;color:white;">&#30005;&#35805;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'上门')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#38754;&#35775;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'微信')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#24494;&#20449;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'短信')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#30701;&#20449;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'邮件')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#37038;&#20214;</span>' +
-        '<div style="flex:1;"></div>' +
-        '<button onclick="fusionInlineSaveNewLog(this,' + targetId + ')" style="font-size:10px;padding:2px 6px;background:#22c55e;color:white;border:none;border-radius:4px;cursor:pointer;">&#x2714; 保存</button>' +
-        '<button onclick="fusionInlineCancelNewLog(this)" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#x2716; 取消</button>' +
-    '</div>' +
-    '<div style="position:relative;margin-bottom:4px;">' +
-        '<textarea class="fusion-log-content-new" rows="2" placeholder="&#27880;&#26126;&#27880;&#26126;&#27880;&#26126;..." style="width:100%;padding:6px 6px 6px 6px;border:1px solid #22c55e;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;"></textarea>' +
-    '</div>';
-    logList.insertBefore(newEl, logList.firstChild);
-}
-
-function fusionInlineSetNewMethod(span, method) {
-    var parent = span.parentElement;
-    var methods = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6'};
-    var colors = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6'};
-    parent.querySelectorAll('span[data-method]').forEach(function(s){ s.removeAttribute('data-method'); s.style.background='#e5e7eb'; s.style.color='#374151';; });
-    span.setAttribute('data-method', method);
-    span.style.background = colors[method];
-    span.style.color = 'white';
-}
-
-function fusionInlineSaveNewLog(btn, targetId) {
-    var newEl = btn.closest('.fusion-log-new');
-    var ta = newEl.querySelector('.fusion-log-content-new');
-    var content = ta.value.trim();
-    if (!content) { alert('请输入沟通内容'); return; }
-    var selectedMethodSpan = newEl.querySelector('span[data-method]');
-    var method = selectedMethodSpan ? selectedMethodSpan.getAttribute('data-method') : '电话';
-    var now = new Date();
-    var contact_time = now.toISOString().substr(0,16);
-    fetch('/api/contact-log/logs', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_id: targetId, contact_time: contact_time, contact_method: method, contact_content: content })
-    }).then(function(r){ return r.json(); }).then(function() {
-        fusionLoad();
-    }).catch(function(){ alert('保存失败'); });
-}
-
-function fusionInlineCancelNewLog(btn) {
-    var el = btn.closest('.fusion-log-new');
-    var logList = el.parentElement;
-    el.remove();
-    if (logList.querySelectorAll('.fusion-log-item').length === 0) {
-        logList.innerHTML = '<div class="fusion-log-empty-hint" style="text-align:center;color:#d1d5db;font-size:12px;padding:16px;">&#x270D; 点击上方「+ 添加」新增跟进记录</div>';
-    }
-}
-
-function fusionInlineSetMethod(logId, method) {
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_method: method })
-    }).then(function(){ fusionLoad(); });
-}
-
-function fusionInlineSaveContent(logId, btn) {
-    var ta = btn.closest('.fusion-log-item').querySelector('.fusion-log-content');
-    if (!ta) return;
-    var content = ta.value.trim();
-    if (!content) { alert('内容不能为空'); return; }
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_content: content })
-    }).then(function(){ showToast('已保存', 1200); });
-}
-
-function fusionInlineDeleteLog(logId, targetId) {
-    if (!confirm('确认删除此跟进记录？')) return;
-    fetch('/api/contact-log/logs/' + logId, { method: 'DELETE' }).then(function() { fusionLoad(); });
-}
-
-    </script>
 </body>
 </html>

@@ -732,26 +732,49 @@
 
 
 
-        <div id="fusionTab" style="display:none;width:100%;">
-            <div style="background:white;border-radius:12px;padding:16px;margin-bottom:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div id="fusionTab" style="display:none;width:100%;">            <div style="background:white;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h2 style="font-size:16px;font-weight:600;color:#374151;margin:0;">融合攻坚目标追踪</h2>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input id="fusionSearch" oninput="fusionRender()" placeholder="搜索客户经理/企业" style="padding:6px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;width:160px;">
-                        <select id="fusionLineFilter" onchange="fusionLoad()" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+                        <input id="fusionSearch" oninput="renderFusionContent()" placeholder="🔍 搜索客户经理/企业" style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;min-width:130px;outline:none;"/>
+                        <select id="fusionStatusFilter" onchange="renderFusionContent()" style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;min-width:100px;">
+                            <option value="">全部状态</option>
+                            <option value="已完成">已完成</option>
+                            <option value="进行中">进行中</option>
+                            <option value="未开始">未开始</option>
+                        </select>
+                        <select id="fusionLineFilter" onchange="loadFusionData()" style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;min-width:100px;">
                             <option value="">全部条线</option>
                             <option value="批发">批发</option>
                             <option value="零售">零售</option>
-                            <option value="运营">运营</option>
                         </select>
-                        <button onclick="fusionLoad()" style="padding:6px 14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">刷新</button>
-                        <button onclick="fusionShowAdd()" style="padding:6px 14px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">+ 新增</button>
+                        <button onclick="loadFusionData()" style="padding:5px 12px;font-size:12px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">🔄 刷新</button>
                     </div>
                 </div>
-                <div id="fusionStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;"></div>
-                <div id="fusionList"></div>
+                <div id="fusionDashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:4px;"></div>
             </div>
+            <!-- Column header -->
+            <div id="fusionListHeader" style="display:grid;grid-template-columns:20px 80px minmax(0,1fr) 60px 70px 55px 85px 70px 16px;align-items:center;padding:6px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-size:11px;color:#9ca3af;font-weight:500;gap:8px;min-width:0;width:100%;box-sizing:border-box;">
+                <div style="width:20px;box-sizing:border-box;"></div>
+                <div style="width:80px;box-sizing:border-box;">客户经理</div>
+                <div style="min-width:0;box-sizing:border-box;">企业进度</div>
+                <div style="width:60px;text-align:center;box-sizing:border-box;">任务/完成</div>
+                <div style="width:70px;text-align:center;box-sizing:border-box;">完成率</div>
+                <div style="width:55px;text-align:center;box-sizing:border-box;">状态</div>
+                <div style="width:85px;text-align:right;box-sizing:border-box;">最近跟进</div>
+                <div style="width:70px;text-align:center;box-sizing:border-box;"></div>
+                <div style="width:16px;box-sizing:border-box;"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:white;border-bottom:1px solid #f3f4f6;min-width:0;">
+                <div style="font-size:12px;color:#6b7280;">共 <span id="fusionCount">0</span> 位客户经理</div>
+                <div style="display:flex;gap:4px;">
+                    <button id="fusionViewTable" onclick="switchFusionView('table')" style="padding:4px 12px;font-size:11px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">📋 表格</button>
+                    <button id="fusionViewKanban" onclick="switchFusionView('kanban')" style="padding:4px 12px;font-size:11px;background:white;color:#6b7280;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;">🎯 看板</button>
+                </div>
+            </div>
+            <div id="fusionContent" style="padding:0;width:100%;display:block;overflow:visible;"></div>
         </div>
+<!-- 全局 Loading -->
     <div id="globalLoading">
         <div class="loading-spinner"></div>
         <div class="loading-text" id="loadingText">加载中...</div>
@@ -1073,14 +1096,14 @@
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
                     <td style="font-weight:600;">${escapeHtml(c.name)||'-'}</td>
                     <td>
-                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
                     </td>
                     <td>
-                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
-                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">📋 详情</button>` : ''}
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">📋 详情</button>` : ''}
                     </td>
-                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\'")}')" title="点击编辑">${escapeHtml(c.manager_name)||'-'}</span></td>
-                    <td style="font-size:13px;">${escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\'")}')">管理</button></td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\'")}')" title="点击编辑">${escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\'")}')">管理</button></td>
                     <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
                     <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
                     <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
@@ -2126,7 +2149,7 @@
             if (tab==='weekly') { loadWeekPlan(); updateWeekTaskSummary(); }
             if (tab==='reminders') { loadReminders(); updateWeekTaskSummary(); }
             if (tab==='todo') { loadTodos(); updateWeekTaskSummary(); }
-            if (tab==='fusion') { fusionLoad(); }
+            if (tab==='fusion') { loadFusionData(); }
         }
 
         async function loadWeekPlan() {
@@ -2263,7 +2286,7 @@
             if (!query || query.length < 1) { resultsDiv.style.display = 'none'; return; }
             const filtered = allCompanies.filter(c => c.name.toLowerCase().includes(query)).slice(0, 10);
             if (!filtered.length) { resultsDiv.innerHTML = '<div style="padding:10px;color:#999;">未找到企业</div>'; resultsDiv.style.display = 'block'; return; }
-            resultsDiv.innerHTML = filtered.map(c => `<div class="company-search-result" onclick="selectCompanyForTask(${c.id}, '${c.name.replace(/'/g, "\'")}')">${c.name} ${c.contact_names ? '· ' + c.contact_names : ''}</div>`).join('');
+            resultsDiv.innerHTML = filtered.map(c => `<div class="company-search-result" onclick="selectCompanyForTask(${c.id}, '${c.name.replace(/'/g, "\\'")}')">${c.name} ${c.contact_names ? '· ' + c.contact_names : ''}</div>`).join('');
             resultsDiv.style.display = 'block';
         }
 
@@ -2396,7 +2419,7 @@
                         <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                                 <h3 style="font-size:16px;color:#333;">📝 跟进记录</h3>
-                                <button class="btn btn-sm btn-primary" onclick="openAddFollowUpModal(${c.id}, '${c.name.replace(/'/g, "\'")}')">+ 添加跟进</button>
+                                <button class="btn btn-sm btn-primary" onclick="openAddFollowUpModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')">+ 添加跟进</button>
                             </div>
                             <div id="followUpList_${c.id}" style="min-height:100px;">
                                 <p style="text-align:center;color:#999;">加载中...</p>
@@ -3699,9 +3722,9 @@
             }
 
             dropdown.innerHTML = history.map(item => `
-                <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\'")}')">
+                <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\\'")}')">
                     <span class="search-history-text">🔍 ${escapeHtml(item)}</span>
-                    <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\'")}', event)">✕</span>
+                    <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\\'")}', event)">✕</span>
                 </div>
             `).join('') + `<div class="search-history-clear" onclick="clearSearchHistory()">清空搜索历史</div>`;
 
@@ -3800,14 +3823,14 @@
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
                     <td style="font-weight:600;">${searchKeyword ? highlightText(c.name, searchKeyword) : escapeHtml(c.name)||'-'}</td>
                     <td>
-                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
+                        <button class="badge ${c.contact_frequency==='本周触达'?'badge-success':c.contact_frequency==='两周触达'?'badge-warning':c.contact_frequency==='本月触达'?'badge-blue':'badge-gray'}" onclick="updateContactFrequency(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}','${c.contact_frequency||'一月前触达'}')">${c.contact_frequency==='本周触达'?'✅ 本周触达':c.contact_frequency==='两周触达'?'⏰ 两周触达':c.contact_frequency==='本月触达'?'📅 本月触达':'🕐 一月前触达'}</button>
                     </td>
                     <td>
-                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
-                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">📋 详情</button>` : ''}
+                        <button class="badge ${c.xinfutong_status==='applicable'?'badge-success':c.xinfutong_status==='not_applicable'?'badge-gray':'badge-blue'}" onclick="editXinfutong(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">${c.xinfutong_status==='applicable'?'✅ 适用':c.xinfutong_status==='not_applicable'?'❌ 不适用':'🔵 未设置'}</button>
+                        ${c.xinfutong_status==='applicable' ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:10px;" onclick="viewXinfutongDetails(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">📋 详情</button>` : ''}
                     </td>
-                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\\'")}')" title="点击编辑">${searchKeyword ? highlightText(c.manager_name, searchKeyword) : escapeHtml(c.manager_name)||'-'}</span></td>
-                    <td style="font-size:13px;">${searchKeyword ? highlightText(c.contact_names, searchKeyword) : escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\\'")}')">管理</button></td>
+                    <td><span class="editable" onclick="makeEditable(this,${c.id},'manager_name','${(c.manager_name||'').replace(/'/g, "\\\\'")}')" title="点击编辑">${searchKeyword ? highlightText(c.manager_name, searchKeyword) : escapeHtml(c.manager_name)||'-'}</span></td>
+                    <td style="font-size:13px;">${searchKeyword ? highlightText(c.contact_names, searchKeyword) : escapeHtml(c.contact_names)||'-'}<button class="btn btn-sm btn-secondary" style="margin-left:4px;padding:2px 6px;font-size:11px;" onclick="manageContacts(${c.id},'${(c.name||'').replace(/'/g, "\\\\'")}')">管理</button></td>
                     <td><input type="number" class="number-input" value="${c.active_count||0}" onchange="inlineNumber(${c.id},'active_count',this.value)" title="点击修改"></td>
                     <td><input type="number" class="number-input" value="${c.hq_count||0}" onchange="inlineNumber(${c.id},'hq_count',this.value)" title="点击修改"></td>
                     <td><button class="badge ${c.is_account_opened?'badge-success':'badge-warning'}" onclick="inlineToggle(${c.id},'is_account_opened')">${c.is_account_opened?'已开户':'未开户'}</button></td>
@@ -4659,684 +4682,672 @@
 
 
         // ========== 融合攻坚目标追踪 ==========
+        var allFusionTargets = [];
 
-// ============================================================
-// 融合攻坚模块 - 完整重写
-// ============================================================
-var fusionData = [];
-var fusionStats = [];
-var fusionLoading = false;
 
-function fusionLoad() {
-    if (fusionLoading) return;
-    fusionLoading = true;
-    var line = (document.getElementById('fusionLineFilter')||{}).value || '';
-    Promise.all([
-        fetch('/api/fusion/stats').then(r => r.json()),
-        fetch('/api/fusion/targets' + (line ? '?line=' + encodeURIComponent(line) : '')).then(r => r.json())
-    ]).then(function(results) {
-        fusionStats = results[0] || [];
-        fusionData = results[1] || [];
-        fusionRender();
-        fusionLoading = false;
-    }).catch(function(e) {
-        console.error('fusion load error:', e);
-        fusionLoading = false;
-    });
-}
+var currentFusionView = 'table';
 
-function fusionRender() {
-    var container = document.getElementById('fusionList');
-    var statsContainer = document.getElementById('fusionStats');
-    if (!container) return;
-
-    // Stats cards
-    var typeColors = {
-        'B2C保险': { color: '#92400e', bg: '#fef3c3' },
-        'B2C小微贷': { color: '#92400e', bg: '#fef3c3' },
-        'B2C百人代发': { color: '#92400e', bg: '#fef3c3' },
-        'C2B授信': { color: '#1e40af', bg: '#dbeafe' },
-        'C2B高质量开户': { color: '#1e40af', bg: '#dbeafe' },
-        'B2B百人代发': { color: '#6d28d9', bg: '#ede9fe' }
-    };
-    if (statsContainer) {
-        statsContainer.innerHTML = fusionStats.map(function(s) {
-            var c = typeColors[s.target_type] || { color: '#6b7280', bg: '#f3f4f6' };
-            var rateColor = s.completion_rate >= 50 ? '#22c55e' : s.completion_rate > 0 ? '#f59e0b' : '#ef4444';
-            return '<div style="background:' + c.bg + ';border-radius:10px;padding:12px;border-left:4px solid ' + c.color + ';">' +
-                '<div style="font-size:11px;color:' + c.color + ';font-weight:600;margin-bottom:4px;">' + (s.target_type||'') + ' · ' + (s.line||'') + '</div>' +
-                '<div style="font-size:22px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + (s.completion_rate||0) + '%</div>' +
-                '<div style="font-size:11px;color:#666;">' + (s.total_completed||0) + '/' + (s.total_task||0) + ' · ' + (s.manager_count||0) + '人</div>' +
-            '</div>';
-        }).join('');
-    }
-
-    var searchText = (document.getElementById('fusionSearch')||{}).value || '';
-
-    // Group: key = target_type||line, sub-key = manager_name
-    var groups = {};
-    fusionData.forEach(function(r) {
-        if (searchText) {
-            var s = searchText.toLowerCase();
-            if ((r.manager_name||'').toLowerCase().indexOf(s) < 0 && (r.target_company||'').toLowerCase().indexOf(s) < 0) return;
-        }
-        var key = (r.target_type||'') + '||' + (r.line||'');
-        if (!groups[key]) groups[key] = { target_type: r.target_type, line: r.line, managers: {} };
-        var mk = r.manager_name||'';
-        if (!groups[key].managers[mk]) {
-            groups[key].managers[mk] = { manager_name: r.manager_name, line: r.line, records: [], task_count: 0, completed_count: 0 };
-        }
-        groups[key].managers[mk].records.push(r);
-        groups[key].managers[mk].task_count += r.task_count || 0;
-        groups[key].managers[mk].completed_count += r.completed_count || 0;
-    });
-
-    var html = '';
-    Object.keys(groups).sort().forEach(function(key) {
-        var g = groups[key];
-        var colors = typeColors[g.target_type] || { header: '#374151', headerBg: '#f3f4f6' };
-        var mgrList = Object.values(g.managers);
-
-        html += '<div style="margin-bottom:16px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:' + colors.headerBg + ';border-radius:6px;margin-bottom:4px;">' +
-            '<span style="font-size:12px;font-weight:700;color:' + colors.header + ';">' + (g.target_type||'') + ' · ' + (g.line||'') + ' (' + mgrList.length + '人)</span>' +
-            '<button onclick="fusionShowAddType(\' + (g.target_type||\') + \',\' + (g.line||\') + \')" style="font-size:11px;padding:2px 8px;background:' + colors.header + ';color:white;border:none;border-radius:4px;cursor:pointer;">+ 添加客户经理</button>' +
-        '</div>';
-
-        mgrList.forEach(function(mg) {
-            var rate = mg.task_count > 0 ? Math.round(mg.completed_count / mg.task_count * 100) : 0;
-            var rateColor = rate >= 50 ? '#22c55e' : rate > 0 ? '#f59e0b' : '#d1d5db';
-            var allDone = mg.completed_count >= mg.task_count && mg.task_count > 0;
-            var allEmpty = mg.completed_count === 0;
-            var statusLabel = allDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">已完成</span>' : allEmpty ? '<span style="color:#d1d5db;font-size:11px;">未开始</span>' : '<span style="color:#f59e0b;font-size:11px;font-weight:600;">进行中</span>';
-            var lastFollow = '';
-            if (mg.records.length > 0) {
-                var sorted = mg.records.slice().sort(function(a,b){ return (b.updated_at||'') > (a.updated_at||'') ? 1 : -1; });
-                lastFollow = sorted[0] && sorted[0].updated_at ? sorted[0].updated_at.substr(0,10) : '';
+        function switchFusionView(view) {
+            currentFusionView = view;
+            var btnTable = document.getElementById('fusionViewTable');
+            var btnKanban = document.getElementById('fusionViewKanban');
+            if (btnTable && btnKanban) {
+                if (view === 'table') {
+                    btnTable.style.background = '#667eea';
+                    btnTable.style.color = 'white';
+                    btnTable.style.border = 'none';
+                    btnKanban.style.background = 'white';
+                    btnKanban.style.color = '#6b7280';
+                    btnKanban.style.border = '1px solid #e5e7eb';
+                } else {
+                    btnKanban.style.background = '#667eea';
+                    btnKanban.style.color = 'white';
+                    btnKanban.style.border = 'none';
+                    btnTable.style.background = 'white';
+                    btnTable.style.color = '#6b7280';
+                    btnTable.style.border = '1px solid #e5e7eb';
+                }
             }
-
-            html += '<div style="display:grid;grid-template-columns:24px 90px 1fr 70px 70px 65px 90px 80px 24px;align-items:center;padding:8px 12px;border-bottom:1px solid #f3f4f6;gap:8px;" onmouseenter="this.style.background='#f9fafb'" onmouseleave="this.style.background='white'">';
-            html += '<div onclick="fusionToggleMgr(this,\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="cursor:pointer;font-size:12px;color:#9ca3af;width:24px;text-align:center;">&#9654;</div>';
-            html += '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + mg.manager_name + '</div>';
-
-            var coPreview = mg.records.slice(0,5).map(function(rec) {
-                var co = rec.target_company || '未命名';
-                var cr = rec.task_count > 0 ? Math.round(rec.completed_count / rec.task_count * 100) : 0;
-                var coClr = cr >= 50 ? '#22c55e' : cr > 0 ? '#f59e0b' : '#ef4444';
-                return '<span style="display:inline-block;padding:1px 6px;background:#f3f4f6;border-radius:4px;font-size:11px;margin:2px;">' + co + ' <span style="color:' + coClr + ';font-weight:600;">' + cr + '%</span></span>';
-            }).join('');
-            if (mg.records.length > 5) coPreview += '<span style="font-size:10px;color:#9ca3af;">+' + (mg.records.length - 5) + '</span>';
-            html += '<div style="min-width:0;overflow:hidden;">' + coPreview + '</div>';
-
-            html += '<div style="text-align:center;font-size:12px;"><span style="font-weight:600;color:#374151;">' + mg.completed_count + '</span><span style="color:#9ca3af;">/' + mg.task_count + '</span></div>';
-            html += '<div style="text-align:center;"><div style="font-size:13px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + rate + '%;background:' + rateColor + ';border-radius:2px;"></div></div></div>';
-            html += '<div style="text-align:center;">' + statusLabel + '</div>';
-            html += '<div style="text-align:right;font-size:11px;color:#9ca3af;">' + lastFollow + '</div>';
-            html += '<div style="display:flex;gap:4px;justify-content:center;">' +
-                '<button onclick="fusionShowAddCompany(\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="font-size:11px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#20256;&#38144;</button>' +
-                '<button onclick="fusionDeleteMgr(\' + mg.manager_name + \',\' + mg.line + \',\' + (g.target_type||\') + \')" style="font-size:11px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-            '</div>';
-            html += '<div></div></div>';
-
-            var detailId = 'fusion_detail_' + mg.manager_name.replace(/\s/g,'_') + '_' + mg.line + '_' + (g.target_type||'');
-            html += '<div id="' + detailId + '" style="display:none;background:#fafafa;padding:10px 12px 10px 36px;border-bottom:1px solid #e5e7eb;"></div>';
-        });
-
-        html += '</div>';
-    });
-
-    if (!html) {
-        html = '<div style="text-align:center;padding:40px;color:#9ca3af;font-size:14px;">暂无数据，点击右上角「+ 新增」添加</div>';
-    }
-    container.innerHTML = html;
-}
-
-function fusionToggleMgr(el, managerName, line, targetType) {
-    var id = 'fusion_detail_' + managerName.replace(/\s/g,'_') + '_' + line + '_' + targetType;
-    var detail = document.getElementById(id);
-    if (!detail) return;
-    var isOpen = detail.style.display !== 'none';
-    if (isOpen) {
-        detail.style.display = 'none';
-        el.textContent = '▶';
-    } else {
-        detail.style.display = 'block';
-        el.textContent = '▼';
-        // 获取该经理所有目标ID并预加载接触记录
-        var recs = fusionData.filter(function(r){ return r.manager_name === managerName && r.line === line && r.target_type === targetType; });
-        var ids = recs.map(function(r){ return r.id; });
-        var loadPromises = ids.map(function(tid) {
-            return fetch('/api/contact-log/target/' + tid + '/logs')
-                .then(function(r){ return r.json(); })
-                .then(function(logs){ return { tid: tid, logs: logs || [] }; });
-        });
-        Promise.all(loadPromises).then(function(results) {
-            results.forEach(function(r) {
-                var rec = fusionData.find(function(d){ return d.id === r.tid; });
-                if (rec) rec._contactLogs = r.logs;
-            });
-            fusionRenderDetail(managerName, line, targetType, detail);
-        }).catch(function() {
-            fusionRenderDetail(managerName, line, targetType, detail);
-        });
-    }
-}
-
-function fusionRenderDetail(managerName, line, targetType, container) {
-    var records = fusionData.filter(function(r) {
-        return r.manager_name === managerName && r.line === line && r.target_type === targetType;
-    });
-    if (records.length === 0) {
-        container.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px;">暂无企业目标，点击下方按钮添加</div>' +
-            '<button onclick="fusionShowAddCompany(\' + managerName + \',\' + line + \',\' + targetType + \')" style="font-size:12px;padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-top:4px;">&#21152;&#26032;&#20225;&#19994;</button>';
-        return;
-    }
-    container.innerHTML = records.map(function(rec) {
-        var logHtml = '';
-        var logs = [];
-        if (rec._contactLogs && rec._contactLogs.length > 0) {
-            logs = rec._contactLogs;
+            renderFusionContent();
         }
-        logHtml = '<div style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                '<span style="font-size:12px;font-weight:600;color:#374151;">&#36319;&#36817;&#35760;&#24405;</span>' +
-                '<button onclick="fusionInlineAddLog(' + (rec.id||0) + ', this)" style="font-size:11px;padding:2px 8px;background:#22c55e;color:white;border:none;border-radius:4px;cursor:pointer;">+ &#28155;&#21152;</button>' +
-            '</div>' +
-            '<div class="fusion-log-list" style="display:flex;flex-direction:column;gap:8px;">' +
-            logs.map(function(log) {
-                var methodColors = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6','其他':'#6b7280'};
-                var mColor = methodColors[log.contact_method] || '#6b7280';
-                return '<div class="fusion-log-item" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">' +
-                    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
-                        '<span style="font-size:11px;color:#9ca3af;min-width:120px;">' + (log.contact_time||'').substr(0,16) + '</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','电话' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='电话'?'#8b5cf6':'#e5e7eb') + ';color:' + (log.contact_method==='电话'?'white':'#374151') + ';">&#30005;&#35805;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','上门' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='上门'?'#10b981':'#e5e7eb') + ';color:' + (log.contact_method==='上门'?'white':'#374151') + ';">&#38754;&#35775;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','微信' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='微信'?'#06b6d4':'#e5e7eb') + ';color:' + (log.contact_method==='微信'?'white':'#374151') + ';">&#24494;&#20449;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','短信' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='短信'?'#f59e0b':'#e5e7eb') + ';color:' + (log.contact_method==='短信'?'white':'#374151') + ';">&#30701;&#20449;</span>' +
-                        '<span onclick="fusionInlineSetMethod(' + (log.id||0) + ','邮件' + ')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:' + (log.contact_method==='邮件'?'#3b82f6':'#e5e7eb') + ';color:' + (log.contact_method==='邮件'?'white':'#374151') + ';">&#37038;&#20214;</span>' +
-                        '<div style="flex:1;"></div>' +
-                        '<button onclick="fusionInlineDeleteLog(' + (log.id||0) + ',' + (rec.id||0) + ')" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-                    '</div>' +
-                    '<div style="position:relative;margin-bottom:4px;">' +
-                        '<textarea class="fusion-log-content" data-id="' + (log.id||0) + '" rows="2" placeholder="&#27880;&#26126;&#27880;&#26126;&#27880;&#26126;..." style="width:100%;padding:6px 30px 6px 6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;">' + (log.contact_content||'') + '</textarea>' +
-                        '<button onclick="fusionInlineSaveContent(' + (log.id||0) + ', this)" style="position:absolute;right:6px;top:6px;font-size:10px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#20445;&#23384;</button>' +
-                    '</div>' +
-                    (log.next_followup_time ? '<div style="font-size:11px;color:#f59e0b;">&#x1F4C5; &#35748;&#21010;&#19979;&#27425;&#36319;&#36827;: ' + log.next_followup_time.substr(0,16) + '</div>' : '') +
-                '</div>';
-            }).join('') +
-            (logs.length === 0 ? '<div style="text-align:center;color:#d1d5db;font-size:12px;padding:16px;">&#x270D; &#28857;&#20987;&#12290;&#28155;&#21152;&#36319;&#36827;&#35760;&#24405;</div>' : '') +
-            '</div>' +
-        '</div>';
-        return '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                '<div style="font-weight:600;font-size:14px;color:#1f2937;flex:1;">' + (rec.target_company||'&#26410;&#21629;&#21517;&#20225;&#19994;') + '</div>' +
-                '<div style="display:flex;gap:4px;">' +
-                    '<button onclick="fusionShowEditInline(' + (rec.id||0) + ', this)" style="font-size:11px;padding:2px 8px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">&#32534;&#36753;</button>' +
-                    '<button onclick="fusionDelete(' + (rec.id||0) + ')" style="font-size:11px;padding:2px 8px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#21092;&#38500;</button>' +
-                '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;">' +
-                '<div style="flex:1;min-width:120px;">' +
-                    '<div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">&#23545;&#25509;&#20154;</div>' +
-                    '<div style="position:relative;">' +
-                        '<input type="text" class="fusion-inline-contact_mgr" data-id="' + (rec.id||0) + '" value="' + (rec.contact_manager||'') + '" placeholder="&#27809;&#22635;" style="width:100%;padding:5px 28px 5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;box-sizing:border-box;color:#374151;">' +
-                        '<button onclick="fusionInlineSave(' + (rec.id||0) + ','contact_manager' + ')" style="position:absolute;right:4px;top:4px;font-size:10px;padding:1px 4px;background:#667eea;color:white;border:none;border-radius:3px;cursor:pointer;">&#x2714;</button>' +
-                    '</div>' +
-                '</div>' +
-                '<div style="flex:2;min-width:180px;">' +
-                    '<div style="font-size:11px;color:#9ca3af;margin-bottom:3px;">&#23458;&#25143;&#31684;&#20171;</div>' +
-                    '<div style="position:relative;">' +
-                        '<textarea class="fusion-inline-follow_record" data-id="' + (rec.id||0) + '" rows="2" placeholder="&#27809;&#22635;" style="width:100%;padding:5px 28px 5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;">' + (rec.follow_record||'') + '</textarea>' +
-                        '<button onclick="fusionInlineSave(' + (rec.id||0) + ','follow_record' + ')" style="position:absolute;right:4px;top:4px;font-size:10px;padding:1px 4px;background:#667eea;color:white;border:none;border-radius:3px;cursor:pointer;">&#x2714;</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            logHtml +
-        '</div>';
-    }).join('') +
-        '<button onclick="fusionShowAddCompany(\' + managerName + \',\' + line + \',\' + targetType + \')" style="font-size:12px;padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-top:4px;">&#21152;&#26032;&#20225;&#19994;</button>';
-}
 
-function fusionInc(id) {
-    var rec = fusionData.find(function(r){ return r.id === id; });
-    if (!rec) return;
-    var newCompleted = (rec.completed_count || 0) + 1;
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ completed_count: newCompleted })
-    }).then(function(){ fusionLoad(); });
-}
+        function renderKanbanView(typeGroups) {
+            var typeColors = {
+                "B2C保险": { color: "#92400e", bg: "#fef3c3", border: "#fde68a" },
+                "B2C小微贷": { color: "#92400e", bg: "#fef3c3", border: "#fde68a" },
+                "B2C百人代发": { color: "#92400e", bg: "#fef3c3", border: "#fde68a" },
+                "C2B授信": { color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe" },
+                "C2B高质量开户": { color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe" },
+                "B2B百人代发": { color: "#6d28d9", bg: "#ede9fe", border: "#ddd6fe" }
+            };
 
-function fusionShowAdd() {
-    var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">' +
-        '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-            '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">新增融合目标</h3>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标类型 *</label>' +
-                '<select id="fa_target_type" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                    '<option value="">请选择类型</option>' +
-                    '<option value="B2C保险">B2C保险</option>' +
-                    '<option value="B2C小微贷">B2C小微贷</option>' +
-                    '<option value="B2C百人代发">B2C百人代发</option>' +
-                    '<option value="C2B授信">C2B授信</option>' +
-                    '<option value="C2B高质量开户">C2B高质量开户</option>' +
-                    '<option value="B2B百人代发">B2B百人代发</option>' +
-                '</select></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">条线 *</label>' +
-                '<select id="fa_line" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                    '<option value="零售">零售</option><option value="批发">批发</option><option value="运营">运营</option>' +
-                '</select></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">客户经理姓名 *</label>' +
-                '<input id="fa_manager" type="text" placeholder="输入客户经理姓名" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">目标企业名称 *</label>' +
-                '<input id="fa_company" type="text" placeholder="输入目标企业名称" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>' +
-                    '<input id="fa_task" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>' +
-                    '<input id="fa_completed" type="number" value="0" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '</div>' +
-            '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>' +
-                '<input id="fa_record" type="text" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '<div style="display:flex;gap:10px;">' +
-                '<button onclick="fusionSubmitAdd()" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                '<button onclick="this.closest('div[style*="position:fixed"]')').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-            '</div>' +
-        '</div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-}
+            var html = '<div style="display:flex;gap:16px;overflow-x:auto;padding:12px 14px;align-items:flex-start;">';
 
-function fusionSubmitAdd() {
-    var target_type = (document.getElementById('fa_target_type')||{}).value;
-    var line = (document.getElementById('fa_line')||{}).value;
-    var manager_name = (document.getElementById('fa_manager')||{}).value.trim();
-    var target_company = (document.getElementById('fa_company')||{}).value.trim();
-    var task_count = parseInt((document.getElementById('fa_task')||{}).value) || 1;
-    var completed_count = parseInt((document.getElementById('fa_completed')||{}).value) || 0;
-    var follow_record = (document.getElementById('fa_record')||{}).value.trim();
-    if (!target_type || !manager_name || !target_company) { alert('请填写必填字段'); return; }
-    fetch('/api/fusion/targets', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ manager_name, task_category: target_type, target_type, line, task_count, completed_count, target_company, follow_record })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    }).catch(function(e){ alert('添加失败：' + e); });
-}
+            Object.keys(typeGroups).forEach(function(type) {
+                var records = typeGroups[type];
+                var colors = typeColors[type] || { color: "#374151", bg: "#f3f4f6", border: "#e5e7eb" };
 
-function fusionShowAddCompany(managerName, line, targetType) {
-    var companyName = prompt('输入目标企业名称：');
-    if (!companyName || !companyName.trim()) return;
-    fetch('/api/fusion/targets', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ manager_name: managerName, task_category: targetType, target_type: targetType, line: line, task_count: 1, completed_count: 0, target_company: companyName.trim() })
-    }).then(function(r){ return r.json(); }).then(function(){ fusionLoad(); });
-}
+                var managerGroups = {};
+                records.forEach(function(r) {
+                    var key = r.manager_name + '||' + r.line;
+                    if (!managerGroups[key]) {
+                        managerGroups[key] = { manager_name: r.manager_name, line: r.line, task_count: 0, completed_count: 0 };
+                    }
+                    managerGroups[key].task_count += r.task_count || 0;
+                    managerGroups[key].completed_count += r.completed_count || 0;
+                });
 
-function fusionShowAddType(targetType, line) {
-    var managerName = prompt('输入客户经理姓名：');
-    if (!managerName || !managerName.trim()) return;
-    fusionShowAddCompany(managerName.trim(), line, targetType);
-}
+                var managers = Object.values(managerGroups);
 
-function fusionShowEdit(id) {
-    var rec = fusionData.find(function(r){ return r.id === id; });
-    if (!rec) return;
-    var ov = document.createElement('div');
-    ov.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
-    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-    ov.innerHTML =
-        '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-            '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑目标</h3>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label>' +
-                '<input id="fe_company" type="text" value="' + (rec.target_company||'') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">任务数</label>' +
-                    '<input id="fe_task" type="number" value="' + (rec.task_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">完成数</label>' +
-                    '<input id="fe_completed" type="number" value="' + (rec.completed_count||0) + '" min="0" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-            '</div>' +
-            '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">对接客户经理</label>' +
-                '<input id="fe_contact_mgr" type="text" value="' + (rec.contact_manager||'') + '" placeholder="输入对接客户经理" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">跟进备注</label>' +
-                '<input id="fe_record" type="text" value="' + (rec.follow_record||'') + '" placeholder="可选" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-            '<div style="display:flex;gap:10px;">' +
-                '<button onclick="fusionSubmitEdit(' + id + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                '<button onclick="this.closest('div[style*="position:fixed"]')').remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-            '</div>' +
-        '</div>';
-    document.body.appendChild(ov);
-}
+                html += '<div style="min-width:200px;max-width:220px;flex-shrink:0;width:100%;">';
+                html += '<div style="padding:8px 10px;background:' + colors.bg + ';border-radius:8px 8px 0 0;border-bottom:2px solid ' + colors.border + ';text-align:center;">';
+                html += '<div style="font-size:12px;font-weight:600;color:' + colors.color + ';">' + type + '</div>';
+                html += '<div style="font-size:11px;color:' + colors.color + ';opacity:0.7;margin-top:2px;">' + managers.length + ' 位客户经理</div>';
+                html += '</div>';
+                html += '<div style="background:#fafafa;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;padding:8px;min-height:200px;">';
 
-function fusionSubmitEdit(id) {
-    var target_company = (document.getElementById('fe_company')||{}).value.trim();
-    var task_count = parseInt((document.getElementById('fe_task')||{}).value) || 0;
-    var completed_count = parseInt((document.getElementById('fe_completed')||{}).value) || 0;
-    var contact_manager = (document.getElementById('fe_contact_mgr')||{}).value.trim();
-    var follow_record = (document.getElementById('fe_record')||{}).value.trim();
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_company, task_count, completed_count, contact_manager, follow_record })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    });
-}
+                managers.forEach(function(mg) {
+                    var totalRate = mg.task_count > 0 ? Math.round(mg.completed_count / mg.task_count * 100) : 0;
+                    var rateColor = totalRate >= 50 ? "#22c55e" : totalRate > 0 ? "#f59e0b" : "#ef4444";
+                    var allDone = mg.completed_count >= mg.task_count && mg.task_count > 0;
+                    var allEmpty = mg.completed_count === 0;
+                    var badgeColor = allDone ? '#22c55e' : allEmpty ? '#d1d5db' : '#f59e0b';
+                    var badgeText = allDone ? '✅' : allEmpty ? '○' : '◐';
+                    html += '<div onclick="switchFusionView(\'table\'); setTimeout(function(){ scrollToManager(\'' + type + '\'); }, 100);" style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:box-shadow 0.15s;" onmouseenter="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                    html += '<div style="font-size:12px;font-weight:600;color:#1f2937;">' + mg.manager_name + '</div>';
+                    html += '<span style="font-size:12px;">' + badgeText + '</span>';
+                    html += '</div>';
+                    html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px;">' + mg.completed_count + ' / ' + mg.task_count + '</div>';
+                    html += '<div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:4px;">';
+                    html += '<div style="width:' + totalRate + '%;height:100%;background:' + rateColor + ';border-radius:3px;"></div>';
+                    html += '</div>';
+                    html += '<div style="text-align:right;font-size:12px;font-weight:bold;color:' + rateColor + ';">' + totalRate + '%</div>';
+                    html += '</div>';
+                });
 
-function fusionDelete(id) {
-    if (!confirm('确认删除此目标？')) return;
-    fetch('/api/fusion/targets/' + id, { method: 'DELETE' }).then(function(){ fusionLoad(); });
-}
+                html += '</div></div>';
+            });
 
-function fusionDeleteMgr(managerName, line, targetType) {
-    if (!confirm('确认删除客户经理「' + managerName + '」的全部目标？')) return;
-    fetch('/api/fusion/manager/' + encodeURIComponent(managerName) + '/' + encodeURIComponent(targetType) + '/' + encodeURIComponent(line), { method: 'DELETE' }).then(function(){ fusionLoad(); });
-}
+            html += '</div>';
+            return html;
+        }
 
-// ========== 接触记录 ==========
-function fusionShowContactLog(targetId) {
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1001;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:600px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-            '<h3 style="margin:0;font-size:16px;color:#374151;">📋 接触记录</h3>' +
-            '<div style="display:flex;gap:8px;">' +
-                '<button onclick="fusionAddContactLog(' + targetId + ')" style="padding:6px 12px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:12px;cursor:pointer;">+ 新增记录</button>' +
-                '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).parentElement.remove()" style="padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;cursor:pointer;">关闭</button>' +
-            '</div>' +
-        '</div>' +
-        '<div id="fusionContactLogList" style="flex:1;overflow-y:auto;min-height:200px;"><p style="text-align:center;color:#999;padding:40px;">加载中...</p></div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-    fusionLoadContactLogs(targetId);
-}
+        var FOLLOW_TYPES = {
+            'phone':  { label: '📞 电话', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+            'visit':  { label: '🏢 面访', color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
+            'wechat': { label: '💬 微信', color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0' },
+            'docs':   { label: '📋 资料', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' }
+        };
+        function getFollowTypeCfg(t) { return FOLLOW_TYPES[t] || FOLLOW_TYPES['phone']; }
+        function getFollowTypeLabel(t) { return getFollowTypeCfg(t).label; }
+        function getFollowTypeStyle(t) { var c = getFollowTypeCfg(t); return 'color:' + c.color + ';background:' + c.bg + ';border:1px solid ' + c.border + ';padding:1px 5px;border-radius:4px;font-size:10px;display:inline-block;'; }
 
-function fusionLoadContactLogs(targetId) {
-    var container = document.getElementById('fusionContactLogList');
-    if (!container) return;
-    fetch('/api/contact-log/target/' + targetId + '/logs')
-        .then(function(r){ return r.json(); })
-        .then(function(logs) {
-            if (!logs || logs.length === 0) {
-                container.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px;">暂无接触记录，点击「新增记录」开始添加</div>';
+
+        function makeFollowRow(rec, managerName, line, targetType, companyName) {
+            var rid = rec && rec.id ? rec.id : 'new_' + Date.now();
+            var rType = (rec && rec.follow_type) || 'phone';
+            var rDate = rec && rec.updated_at ? rec.updated_at.substr(0, 16) : new Date().toISOString().substr(0, 16);
+            var rContent = rec && rec.follow_record ? rec.follow_record.replace(/"/g, '&quot;') : '';
+            var html = '<div class="f-row" data-rid="' + rid + '" data-mgr="' + managerName.replace(/"/g, '&quot;') + '" data-line="' + (line||'').replace(/"/g, '&quot;') + '" data-type="' + targetType.replace(/"/g, '&quot;') + '" data-co="' + companyName.replace(/"/g, '&quot;') + '" style="display:flex;align-items:center;gap:5px;padding:4px 6px;background:white;border-radius:6px;margin-bottom:3px;border:1px solid #e5e7eb;">';
+            html += '<input type="datetime-local" value="' + rDate + '" data-date style="font-size:11px;color:#374151;border:1px solid #e5e7eb;border-radius:5px;padding:3px 5px;width:145px;background:#f9fafb;cursor:pointer;">';
+            html += '<div style="display:flex;gap:2px;flex-shrink:0;">';
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var cfg = FOLLOW_TYPES[t];
+                var isActive = rType === t;
+                html += '<span data-ft="' + t + '" onclick="switchFollowType(this)" style="padding:2px 6px;border-radius:5px;font-size:10px;cursor:pointer;' + (isActive ? 'opacity:1;box-shadow:0 0 0 2px ' + cfg.border + ';' : 'opacity:0.5;') + getFollowTypeStyle(t).replace('display:inline-block;', '') + '" title="' + cfg.label + '">' + cfg.label + '</span>';
+            });
+            html += '</div>';
+            html += '<input type="text" value="' + rContent + '" placeholder="跟进内容..." data-content onfocus="this.style.borderColor=&#39;#667eea&#39;;this.style.boxShadow=&#39;0 0 0 2px #c4b5fd&#39;;this.style.width=&#39;220px&#39;;" onblur="saveFollowRecInput(this)" style="flex:1;min-width:120px;font-size:11px;color:#374151;border:1px solid #e5e7eb;border-radius:5px;padding:3px 6px;background:white;transition:all 0.15s;">';
+            html += '<button onclick="var par=this.closest(\x27.f-row\x27);var n=makeFollowRow(null,par.getAttribute(\x27data-mgr\x27),par.getAttribute(\x27data-line\x27),par.getAttribute(\x27data-type\x27),par.getAttribute(\x27data-co\x27));par.insertAdjacentHTML(\x27afterend\x27,n);this.style.display=\'none\';" style="padding:2px 6px;font-size:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:4px;cursor:pointer;color:#7c3aed;flex-shrink:0;">➕</button>';
+            html += '<button onclick="deleteFollowRow(this,' + (rec && rec.id ? rec.id : 0) + ')" style="padding:2px 6px;font-size:10px;background:white;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;flex-shrink:0;">🗑️</button>';
+            html += '</div>';
+            return html;
+        }
+        function switchFollowType(el) {
+            var par = el.closest('.f-row');
+            par.querySelectorAll('[data-ft]').forEach(function(s) { s.style.opacity = '0.5'; s.style.boxShadow = 'none'; });
+            el.style.opacity = '1';
+            el.style.boxShadow = '0 0 0 2px ' + FOLLOW_TYPES[el.getAttribute('data-ft')].border + ';';
+        }
+        function saveFollowRecInput(el) {
+            var par = el.closest('.f-row');
+            var content = par.querySelector('[data-content]').value.trim();
+            if (!content) { el.style.borderColor = '#e5e7eb'; return; }
+            var ftEl = par.querySelector('[data-ft][style*="opacity:1"]') || par.querySelector('[data-ft]');
+            var fd = par.querySelector('[data-date]').value;
+            var rid = par.getAttribute('data-rid');
+            var isNew = rid.startsWith('new_');
+            var body = { follow_record: content, follow_type: ftEl ? ftEl.getAttribute('data-ft') : 'phone' };
+            if (fd) body.updated_at = fd + ':00';
+            if (!isNew) {
+                fetch('/api/fusion/followup/' + rid, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function() { loadFusionData(); });
+            } else {
+                var payload = { manager_name: par.getAttribute('data-mgr'), line: par.getAttribute('data-line'), target_type: par.getAttribute('data-type'), target_company: par.getAttribute('data-co'), follow_record: content, follow_type: ftEl ? ftEl.getAttribute('data-ft') : 'phone', task_count: 1, completed_count: 0 };
+                if (fd) payload.updated_at = fd + ':00';
+                fetch('/api/fusion/followup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function() { loadFusionData(); });
+            }
+            el.style.borderColor = '#e5e7eb';
+        }
+        function deleteFollowRow(el, recordId) {
+            var par = el.closest('.f-row');
+            if (recordId > 0) {
+                if (!confirm('删除此条跟进记录?')) return;
+                fetch('/api/fusion/followup/' + recordId, { method: 'DELETE' }).then(function() { loadFusionData(); });
+            } else {
+                par.remove();
+            }
+        }
+
+        function showAddFollowModal(managerName, line, targetType, companyName) {
+            var ov = document.createElement('div');
+            ov.id = 'followModalOverlay';
+            ov.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            var h = '<div style="background:white;border-radius:12px;padding:20px;width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);">';
+            h += '<div style="font-size:15px;font-weight:600;margin-bottom:14px;color:#374151;">➕ 添加跟进记录</div>';
+            h += '<div style="margin-bottom:14px;"><div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:500;">跟进方式</div><div style="display:flex;gap:8px;flex-wrap:wrap;">';
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var c = FOLLOW_TYPES[t];
+                h += '<div id="ftypebtn_' + t + '" onclick="selectFollowType(\' + t + \')" style="padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;' + getFollowTypeStyle(t) + '">' + c.label + '</div>';
+            });
+            h += '</div></div>';
+            h += '<div style="margin-bottom:14px;"><div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:500;">跟进内容</div>';
+            h += '<textarea id="followContentInput" placeholder="输入跟进内容..." style="width:100%;height:80px;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea></div>';
+            h += '<div style="display:flex;gap:10px;">';
+            h += '<button onclick="confirmAddFollow(managerName,line,targetType,companyName)" style="flex:1;padding:9px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;">保存</button>';
+            h += '<button onclick="closeFollowModal()" style="flex:1;padding:9px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer;">取消</button>';
+            h += '</div></div>';
+            ov.innerHTML = h;
+            document.body.appendChild(ov);
+            ov.onclick = function(e) { if(e.target === ov) closeFollowModal(); };
+            window._selFollowType = 'phone';
+            document.getElementById('ftypebtn_phone').style.outline = '2px solid #667eea';
+        }
+        function selectFollowType(type) {
+            window._selFollowType = type;
+            Object.keys(FOLLOW_TYPES).forEach(function(t) {
+                var el = document.getElementById('ftypebtn_' + t);
+                if (el) el.style.outline = t === type ? '2px solid #667eea' : 'none';
+            });
+        }
+        function confirmAddFollow(managerName, line, targetType, companyName) {
+            var content = document.getElementById('followContentInput').value.trim();
+            if (!content) { alert('请输入跟进内容'); return; }
+            closeFollowModal();
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName, follow_record: content, follow_type: window._selFollowType || 'phone', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+        function closeFollowModal() {
+            var el = document.getElementById('followModalOverlay');
+            if (el) el.remove();
+        }
+
+function loadFusionData() {
+            var lineFilter = (document.getElementById("fusionLineFilter") || {}).value || "";
+            var followUrl = "/api/fusion/followup" + (lineFilter ? "?line=" + encodeURIComponent(lineFilter) : "");
+            Promise.all([
+                fetch("/api/fusion/dashboard").then(function(r) { return r.json(); }),
+                fetch(followUrl).then(function(r) { return r.json(); })
+            ]).then(function(results) {
+                renderFusionDashboard(results[0]);
+                allFusionTargets = results[1];
+                renderFusionContent();
+            }).catch(function(e) { console.error(e); });
+        }
+
+        function renderFusionDashboard(data) {
+            var container = document.getElementById("fusionDashboard");
+            if (!container) return;
+            var typeMap = {
+                "B2C保险": { color: "#f59e0b", bg: "#fef3c3" },
+                "B2C小微贷": { color: "#f59e0b", bg: "#fef3c3" },
+                "B2C百人代发": { color: "#f59e0b", bg: "#fef3c3" },
+                "C2B授信": { color: "#3b82f6", bg: "#dbeafe" },
+                "C2B高质量开户": { color: "#3b82f6", bg: "#dbeafe" },
+                "B2B百人代发": { color: "#8b5cf6", bg: "#ede9fe" }
+            };
+            container.innerHTML = data.map(function(d) {
+                var style = typeMap[d.target_type] || { color: "#6b7280", bg: "#f3f4f6" };
+                var rate = d.completion_rate || 0;
+                var rateColor = rate >= 50 ? "#22c55e" : rate > 0 ? "#f59e0b" : "#ef4444";
+                return '<div style="background:' + style.bg + ';border-left:4px solid ' + style.color + ';padding:10px 12px;border-radius:8px;cursor:pointer;" onclick="scrollToManager(\'' + d.target_type + '\')">' +
+                    '<div style="font-size:12px;font-weight:600;color:' + style.color + ';margin-bottom:4px;">' + d.target_type + '</div>' +
+                    '<div style="font-size:20px;font-weight:bold;color:' + rateColor + ';margin-bottom:2px;">' + rate + '%</div>' +
+                    '<div style="font-size:11px;color:#666;">' + (d.total_completed || 0) + '/' + (d.total_task || 0) + ' · ' + (d.manager_count || 0) + '人</div></div>';
+            }).join("");
+        }
+
+        function scrollToManager(targetType) {
+            var el = document.getElementById('fusion_type_' + targetType);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function getStatusIcon(mg) {
+            if (mg.completed_count >= mg.task_count && mg.task_count > 0) return '<span style="color:#22c55e;font-size:13px;" title="已完成">●</span>';
+            var hasAny = mg.completed_count > 0;
+            var allEmpty = mg.completed_count === 0;
+            if (allEmpty) return '<span style="color:#d1d5db;font-size:13px;" title="未开始">○</span>';
+            return '<span style="color:#f59e0b;font-size:13px;" title="进行中">◐</span>';
+        }
+
+        function renderFusionContent() {
+            var container = document.getElementById("fusionContent");
+            if (!container) return;
+
+            var statusFilter = (document.getElementById("fusionStatusFilter") || {}).value || '';
+            var searchText = (document.getElementById("fusionSearch") || {}).value || '';
+
+            if (!allFusionTargets || !allFusionTargets.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
-            container.innerHTML = logs.map(function(log) {
-                var methodColors = { '电话':'#8b5cf6', '上门':'#10b981', '微信':'#06b6d4', '短信':'#f59e0b', '邮件':'#3b82f6', '其他':'#6b7280' };
-                var color = methodColors[log.contact_method] || '#6b7280';
-                var nextInfo = log.next_followup_time ? '<span style="color:#f59e0b;font-size:11px;">📅 下次跟进: ' + log.next_followup_time.substr(0,16) + '</span>' : '';
-                return '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;">' +
-                    '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-                        '<div style="display:flex;gap:8px;align-items:center;">' +
-                            '<span style="background:' + color + ';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (log.contact_method||'其他') + '</span>' +
-                            '<span style="font-size:12px;color:#6b7280;">' + (log.contact_time||'').substr(0,16) + '</span>' +
-                            (log.created_by ? '<span style="font-size:11px;color:#9ca3af;">' + log.created_by + '</span>' : '') +
-                        '</div>' +
-                        '<div style="display:flex;gap:6px;">' +
-                            '<button onclick="fusionEditContactLog(' + log.id + ')" style="font-size:10px;padding:2px 6px;background:#667eea;color:white;border:none;border-radius:4px;cursor:pointer;">编辑</button>' +
-                            '<button onclick="fusionDeleteContactLog(' + log.id + ',' + targetId + ')" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">删除</button>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div style="font-size:13px;color:#374151;margin-bottom:6px;">' + (log.contact_content||'') + '</div>' +
-                    nextInfo +
-                '</div>';
-            }).join('');
-        })
-        .catch(function() {
-            container.innerHTML = '<div style="text-align:center;color:#ef4444;padding:40px;">加载失败</div>';
-        });
-}
 
-function fusionAddContactLog(targetId) {
-    var now = new Date();
-    var defaultTime = now.toISOString().substr(0,16);
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1002;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:480px;max-width:90vw;">' +
-        '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">新增接触记录</h3>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达时间 *</label>' +
-            '<input id="clog_time" type="datetime-local" value="' + defaultTime + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达方式 *</label>' +
-            '<select id="clog_method" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                '<option value="电话">电话</option>' +
-                '<option value="上门">上门</option>' +
-                '<option value="微信">微信</option>' +
-                '<option value="短信">短信</option>' +
-                '<option value="邮件">邮件</option>' +
-                '<option value="其他">其他</option>' +
-            '</select></div>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">沟通内容 *</label>' +
-            '<textarea id="clog_content" rows="3" placeholder="简要记录本次沟通内容..." style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;"></textarea></div>' +
-        '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">计划下次跟进时间</label>' +
-            '<input id="clog_next" type="datetime-local" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-        '<div style="display:flex;gap:10px;">' +
-            '<button onclick="fusionSubmitContactLog(' + targetId + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-            '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-        '</div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-}
+            var typeGroups = {};
+            allFusionTargets.forEach(function(r) {
+                var type = r.target_type || r.task_category || '未知';
+                if (!typeGroups[type]) typeGroups[type] = [];
+                typeGroups[type].push(r);
+            });
 
-function fusionSubmitContactLog(targetId) {
-    var contact_time = (document.getElementById('clog_time')||{}).value;
-    var contact_method = (document.getElementById('clog_method')||{}).value;
-    var contact_content = (document.getElementById('clog_content')||{}).value.trim();
-    var next_followup_time = (document.getElementById('clog_next')||{}).value;
-    if (!contact_time || !contact_method || !contact_content) { alert('请填写必填字段'); return; }
-    fetch('/api/contact-log/logs', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_id: targetId, contact_time: contact_time, contact_method: contact_method, contact_content: contact_content, next_followup_time: next_followup_time || null })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    }).catch(function(e){ alert('添加失败'); });
-}
+            // Update count
+            var totalMgrs = Object.values(typeGroups).reduce(function(acc, recs) {
+                var seen = {};
+                recs.forEach(function(r) {
+                    var key = r.manager_name + '||' + r.line;
+                    if (!seen[key]) { seen[key] = true; acc.push(key); }
+                });
+                return acc;
+            }, []).length;
+            var cntEl = document.getElementById('fusionCount');
+            if (cntEl) cntEl.textContent = totalMgrs;
 
-function fusionEditContactLog(logId) {
-    fetch('/api/contact-log/target/0/logs')
-        .then(function(r){ return r.json(); })
-        .then(function(){});
-    fetch('/api/contact-log/logs/' + logId, { method: 'GET' })
-        .then(function(r){ return r.json(); })
-        .then(function(log) {
-            var overlay = document.createElement('div');
-            overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1003;display:flex;align-items:center;justify-content:center;';
-            overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-            overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:480px;max-width:90vw;">' +
-                '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑接触记录</h3>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达时间</label>' +
-                    '<input id="clog_time" type="datetime-local" value="' + ((log.contact_time||'').substr(0,16)) + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">触达方式</label>' +
-                    '<select id="clog_method" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">' +
-                        '<option value="电话"' + (log.contact_method==='电话'?' selected':'') + '>电话</option>' +
-                        '<option value="上门"' + (log.contact_method==='上门'?' selected':'') + '>上门</option>' +
-                        '<option value="微信"' + (log.contact_method==='微信'?' selected':'') + '>微信</option>' +
-                        '<option value="短信"' + (log.contact_method==='短信'?' selected':'') + '>短信</option>' +
-                        '<option value="邮件"' + (log.contact_method==='邮件'?' selected':'') + '>邮件</option>' +
-                        '<option value="其他"' + (log.contact_method==='其他'?' selected':'') + '>其他</option>' +
-                    '</select></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">沟通内容</label>' +
-                    '<textarea id="clog_content" rows="3" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;">' + (log.contact_content||'') + '</textarea></div>' +
-                '<div style="margin-bottom:16px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">计划下次跟进时间</label>' +
-                    '<input id="clog_next" type="datetime-local" value="' + ((log.next_followup_time||'').substr(0,16)) + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
-                '<div style="display:flex;gap:10px;">' +
-                    '<button onclick="fusionSubmitEditContactLog(' + logId + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-                    '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-                '</div>' +
-            '</div></div>';
-            document.body.appendChild(overlay);
-        });
-}
+            if (currentFusionView === 'kanban') {
+                container.innerHTML = renderKanbanView(typeGroups);
+                return;
+            }
 
-function fusionSubmitEditContactLog(logId) {
-    var contact_time = (document.getElementById('clog_time')||{}).value;
-    var contact_method = (document.getElementById('clog_method')||{}).value;
-    var contact_content = (document.getElementById('clog_content')||{}).value.trim();
-    var next_followup_time = (document.getElementById('clog_next')||{}).value;
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_time: contact_time, contact_method: contact_method, contact_content: contact_content, next_followup_time: next_followup_time || null })
-    }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    });
-}
+            var html = '';
 
-function fusionDeleteContactLog(logId, targetId) {
-    if (!confirm('确认删除此接触记录？')) return;
-    fetch('/api/contact-log/logs/' + logId, { method: 'DELETE' }).then(function() {
-        var list = document.getElementById('fusionContactLogList');
-        if (list) fusionLoadContactLogs(targetId);
-        fusionLoad();
-    });
-}
+            Object.keys(typeGroups).sort().forEach(function(type) {
+                var records = typeGroups[type];
 
-// ========== 内联编辑支持函数 ==========
-function fusionInlineSave(id, field) {
-    var el = document.querySelector('.fusion-inline-' + field + '[data-id="' + id + '"]');
-    if (!el) return;
-    var value = el.value;
-    var data = {};
-    data[field] = value;
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(data)
-    }).then(function(r){ return r.json(); }).then(function() {
-        // 更新本地缓存
-        var rec = fusionData.find(function(r){ return r.id === id; });
-        if (rec) rec[field] = value;
-        showToast('已保存', 1500);
-    }).catch(function(){ showToast('保存失败', 2000); });
-}
+                // Filter by status and search
+                var managerGroups = {};
+                records.forEach(function(r) {
+                    var key = r.manager_name + '||' + r.line;
+                    if (!managerGroups[key]) {
+                        managerGroups[key] = { manager_name: r.manager_name, line: r.line, companies: {}, task_count: 0, completed_count: 0, records: [] };
+                    }
+                    var co = r.target_company || '未命名企业';
+                    if (!managerGroups[key].companies[co]) {
+                        managerGroups[key].companies[co] = { name: co, records: [], task_count: 0, completed_count: 0 };
+                    }
+                    managerGroups[key].companies[co].records.push(r);
+                    managerGroups[key].companies[co].task_count += r.task_count || 0;
+                    managerGroups[key].companies[co].completed_count += r.completed_count || 0;
+                    managerGroups[key].task_count += r.task_count || 0;
+                    managerGroups[key].completed_count += r.completed_count || 0;
+                    managerGroups[key].records.push(r);
+                });
 
-function fusionShowEditInline(id, btn) {
-    var rec = fusionData.find(function(r){ return r.id === id; });
-    if (!rec) return;
-    var overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1005;display:flex;align-items:center;justify-content:center;';
-    overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
-    overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:440px;max-width:90vw;">' +
-        '<h3 style="margin:0 0 16px;font-size:16px;color:#374151;">编辑目标企业</h3>' +
-        '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;color:#6b7280;margin-bottom:4px;">企业名称</label>' +
-            '<input id="fei_company" type="text" value="' + (rec.target_company||'') + '" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
-        '<div style="display:flex;gap:10px;">' +
-            '<button onclick="fusionSubmitEditInline(' + id + ')" style="flex:1;padding:10px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">保存</button>' +
-            '<button onclick="this.closest(\x27div[style*=position:fixed]\x27).remove()" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">取消</button>' +
-        '</div>' +
-    '</div></div>';
-    document.body.appendChild(overlay);
-}
+                var typeColors = {
+                    "B2C保险": { header: "#92400e", headerBg: "#fef3c3" },
+                    "B2C小微贷": { header: "#92400e", headerBg: "#fef3c3" },
+                    "B2C百人代发": { header: "#92400e", headerBg: "#fef3c3" },
+                    "C2B授信": { header: "#1e40af", headerBg: "#dbeafe" },
+                    "C2B高质量开户": { header: "#1e40af", headerBg: "#dbeafe" },
+                    "B2B百人代发": { header: "#6d28d9", headerBg: "#ede9fe" }
+                };
+                var colors = typeColors[type] || { header: "#374151", headerBg: "#f3f4f6" };
+                var coCount = Object.keys(managerGroups).length;
 
-function fusionSubmitEditInline(id) {
-    var target_company = (document.getElementById('fei_company')||{}).value.trim();
-    if (!target_company) { alert('企业名称不能为空'); return; }
-    fetch('/api/fusion/targets/' + id, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_company: target_company })
-    }).then(function(r){ return r.json(); }).then(function() {
-        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el){ el.remove(); });
-        fusionLoad();
-    });
-}
+                html += '<div id="fusion_type_' + type + '" style="margin-bottom:20px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:' + colors.headerBg + ';border-radius:8px 8px 0 0;border-bottom:2px solid ' + (colors.headerBg === "#fef3c3" ? "#fde68a" : colors.headerBg === "#dbeafe" ? "#bfdbfe" : "#ddd6fe") + ';">';
+                html += '<span style="font-size:13px;font-weight:600;color:' + colors.header + ';">📋 ' + type + '</span>';
+                html += '<div style="display:flex;align-items:center;gap:8px;">';
+                html += '<span style="font-size:11px;color:' + colors.header + ';opacity:0.7;">' + coCount + ' 位客户经理</span>';
+                html += '<button onclick="addFusionManagerInline(\'' + type + '\')" style="padding:2px 10px;font-size:11px;background:white;color:' + colors.header + ';border:1px solid ' + (colors.headerBg === "#fef3c3" ? "#fde68a" : colors.headerBg === "#dbeafe" ? "#bfdbfe" : "#ddd6fe") + ';border-radius:20px;cursor:pointer;">+ 添加客户经理</button>';
+                html += '</div></div>';
 
-function fusionInlineAddLog(targetId, btn) {
-    // 在触发按钮上方插入新记录输入行
-    var now = new Date();
-    var defaultTime = now.toISOString().substr(0,16);
-    var logList = btn.closest('.fusion-log-list');
-    var emptyMsg = logList.querySelector('.fusion-log-empty-hint');
-    if (emptyMsg) emptyMsg.remove();
-    var newEl = document.createElement('div');
-    newEl.className = 'fusion-log-item fusion-log-new';
-    newEl.style = 'background:#f0fdf4;border:2px solid #22c55e;border-radius:8px;padding:10px;';
-    newEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
-        '<span style="font-size:11px;color:#9ca3af;min-width:120px;">' + defaultTime + '</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'电话')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#8b5cf6;color:white;">&#30005;&#35805;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'上门')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#38754;&#35775;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'微信')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#24494;&#20449;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'短信')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#30701;&#20449;</span>' +
-        '<span onclick="fusionInlineSetNewMethod(this,'邮件')" style="padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;background:#e5e7eb;color:#374151;">&#37038;&#20214;</span>' +
-        '<div style="flex:1;"></div>' +
-        '<button onclick="fusionInlineSaveNewLog(this,' + targetId + ')" style="font-size:10px;padding:2px 6px;background:#22c55e;color:white;border:none;border-radius:4px;cursor:pointer;">&#x2714; 保存</button>' +
-        '<button onclick="fusionInlineCancelNewLog(this)" style="font-size:10px;padding:2px 6px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">&#x2716; 取消</button>' +
-    '</div>' +
-    '<div style="position:relative;margin-bottom:4px;">' +
-        '<textarea class="fusion-log-content-new" rows="2" placeholder="&#27880;&#26126;&#27880;&#26126;&#27880;&#26126;..." style="width:100%;padding:6px 6px 6px 6px;border:1px solid #22c55e;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;color:#374151;"></textarea>' +
-    '</div>';
-    logList.insertBefore(newEl, logList.firstChild);
-}
+                Object.values(managerGroups).forEach(function(mg) {
+                    var totalRate = mg.task_count > 0 ? Math.round(mg.completed_count / mg.task_count * 100) : 0;
+                    var rateColor = totalRate >= 50 ? "#22c55e" : totalRate > 0 ? "#f59e0b" : "#ef4444";
 
-function fusionInlineSetNewMethod(span, method) {
-    var parent = span.parentElement;
-    var methods = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6'};
-    var colors = {'电话':'#8b5cf6','上门':'#10b981','微信':'#06b6d4','短信':'#f59e0b','邮件':'#3b82f6'};
-    parent.querySelectorAll('span[data-method]').forEach(function(s){ s.removeAttribute('data-method'); s.style.background='#e5e7eb'; s.style.color='#374151';; });
-    span.setAttribute('data-method', method);
-    span.style.background = colors[method];
-    span.style.color = 'white';
-}
+                    var statusIcon = getStatusIcon(mg);
+                    var companyList = Object.values(mg.companies);
+                    var coDots = companyList.map(function(co) {
+                        return co.records.length > 0
+                    }).join('');
 
-function fusionInlineSaveNewLog(btn, targetId) {
-    var newEl = btn.closest('.fusion-log-new');
-    var ta = newEl.querySelector('.fusion-log-content-new');
-    var content = ta.value.trim();
-    if (!content) { alert('请输入沟通内容'); return; }
-    var selectedMethodSpan = newEl.querySelector('span[data-method]');
-    var method = selectedMethodSpan ? selectedMethodSpan.getAttribute('data-method') : '电话';
-    var now = new Date();
-    var contact_time = now.toISOString().substr(0,16);
-    fetch('/api/contact-log/logs', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ target_id: targetId, contact_time: contact_time, contact_method: method, contact_content: content })
-    }).then(function(r){ return r.json(); }).then(function() {
-        fusionLoad();
-    }).catch(function(){ alert('保存失败'); });
-}
+                    var lastFollow = '';
+                    var allEmpty = mg.completed_count === 0;
+                    var allDone = mg.completed_count >= mg.task_count && mg.task_count > 0;
+                    var statusLabel = allDone ? '<span style="color:#22c55e;font-size:11px;font-weight:500;">已完成</span>'
+                        : allEmpty ? '<span style="color:#d1d5db;font-size:11px;font-weight:500;">未开始</span>'
+                        : '<span style="color:#f59e0b;font-size:11px;font-weight:500;">进行中</span>';
 
-function fusionInlineCancelNewLog(btn) {
-    var el = btn.closest('.fusion-log-new');
-    var logList = el.parentElement;
-    el.remove();
-    if (logList.querySelectorAll('.fusion-log-item').length === 0) {
-        logList.innerHTML = '<div class="fusion-log-empty-hint" style="text-align:center;color:#d1d5db;font-size:12px;padding:16px;">&#x270D; 点击上方「+ 添加」新增跟进记录</div>';
-    }
-}
+                    if (mg.records.length > 0) {
+                        var sortedRecs = mg.records.slice().sort(function(a, b) { return (b.updated_at||'').localeCompare(a.updated_at||''); });
+                        var lastRec = sortedRecs[0];
+                        lastFollow = lastRec && lastRec.updated_at ? lastRec.updated_at.substr(0, 16).replace('T', ' ') : '';
+                    }
 
-function fusionInlineSetMethod(logId, method) {
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_method: method })
-    }).then(function(){ fusionLoad(); });
-}
+                    html += '<div style="width:100%;">';
+                    html += '<div class="fusion-row" style="display:grid;grid-template-columns:20px 80px minmax(0,1fr) 60px 70px 55px 85px 70px 16px;align-items:center;padding:10px 14px;background:white;border-bottom:1px solid #f3f4f6;position:relative;width:100%;box-sizing:border-box;" onmouseenter="showFusionActions(this)" onmouseleave="hideFusionActions(this)">';
 
-function fusionInlineSaveContent(logId, btn) {
-    var ta = btn.closest('.fusion-log-item').querySelector('.fusion-log-content');
-    if (!ta) return;
-    var content = ta.value.trim();
-    if (!content) { alert('内容不能为空'); return; }
-    fetch('/api/contact-log/logs/' + logId, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ contact_content: content })
-    }).then(function(){ showToast('已保存', 1200); });
-}
+                    // Status icon
+                    html += '<div style="font-size:16px;margin-right:10px;text-align:center;width:20px;box-sizing:border-box;grid-column:1;">' + statusIcon + '</div>';
 
-function fusionInlineDeleteLog(logId, targetId) {
-    if (!confirm('确认删除此跟进记录？')) return;
-    fetch('/api/contact-log/logs/' + logId, { method: 'DELETE' }).then(function() { fusionLoad(); });
-}
+                    // Manager name
+                    html += '<div style="width:80px;grid-column:2;box-sizing:border-box;min-width:0;overflow:hidden;">';
+                    html += '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + mg.manager_name + '</div>';
+                    html += '</div>';
 
-    </script>
+                    // Company dots + names preview
+                    html += '<div style="grid-column:3;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;overflow:hidden;">';
+                    companyList.slice(0, 5).forEach(function(co, ci) {
+                        var coR = co.task_count > 0 ? Math.round(co.completed_count / co.task_count * 100) : 0;
+                        var coColor = coR >= 50 ? "#22c55e" : coR > 0 ? "#f59e0b" : "#ef4444";
+                        var hasF = co.records.length > 0;
+                        html += '<div onclick="event.stopPropagation(); toggleFusionCompanyPreview(this)" style="display:flex;align-items:center;gap:3px;padding:2px 7px;background:' + (hasF ? '#f0fdf4' : '#fffbeb') + ';border:1px solid ' + (hasF ? '#bbf7d0' : '#fde68a') + ';border-radius:20px;font-size:11px;cursor:pointer;max-width:120px;" title="' + co.name + ' - 点击查看跟进">';
+                        html += '<span style="color:' + (hasF ? '#22c55e' : '#fbbf24') + ';font-size:9px;">' + (hasF ? '●' : '○') + '</span>';
+                        html += '<span style="color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px;">' + co.name.substring(0, 6) + '</span>';
+                        html += '<span style="color:' + coColor + ';font-weight:600;">' + coR + '%</span>';
+                        html += '</div>';
+                    });
+                    if (companyList.length > 5) {
+                        html += '<span style="font-size:10px;color:#9ca3af;padding:2px 6px;background:#f3f4f6;border-radius:20px;">+' + (companyList.length - 5) + '</span>';
+                    }
+                    html += '</div>';
+
+                    // Task/completed
+                    html += '<div onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:60px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;grid-column:4;box-sizing:border-box;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改任务/完成数">';
+                    html += '<div style="font-size:11px;color:#9ca3af;margin-bottom:1px;">任务/完成</div>';
+                    html += '<div style="font-size:13px;font-weight:600;color:#374151;">' + mg.completed_count + ' / ' + mg.task_count + '</div>';
+                    html += '</div>';
+
+                    // Progress
+                    html += '<div onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:70px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;grid-column:5;box-sizing:border-box;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击+1完成数">';
+                    html += '<div style="font-size:14px;font-weight:bold;color:' + rateColor + ';">' + totalRate + '%</div>';
+                    html += '<div style="width:60px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-top:2px;"><div style="width:' + totalRate + '%;height:100%;background:' + rateColor + ';border-radius:2px;"></div></div>';
+                    html += '</div>';
+
+                    // Status label
+                    html += '<div style="min-width:55px;text-align:center;grid-column:6;box-sizing:border-box;">' + statusLabel + '</div>';
+
+                    // Last follow time
+                    html += '<div style="min-width:85px;text-align:right;font-size:11px;color:#9ca3af;grid-column:7;box-sizing:border-box;">' + (lastFollow ? lastFollow.replace(' ', '<br>') : '-') + '</div>';
+
+
+                    html += '<div onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:2px 8px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;white-space:nowrap;grid-column:8;box-sizing:border-box;width:70px;text-align:center;" onmouseenter=\"this.style.background=\'#5a67d8\'\" onmouseleave=\"this.style.background=\'#667eea\'\" title="添加目标企业">+ 企业</div>';
+
+                    // Hover action bar (hidden by default)
+                    html += '<div class="fusion-actions" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);gap:6px;background:white;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;">';
+                    html += '<button onclick="event.stopPropagation(); addFusionFollowForManager(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">+ 跟进</button>';
+                    html += '<button onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#22c55e;border:1px solid #22c55e;border-radius:6px;cursor:pointer;">+1完成</button>';
+                    html += '<button onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;">✏️ 编辑</button>';
+                    html += '<button onclick="event.stopPropagation(); deleteFusionManager(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:4px 10px;font-size:11px;background:white;color:#ef4444;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">🗑️</button>';
+                    html += '</div>';
+
+                    html += '</div>';
+
+                    // Detail section (hidden)
+                    html += '<div style="background:#fafafa;padding:12px 14px;border-bottom:1px solid #e5e7eb;width:100%;box-sizing:border-box;display:block;">';
+                    companyList.forEach(function(co) {
+                        var coTask = co.task_count, coComp = co.completed_count;
+                        var coRate = coTask > 0 ? Math.round(coComp / coTask * 100) : 0;
+                        var coRateColor = coRate >= 50 ? "#22c55e" : coRate > 0 ? "#f59e0b" : "#ef4444";
+                        var hasFollow = co.records.length > 0;
+                        var contactMgr = co.records.length > 0 && co.records[0].contact_manager ? co.records[0].contact_manager : '';
+                        var borderLeft = hasFollow ? "3px solid #22c55e" : "3px solid #fbbf24";
+                        var cardBg = hasFollow ? "#f0fdf4" : "#fffbeb";
+
+                        html += '<div style="border:' + borderLeft + ';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:' + cardBg + ';position:relative;">';
+                        html += '<div onclick="event.stopPropagation(); deleteFusionCompany(this, ' + co.records[0].id + ', \'' + co.name.replace(/'/g, "\\'") + '\')" style="position:absolute;top:6px;right:8px;padding:3px 6px;font-size:11px;cursor:pointer;color:#9ca3af;transition:color 0.15s;z-index:5;" onmouseenter=\"this.style.color=\'#ef4444\'\" onmouseleave=\"this.style.color=\'#9ca3af\'\" title="删除企业">🗑️</div>';
+                        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+                        html += '<div onclick="event.stopPropagation(); editFusionCompanyName(this, \'' + co.name.replace(/'/g, "\\'") + '\', ' + co.records[0].id + ')" style="font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#fef3c3\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改企业名称">' + co.name + ' <span style="font-size:10px;color:#9ca3af;">✏️</span></div>';
+                        html += '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">';
+                        html += '<span style="font-size:11px;color:#7c3aed;white-space:nowrap;">对接客户经理:</span>';
+                        html += '<input type="text" value="' + (contactMgr||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(contactMgr||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_manager:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f3f4f6;outline:none;font-size:11px;color:#7c3aed;padding:2px 6px;border-radius:4px;width:72px;" placeholder="输入" title="' + (contactMgr||'点击添加') + '">';
+                        html += '<input type="text" value="' + (co.records[0].contact_info||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(co.records[0].contact_info||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_info:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f9fafb;outline:none;font-size:11px;color:#6b7280;padding:2px 6px;border-radius:4px;flex:1;min-width:60px;" placeholder="客户简介" title="' + (co.records[0].contact_info||'点击添加简介') + '">';
+                        html += '</div>';
+                        html += '</div>';
+
+                        // Follow-up section - 单行内联编辑
+                        co.records.slice().reverse().forEach(function(rec) {
+                            html += makeFollowRow(rec, mg.manager_name, mg.line, type, co.name);
+                        });
+
+
+                        html += '</div>';
+                    });
+
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function showFusionActions(row) {
+            var actions = row.querySelector('.fusion-actions');
+            if (actions) actions.style.display = 'flex';
+        }
+
+        function hideFusionActions(row) {
+            var actions = row.querySelector('.fusion-actions');
+            if (actions) actions.style.display = 'none';
+        }
+
+        function toggleFusionManagerRow(row) {
+            var arrow = row.querySelector('.fusion-row-arrow');
+            var details = [];
+            var sibling = row.nextElementSibling;
+            while (sibling) {
+                if (sibling.classList && sibling.classList.contains('fusion-detail')) {
+                    details.push(sibling);
+                    // Only look for siblings that are direct children of the manager section
+                    // Stop if we hit another fusion-row (next manager)
+                    if (sibling.nextElementSibling && sibling.nextElementSibling.classList.contains('fusion-row')) {
+                        break;
+                    }
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            var anyOpen = false;
+            for (var i = 0; i < details.length; i++) {
+                if (details[i].style.display !== 'none') {
+                    anyOpen = true;
+                    break;
+                }
+            }
+            for (var i = 0; i < details.length; i++) {
+                details[i].style.display = anyOpen ? 'none' : 'block';
+            }
+            if (arrow) arrow.textContent = anyOpen ? '▶' : '▼';
+        }
+        function toggleFollowTimeline(el) {
+            var timeline = el.nextElementSibling;
+            var arrow = el.querySelector('.fusion-follow-arrow');
+            if (!timeline) return;
+            var isOpen = timeline.style.display !== 'none';
+            timeline.style.display = isOpen ? 'none' : 'block';
+            if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+        }
+
+        function toggleFusionCompanyPreview(el) {
+            el.closest('.fusion-detail').style.display = 'block';
+            var row = el.closest('.fusion-row');
+            var arrow = row.querySelector('.fusion-row-arrow');
+            if (arrow) arrow.textContent = '▼';
+        }
+
+        function escapeHtmlForAttr(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, ' ');
+        }
+
+        function editFusionCounts(el, managerName, line, targetType) {
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            if (!records.length) return;
+            var r = records[0];
+            var newTask = prompt('\u4fee\u6539\u4efb\u52a1\u6570:', r.task_count);
+            if (newTask === null) return;
+            var newCompleted = prompt('\u4fee\u6539\u5b8c\u6210\u6570:', r.completed_count);
+            if (newCompleted === null) return;
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_count: parseInt(newTask)||0, completed_count: parseInt(newCompleted)||0 })
+                });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function incFusionCompleted(managerName, line, targetType) {
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            if (!records.length) return;
+            var r = records[0];
+            var newCompleted = (r.completed_count || 0) + 1;
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed_count: newCompleted })
+                });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function editFusionCompanyName(el, oldName, followId) {
+            var newName = prompt('\u4fee\u6539\u4f01\u4e1a\u540d\u79f0:', oldName);
+            if (newName === null || !newName.trim() || newName.trim() === oldName) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_company: newName.trim() })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function editFusionRecordCounts(el, followId) {
+            var rec = allFusionTargets.find(function(r) { return r.id === followId; });
+            if (!rec) return;
+            var newTask = prompt('\u4fee\u6539\u4efb\u52a1\u6570:', rec.task_count);
+            if (newTask === null) return;
+            var newCompleted = prompt('\u4fee\u6539\u5b8c\u6210\u6570:', rec.completed_count);
+            if (newCompleted === null) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_count: parseInt(newTask)||0, completed_count: parseInt(newCompleted)||0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function incFusionRecordCompleted(followId, taskCount, currentCompleted) {
+            if (currentCompleted >= taskCount) {
+                alert('\u5df2\u5b8c\u6210\u6570\u5df2\u8fbe\u5230\u4efb\u52a1\u6570\u4e0a\u9650');
+                return;
+            }
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed_count: currentCompleted + 1 })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function addFusionFollowInline(el, managerName, line, targetType, companyName) {
+            var content = prompt('\u6dfb\u52a0\u8ddf\u8fdb\u8bb0\u5f55:', '');
+            if (!content) return;
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, line: line, target_type: targetType, target_company: companyName, follow_record: content, task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+
+        function addFusionFollowForManager(el, managerName, line, targetType) {
+            var companyName = prompt('输入目标企业名称(会自动创建新企业记录):', '');
+            if (!companyName || !companyName.trim()) return;
+            showAddFollowModal(managerName, line, targetType, companyName.trim());
+        }
+        function editFusionFollowInline(el, followId, currentContent) {
+            var decoded = currentContent.replace(/&quot;/g, '"').replace(/\\'/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<br>/g, '\n');
+            var newContent = prompt('\u7f16\u8f91\u8ddf\u8fdb\u8bb0\u5f55:', decoded);
+            if (newContent === null) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ follow_record: newContent })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function deleteFusionFollow(followId) {
+            if (!confirm('\u786e\u5b9a\u5220\u9669\u8fd9\u6761\u8ddf\u8fdb\u8bb0\u5f55\uff1f')) return;
+            fetch('/api/fusion/followup/' + followId, { method: 'DELETE' }).then(function() { loadFusionData(); });
+        }
+
+        function deleteFusionManager(managerName, line, targetType) {
+            if (!confirm('\u786e\u5b9a\u5220\u9669\u8be5\u5ba2\u6237\u7ecf\u7406\u6240\u6709\u8bb0\u5f55\uff1f')) return;
+            var records = allFusionTargets.filter(function(r) {
+                return r.manager_name === managerName && r.line === line && (r.target_type === targetType || r.task_category === targetType);
+            });
+            Promise.all(records.map(function(rec) {
+                return fetch('/api/fusion/followup/' + rec.id, { method: 'DELETE' });
+            })).then(function() { loadFusionData(); });
+        }
+
+        function addFusionCompanyInline(el, managerName, line, targetType) {
+            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0:', '');
+            if (!companyName || !companyName.trim()) return;
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName, task_category: targetType, target_type: targetType, line: line || '\u96f6\u552e', target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
+            }).then(function(r) {
+                if (!r.ok) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + r.status); return; }
+                loadFusionData();
+            }).catch(function(e) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + e); });
+        }
+        function deleteFusionCompany(el, followId, companyName) {
+            if (!confirm('确认删除目标企业「' + companyName + '」吗?')) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(function() { loadFusionData(); });
+        }
+        function editFusionContactMgr(el, followId, currentContact) {
+            var newContact = prompt('\u8f93\u5165\u5bf9\u63a5\u5ba2\u6237\u7ecf\u7406\u59d4\u5458(\u96f6\u552e\u6761\u7ebf):', currentContact || '');
+            if (newContact === null) return;
+            fetch('/api/fusion/followup/' + followId, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contact_manager: newContact.trim() })
+            }).then(function() { loadFusionData(); });
+        }
+
+        function addFusionManagerInline(targetType) {
+            var managerName = prompt('\u8f93\u5165\u5ba2\u6237\u7ecf\u7406\u59d4\u5458\u540d\u79f0:', '');
+            if (!managerName || !managerName.trim()) return;
+            var line = prompt('\u8f93\u5165\u6761\u7ebf(\u96f6\u552e/\u6279\u53d1,\u9ed8\u8ba4\u96f6\u552e):', '\u96f6\u552e');
+            line = line || '\u96f6\u552e';
+            var companyName = prompt('\u8f93\u5165\u76ee\u6807\u4f01\u4e1a\u540d\u79f0:', '');
+            if (!companyName || !companyName.trim()) return;
+            var content = prompt('\u8ddf\u8fdb\u5185\u5bb9(\u53ef\u7a7a):', '');
+            fetch('/api/fusion/followup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manager_name: managerName.trim(), line: line, target_type: targetType, target_company: companyName.trim(), follow_record: content || '', task_count: 1, completed_count: 0 })
+            }).then(function() { loadFusionData(); });
+        }
+
+</script>
 </body>
 </html>

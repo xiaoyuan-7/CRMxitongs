@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { db } = require("../database");
 
-// 获取任务说明（保持不变）
 router.get("/tasks", (req, res) => {
   const tasks = {
     批发条线: {
@@ -27,7 +26,6 @@ router.get("/tasks", (req, res) => {
   res.json(tasks);
 });
 
-// 获取目标列表
 router.get("/targets", (req, res) => {
   const { line, search } = req.query;
   let sql = "SELECT * FROM fusion_targets WHERE 1=1";
@@ -44,7 +42,6 @@ router.get("/targets", (req, res) => {
   });
 });
 
-// 获取统计
 router.get("/stats", (req, res) => {
   const sql = `SELECT
     target_type, line,
@@ -63,7 +60,6 @@ router.get("/stats", (req, res) => {
   });
 });
 
-// 新增目标
 router.post("/targets", (req, res) => {
   const { manager_name, task_category, target_type, line, task_count, completed_count, target_company, follow_record } = req.body;
   if (!manager_name || !target_type || !line) {
@@ -78,7 +74,6 @@ router.post("/targets", (req, res) => {
   });
 });
 
-// 更新目标
 router.put("/targets/:id", (req, res) => {
   const { task_count, completed_count, target_company, follow_record, contact_manager, contact_info, status } = req.body;
   const sql = `UPDATE fusion_targets SET
@@ -91,7 +86,6 @@ router.put("/targets/:id", (req, res) => {
   });
 });
 
-// 删除目标
 router.delete("/targets/:id", (req, res) => {
   db.run("DELETE FROM fusion_targets WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -99,7 +93,6 @@ router.delete("/targets/:id", (req, res) => {
   });
 });
 
-// 删除客户经理全部目标
 router.delete("/manager/:name/:targetType/:line", (req, res) => {
   const { name, targetType, line } = req.params;
   db.run("DELETE FROM fusion_targets WHERE manager_name = ? AND target_type = ? AND line = ?", [name, targetType, line], (err) => {
