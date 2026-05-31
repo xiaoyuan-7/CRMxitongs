@@ -5112,6 +5112,7 @@ function loadFusionData() {
                         html += '<input type="text" value="' + (contactMgr||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(contactMgr||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_manager:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f3f4f6;outline:none;font-size:11px;color:#7c3aed;padding:2px 6px;border-radius:4px;width:72px;" placeholder="输入" title="' + (contactMgr||'点击添加') + '">';
                         html += '<input type="text" value="' + (co.records[0].contact_info||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(co.records[0].contact_info||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_info:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f9fafb;outline:none;font-size:11px;color:#6b7280;padding:2px 6px;border-radius:4px;flex:1;min-width:60px;" placeholder="客户简介" title="' + (co.records[0].contact_info||'点击添加简介') + '">';
                         html += '</div>';
+                        html += '</div>';
 
                         // Follow-up section - 单行内联编辑
                         co.records.slice().reverse().forEach(function(rec) {
