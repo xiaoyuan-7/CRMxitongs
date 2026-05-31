@@ -345,43 +345,57 @@ CREATE TABLE xinfutong (
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
         );
-CREATE TABLE fusion_targets (id INTEGER PRIMARY KEY AUTOINCREMENT, manager_name VARCHAR(50) NOT NULL, task_category VARCHAR(50) NOT NULL, target_type VARCHAR(30) NOT NULL, line VARCHAR(20) NOT NULL, task_count INTEGER DEFAULT 0, completed_count INTEGER DEFAULT 0, target_companies TEXT, potential_companies TEXT, follow_record TEXT, linked_marketing_task_id INTEGER, status VARCHAR(20) DEFAULT '进行中', open_red_task INTEGER DEFAULT 0, open_red_completed INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, target_company VARCHAR(100), contact_manager VARCHAR(50), follow_type VARCHAR(20));
-INSERT INTO fusion_targets VALUES(34,'武孝龙','C2B高质量开户','C2B高质量开户','批发',6,3,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(35,'程方正','C2B高质量开户','C2B高质量开户','批发',5,1,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(36,'杨思娴','C2B高质量开户','C2B高质量开户','批发',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(37,'魏小栋','C2B高质量开户','C2B高质量开户','批发',2,2,NULL,NULL,'',NULL,'已完成',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(39,'程方正','C2B授信','C2B授信','批发',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(40,'陈喆','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(41,'林玉婵','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(42,'冯志翔','B2C保险','B2C保险','零售',2,1,NULL,NULL,'委任为吧',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-30 12:24:30','刘总','武孝龙',NULL);
-INSERT INTO fusion_targets VALUES(43,'鄢奥成','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(44,'徐嘉蔚','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(45,'李紫茹','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(46,'吴逸辉','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-30 03:57:56','',NULL,NULL);
-INSERT INTO fusion_targets VALUES(47,'张翔霖','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(48,'唐菁菁','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(49,'陈喆','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(50,'林玉婵','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(51,'冯志翔','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(52,'鄢奥成','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(53,'徐嘉蔚','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(54,'李紫茹','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(55,'吴逸辉','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(56,'张翔霖','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(57,'唐菁菁','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(58,'陈喆','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(59,'林玉婵','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(60,'冯志翔','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(61,'鄢奥成','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(62,'徐嘉蔚','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(63,'李紫茹','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(64,'吴逸辉','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(65,'张翔霖','B2C百人代发','B2C百人代发','零售',1,1,NULL,NULL,'',NULL,'已完成',0,0,'2026-05-29 23:08:56','2026-05-30 12:10:48','深圳市恒之易电子商务有限公司',NULL,NULL);
-INSERT INTO fusion_targets VALUES(66,'唐菁菁','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(67,'冯志翔','B2C保险','B2C保险','零售',0,0,'',NULL,'的撒法的路上看见法律阿达离开房间啊领导；的数据库',NULL,'进行中',0,0,'2026-05-30 02:47:48','2026-05-30 13:09:29','王总',NULL,'phone');
-INSERT INTO fusion_targets VALUES(68,'冯志翔','B2C保险','B2C保险','零售',0,0,'',NULL,'',NULL,'进行中',0,0,'2026-05-30 02:48:50','2026-05-30 12:09:22','谢总',NULL,NULL);
-INSERT INTO fusion_targets VALUES(70,'冯志翔','B2C保险','B2C保险','零售',0,0,'',NULL,'',NULL,'进行中',0,0,'2026-05-30 02:59:24','2026-05-30 02:59:24',NULL,NULL,NULL);
-INSERT INTO fusion_targets VALUES(71,'冯志翔','B2C保险','B2C保险','零售',0,0,'',NULL,'',NULL,'进行中',0,0,'2026-05-30 02:59:47','2026-05-30 02:59:47',NULL,NULL,NULL);
+CREATE TABLE fusion_targets (id INTEGER PRIMARY KEY AUTOINCREMENT, manager_name VARCHAR(50) NOT NULL, task_category VARCHAR(50) NOT NULL, target_type VARCHAR(30) NOT NULL, line VARCHAR(20) NOT NULL, task_count INTEGER DEFAULT 0, completed_count INTEGER DEFAULT 0, target_companies TEXT, potential_companies TEXT, follow_record TEXT, linked_marketing_task_id INTEGER, status VARCHAR(20) DEFAULT '进行中', open_red_task INTEGER DEFAULT 0, open_red_completed INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, target_company VARCHAR(100), contact_manager VARCHAR(50), follow_type VARCHAR(20), current_stage VARCHAR(20) DEFAULT '待联系', last_contact_time DATETIME, last_contact_method VARCHAR(20));
+INSERT INTO fusion_targets VALUES(34,'武孝龙','C2B高质量开户','C2B高质量开户','批发',6,3,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-31 13:04:36',NULL,NULL,NULL,'跟进中','2026-05-31 21:00','电话');
+INSERT INTO fusion_targets VALUES(35,'程方正','C2B高质量开户','C2B高质量开户','批发',5,1,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(36,'杨思娴','C2B高质量开户','C2B高质量开户','批发',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(37,'魏小栋','C2B高质量开户','C2B高质量开户','批发',2,2,NULL,NULL,'',NULL,'已完成',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(39,'程方正','C2B授信','C2B授信','批发',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(40,'陈喆','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(41,'林玉婵','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(42,'冯志翔','B2C保险','B2C保险','零售',2,1,NULL,NULL,'委任为吧',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-31 13:13:06','刘总','武孝龙',NULL,'跟进中','2026-05-31T13:13','电话');
+INSERT INTO fusion_targets VALUES(43,'鄢奥成','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(44,'徐嘉蔚','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(45,'李紫茹','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(46,'吴逸辉','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-30 03:57:56','',NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(47,'张翔霖','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(48,'唐菁菁','B2C保险','B2C保险','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(49,'陈喆','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(50,'林玉婵','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(51,'冯志翔','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(52,'鄢奥成','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(53,'徐嘉蔚','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(54,'李紫茹','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(55,'吴逸辉','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(56,'张翔霖','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(57,'唐菁菁','B2C小微贷','B2C小微贷','零售',2,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(58,'陈喆','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(59,'林玉婵','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(60,'冯志翔','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(61,'鄢奥成','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(62,'徐嘉蔚','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(63,'李紫茹','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(64,'吴逸辉','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(65,'张翔霖','B2C百人代发','B2C百人代发','零售',1,1,NULL,NULL,'',NULL,'已完成',0,0,'2026-05-29 23:08:56','2026-05-30 12:10:48','深圳市恒之易电子商务有限公司',NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(66,'唐菁菁','B2C百人代发','B2C百人代发','零售',1,0,NULL,NULL,'',NULL,'进行中',0,0,'2026-05-29 23:08:56','2026-05-29 23:08:56',NULL,NULL,NULL,'待联系',NULL,NULL);
+INSERT INTO fusion_targets VALUES(68,'冯志翔','B2C保险','B2C保险','零售',0,0,'',NULL,'',NULL,'进行中',0,0,'2026-05-30 02:48:50','2026-05-30 12:09:22','谢总',NULL,NULL,'待联系',NULL,NULL);
+CREATE TABLE contact_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_id INTEGER NOT NULL,
+  contact_time DATETIME NOT NULL,
+  contact_method VARCHAR(20) NOT NULL,
+  contact_content TEXT,
+  next_followup_time DATETIME,
+  created_by VARCHAR(50),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (target_id) REFERENCES fusion_targets(id) ON DELETE CASCADE
+);
+INSERT INTO contact_log VALUES(1,34,'2026-05-31 21:00','电话','测试接触记录功能',NULL,'武孝龙','2026-05-31 13:04:36');
+INSERT INTO contact_log VALUES(2,42,'2026-05-31T13:12','电话','阿凡达','2026-07-03T21:12','','2026-05-31 13:12:51');
+INSERT INTO contact_log VALUES(3,42,'2026-05-31T13:12','电话','阿凡达','2026-07-03T21:12','','2026-05-31 13:12:53');
+INSERT INTO contact_log VALUES(4,42,'2026-05-31T13:12','电话','阿凡达','2026-07-03T21:12','','2026-05-31 13:12:58');
+INSERT INTO contact_log VALUES(5,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:05');
+INSERT INTO contact_log VALUES(6,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:06');
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('companies',90);
 INSERT INTO sqlite_sequence VALUES('users',1);
@@ -394,6 +408,7 @@ INSERT INTO sqlite_sequence VALUES('leads',52);
 INSERT INTO sqlite_sequence VALUES('referrals',46);
 INSERT INTO sqlite_sequence VALUES('follow_ups',21);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
+INSERT INTO sqlite_sequence VALUES('contact_log',6);
 CREATE INDEX idx_contacts_company ON contacts(company_id);
 CREATE INDEX idx_marketing_company ON marketing_progress(company_id);
 CREATE INDEX idx_reminders_date ON reminders(reminder_date);
