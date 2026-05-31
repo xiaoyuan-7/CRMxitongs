@@ -58,6 +58,8 @@ app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/follow-ups', followUpRoutes);
 const fusionRoutes = require('./routes/fusion');
 app.use('/api/fusion', fusionRoutes);
+const contactLogRoutes = require('./routes/contact-log');
+app.use('/api/contact-log', contactLogRoutes);
 
 // 健康检查（包含数据库状态）
 app.get('/api/health', async (req, res) => {
