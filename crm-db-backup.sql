@@ -36,7 +36,7 @@ INSERT INTO companies VALUES(20,'深圳市得润电子股份有限公司',NULL,N
 INSERT INTO companies VALUES(21,'深圳正康骨科医院',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:11:02','2026-05-24 07:37:21',5,'quarter',100,10,NULL,0,'毛良聪',NULL,'applicable',NULL,'本周触达','','','','','','目前医院及集团公司均在我行开户，基本户目前在农行，异地医院在异地小银行。目前各医院均有授信，因现金流暂不够好，目前我行授信暂无法介入，因此较难转代发。目前我行主要以系统服务为主，提供资产管理系统、薪福通考勤系统、E餐通系统等。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(22,'新永胜科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:15:39','2026-05-26 01:52:30',5,'quarter',500,50,NULL,0,'张祥霖','跟进薪福通评估中','not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，主要代发行在中国银行。目前中行刚批1000万授信，人员全部办理中行卡。我们前期营销了薪福通，因企业也有一整套完善的系统在运营，经过前期配置和评估，企业觉得接入我们系统会让他们原有模式改动较大，因此暂不考虑，目前希望我们在授信方面有合作，授信预计6月中旬，届时可以营销交换一些代发。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(23,'深圳市恒之易电子商务有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:16:09','2026-05-21 11:54:10',5,'completed',1000,50,NULL,0,'张祥霖','开卡中','applicable',NULL,'一月前触达','','','','','','企业基本账户在中行，目前无授信，已落地。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(24,'深圳市福瑞诺科技有限公司','','','','','',0,0,0,0,'初步接触','2026-03-19 11:13:04','2026-03-19 23:00:31',5,'ongoing',0,0,NULL,0,'林玉婵','正在跟进薪福通','applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(24,'深圳市福瑞诺科技有限公司','','','','','',0,0,0,0,'初步接触','2026-03-19 11:13:04','2026-03-19 23:00:31',7,'ongoing',0,0,NULL,0,'林玉婵','正在跟进薪福通','applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(25,'深圳市吉昌盛电路技术有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-19 21:59:52','2026-05-18 00:55:39',6,'year',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(26,'华安芯（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-19 22:00:29','2026-05-13 02:10:02',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(27,'深圳市至鑫海科技开发有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-19 22:01:16','2026-05-13 02:10:23',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
@@ -46,7 +46,7 @@ INSERT INTO companies VALUES(31,'深圳市鑫永成科技有限公司',NULL,NULL
 INSERT INTO companies VALUES(32,'深圳思远国际货运代理有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-20 09:54:53','2026-05-13 02:10:09',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达','','','','','','','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(86,'宇天汛通讯科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-05-18 00:56:33','2026-05-24 08:05:16',5,'quarter',500,0,NULL,0,'张祥霖',NULL,'not_applicable',NULL,'低频','','','','','','目前基本户在工行，韶关工厂有授信，基本代发在工行。我行目前授信较难准入，提供外汇方面服务。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(87,'存量完成企业',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-18 01:08:48','2026-05-25 09:27:36',NULL,'completed',2162,202,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(88,'深圳市德龙包装制品有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:14:07','2026-05-25 08:14:27',5,'ongoing',0,0,NULL,0,'吴逸辉',NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(88,'深圳市德龙包装制品有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:14:07','2026-06-01 01:29:05',5,'ongoing',1000,50,NULL,0,'吴逸辉',NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(89,'五金制品',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:16:59','2026-05-25 08:16:59',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(90,'深圳市泰和源电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-29 20:41:42','2026-05-29 20:41:42',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 CREATE TABLE contacts (
@@ -108,6 +108,7 @@ CREATE TABLE reminders (
 CREATE TABLE marketing_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, description TEXT, status TEXT DEFAULT '进行中', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 INSERT INTO marketing_tasks VALUES(5,'重点跟进企业','','进行中','2026-03-17 11:34:31','2026-03-17 11:34:31');
 INSERT INTO marketing_tasks VALUES(6,'新客户营销','','进行中','2026-03-19 21:58:27','2026-03-19 21:58:27');
+INSERT INTO marketing_tasks VALUES(7,'近期代发企业','','进行中','2026-06-01 01:29:56','2026-06-01 01:29:56');
 CREATE TABLE week_tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_id INTEGER,
@@ -158,8 +159,13 @@ INSERT INTO week_tasks VALUES(45,NULL,NULL,'','鼎盛多层电子开卡','medium
 INSERT INTO week_tasks VALUES(46,NULL,NULL,'2026-05-29','德龙包装','medium','2026-05-25','completed','2026-05-25 09:16:52','pm',NULL);
 INSERT INTO week_tasks VALUES(47,NULL,NULL,'2026-05-29','思诺信','medium','2026-05-25','completed','2026-05-25 09:18:13','am',NULL);
 INSERT INTO week_tasks VALUES(48,NULL,NULL,'2026-05-27','电建市政','medium','2026-05-25','completed','2026-05-25 09:18:30','pm',NULL);
-INSERT INTO week_tasks VALUES(49,NULL,NULL,'2026-05-28','恒之易','medium','2026-05-25','pending','2026-05-25 09:18:57','pm',NULL);
-INSERT INTO week_tasks VALUES(50,NULL,NULL,'2026-05-26','鼎盛多层电子开卡','medium','2026-05-25','pending','2026-05-29 20:33:59','am',NULL);
+INSERT INTO week_tasks VALUES(50,NULL,NULL,'2026-06-02','鼎盛多层电子开卡','medium','2026-06-01','pending','2026-05-29 20:33:59','am',NULL);
+INSERT INTO week_tasks VALUES(52,NULL,NULL,'2026-06-04','中山妇产拜访','medium','2026-06-01','pending','2026-06-01 02:44:35','am',NULL);
+INSERT INTO week_tasks VALUES(53,NULL,NULL,'2026-06-03','龙华社工部','medium','2026-06-01','pending','2026-06-01 02:45:02','am',NULL);
+INSERT INTO week_tasks VALUES(54,NULL,NULL,'2026-06-05','恒之易拜访','medium','2026-06-01','pending','2026-06-01 03:10:59','pm','恒之易拜访');
+INSERT INTO week_tasks VALUES(55,NULL,NULL,'2026-06-02','江西特尔电路有限公司','medium','2026-06-01','pending','2026-06-01 07:01:17','pm',NULL);
+INSERT INTO week_tasks VALUES(56,NULL,NULL,'2026-06-03','远晨电子','medium','2026-06-01','pending','2026-06-01 09:48:21','pm',NULL);
+INSERT INTO week_tasks VALUES(57,NULL,NULL,'2026-06-04','陌拜全息医疗','medium','2026-06-01','pending','2026-06-01 10:00:10','pm',NULL);
 CREATE TABLE xinfutong_details (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER UNIQUE, is_registered INTEGER DEFAULT 0, modules TEXT, config_status TEXT, config_teacher TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE);
 INSERT INTO xinfutong_details VALUES(1,3,1,'费控报销','一配置','郑秋金','2026-03-17 13:46:14','2026-03-18 04:36:20');
 INSERT INTO xinfutong_details VALUES(2,21,1,'资产管理','','郑秋金','2026-03-18 11:12:41','2026-03-18 11:12:41');
@@ -400,8 +406,8 @@ DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('companies',90);
 INSERT INTO sqlite_sequence VALUES('users',1);
 INSERT INTO sqlite_sequence VALUES('contacts',15);
-INSERT INTO sqlite_sequence VALUES('marketing_tasks',6);
-INSERT INTO sqlite_sequence VALUES('week_tasks',50);
+INSERT INTO sqlite_sequence VALUES('marketing_tasks',7);
+INSERT INTO sqlite_sequence VALUES('week_tasks',57);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
