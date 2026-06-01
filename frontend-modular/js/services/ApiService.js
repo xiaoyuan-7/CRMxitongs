@@ -284,3 +284,73 @@ export const leadService = {
         }, false);
     }
 };
+
+/**
+ * 融合攻坚数据服务
+ */
+export const fusionService = {
+    async getTargets(line = '', search = '') {
+        const params = new URLSearchParams();
+        if (line) params.set('line', line);
+        if (search) params.set('search', search);
+        const query = params.toString();
+        return fetchWithCache(`/fusion/targets${query ? '?' + query : ''}`, {}, true);
+    },
+    
+    async getStats() {
+        return fetchWithCache('/fusion/stats', {}, true);
+    },
+    
+    async createTarget(data) {
+        return fetchWithCache('/fusion/targets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }, false);
+    },
+    
+    async updateTarget(id, data) {
+        return fetchWithCache(`/fusion/targets/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }, false);
+    },
+    
+    async deleteTarget(id) {
+        return fetchWithCache(`/fusion/targets/${id}`, {
+            method: 'DELETE'
+        }, false);
+    }
+};
+
+/**
+ * 接触记录数据服务
+ */
+export const contactLogService = {
+    async getLogs(targetId) {
+        return fetchWithCache(`/contact-log/target/${targetId}/logs`, {}, true);
+    },
+    
+    async createLog(data) {
+        return fetchWithCache('/contact-log/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }, false);
+    },
+    
+    async updateLog(id, data) {
+        return fetchWithCache(`/contact-log/logs/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }, false);
+    },
+    
+    async deleteLog(id) {
+        return fetchWithCache(`/contact-log/logs/${id}`, {
+            method: 'DELETE'
+        }, false);
+    }
+};

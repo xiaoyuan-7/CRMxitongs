@@ -63,6 +63,83 @@ router.get("/stats", (req, res) => {
   });
 });
 
+// 获取仪表盘统计
+router.get("/dashboard", (req, res) => {
+  const sql = `SELECT
+    target_type, line,
+    SUM(task_count) as total_task,
+    SUM(completed_count) as total_completed,
+    COUNT(DISTINCT manager_name) as manager_count,
+    COUNT(*) as record_count
+    FROM fusion_targets GROUP BY target_type, line`;
+  db.all(sql, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    rows = rows.map(r => ({
+      ...r,
+      completion_rate: r.total_task > 0 ? Math.round(r.total_completed / r.total_task * 100) : 0
+    }));
+    res.json(rows);
+  });
+});
+
+// 获取跟进列表
+router.get("/followup", (req, res) => {
+  const { line, search } = req.query;
+  let sql = "SELECT * FROM fusion_targets WHERE 1=1";
+  const params = [];
+  if (line) { sql += " AND line = ?"; params.push(line); }
+  if (search) {
+    sql += " AND (manager_name LIKE ? OR target_company LIKE ?)";
+    params.push("%" + search + "%", "%" + search + "%");
+  }
+  sql += " ORDER BY line, target_type, manager_name, id";
+  db.all(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows || []);
+  });
+});
+
+// 更新跟进记录
+router.patch("/followup/:id", (req, res) => {
+  const { contact_manager, contact_info, status, completed_count, task_count } = req.body;
+  const sql = `UPDATE fusion_targets SET
+    contact_manager=COALESCE(?, contact_manager),
+    contact_info=COALESCE(?, contact_info),
+    status=COALESCE(?, status),
+    completed_count=COALESCE(?, completed_count),
+    task_count=COALESCE(?, task_count),
+    updated_at=CURRENT_TIMESTAMP
+    WHERE id=?`;
+  const params = [contact_manager||null, contact_info||null, status||null, completed_count, task_count, req.params.id];
+  db.run(sql, params, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+// 创建跟进记录
+router.post("/followup", (req, res) => {
+  const { manager_name, target_type, line, task_count, completed_count, target_company, contact_manager, contact_info } = req.body;
+  if (!manager_name || !target_type || !line) {
+    return res.status(400).json({ error: "缺少必填字段" });
+  }
+  const sql = `INSERT INTO fusion_targets (manager_name, task_category, target_type, line, task_count, completed_count, target_company, contact_manager, contact_info, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "进行中")`;
+  const params = [manager_name, target_type, target_type, line, task_count||0, completed_count||0, target_company||"", contact_manager||"", contact_info||""];
+  db.run(sql, params, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, id: this.lastID });
+  });
+});
+
+// 删除跟进记录
+router.delete("/followup/:id", (req, res) => {
+  db.run("DELETE FROM fusion_targets WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 // 新增目标
 router.post("/targets", (req, res) => {
   const { manager_name, task_category, target_type, line, task_count, completed_count, target_company, follow_record } = req.body;
