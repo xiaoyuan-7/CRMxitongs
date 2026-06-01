@@ -28,7 +28,7 @@
         .tab.active { background: #667eea; color: white; }
         .content-card { background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; }
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
+        
         /* 全局 Loading 样式 */
         #globalLoading {
             display: none;
@@ -163,7 +163,7 @@
         .todo-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .todo-input-row input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
         .todo-input-row select { width: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
-
+        
         /* 待办提醒下拉弹窗 */
         #todoDropdown {
             display: none;
@@ -266,7 +266,7 @@
         .todo-dropdown-footer a:hover {
             text-decoration: underline;
         }
-
+        
         /* 展示面板增强样式 */
         .stat-card .trend {
             font-size: 11px;
@@ -292,7 +292,7 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 16px rgba(0,0,0,0.12);
         }
-
+        
         /* 搜索高亮样式 */
         .search-highlight {
             background: #fef3c7;
@@ -301,7 +301,7 @@
             border-radius: 3px;
             font-weight: 600;
         }
-
+        
         /* 搜索历史下拉框 */
         #searchHistoryDropdown {
             display: none;
@@ -359,7 +359,7 @@
         .search-history-clear:hover {
             background: #f0f5ff;
         }
-
+        
         /* 移动端优化 */
         @media (max-width: 768px) {
             .container { padding: 8px; }
@@ -387,7 +387,7 @@
             .modal-header { padding: 12px; }
             .modal-body { padding: 12px; }
         }
-
+        
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
             .progress-grid { grid-template-columns: repeat(2, 1fr); }
@@ -396,8 +396,6 @@
             body { font-size: 13px; }
         }
     </style>
-<style>
-        </style>
 </head>
 <body>
     <div class="container">
@@ -408,7 +406,7 @@
                     <p>待办清单 · 每周计划 · 线索挖掘 · 营销任务 · 企业列表 · 协同融合 · 智能提醒</p>
                 </div>
                 <div id="weekTaskSummary" style="background:rgba(255,255,255,0.2);padding:12px 16px;border-radius:8px;min-width:200px;cursor:pointer;" onclick="toggleTodoDropdown()"></div>
-
+                
                 <!-- 待办提醒下拉弹窗 -->
                 <div id="todoDropdown">
                     <div class="todo-dropdown-header">
@@ -485,21 +483,21 @@
             <div class="stat-card clickable" onclick="filterByStat('opened')">
                 <h3>已开户</h3>
                 <div class="value" id="openedAccounts">-</div>
-                <div class="target" id="openedTarget">目标:-</div>
+                <div class="target" id="openedTarget">目标：-</div>
                 <div class="progress-bar"><div class="progress-fill" id="openedProgress" style="width:0%"></div></div>
                 <button class="edit-target" onclick="event.stopPropagation(); editTarget('opened')">✏️</button>
             </div>
             <div class="stat-card clickable" onclick="filterByStat('active')">
                 <h3>有效户</h3>
                 <div class="value" id="activeAccounts">-</div>
-                <div class="target" id="activeTarget">目标:-</div>
+                <div class="target" id="activeTarget">目标：-</div>
                 <div class="progress-bar"><div class="progress-fill" id="activeProgressBar" style="width:0%"></div></div>
                 <button class="edit-target" onclick="event.stopPropagation(); editTarget('active')">✏️</button>
             </div>
             <div class="stat-card clickable" onclick="filterByStat('hq')">
                 <h3>高质量客户</h3>
                 <div class="value" id="highQuality">-</div>
-                <div class="target" id="hqTarget">目标:-</div>
+                <div class="target" id="hqTarget">目标：-</div>
                 <div class="progress-bar"><div class="progress-fill" id="hqProgress" style="width:0%"></div></div>
                 <button class="edit-target" onclick="event.stopPropagation(); editTarget('hq')">✏️</button>
             </div>
@@ -522,7 +520,7 @@
                 <select id="newTodoDate"><option value="">不安排日期</option><option value="today">今天</option><option value="tomorrow">明天</option></select>
                 <button class="btn btn-primary" onclick="addTodo()">添加</button>
             </div>
-
+            
             <!-- 筛选和统计栏 -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -544,12 +542,12 @@
                     <button class="btn btn-sm btn-secondary" onclick="toggleCompleted()" id="toggleCompletedBtn">折叠已完成</button>
                 </div>
             </div>
-
+            
             <!-- 分页控制 -->
             <div id="todoPagination" style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;"></div>
-
+            
             <div class="todo-list" id="todoList"></div>
-
+            
             <!-- 底部分页 -->
             <div id="todoPaginationBottom" style="display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>
         </div>
@@ -561,7 +559,7 @@
                 <button class="btn btn-secondary" onclick="loadWeekPlan()">🔄 刷新</button>
             </div>
             <div class="week-plan" id="weekPlan"></div>
-
+            
             <div style="margin-top:20px;padding-top:20px;border-top:2px solid #e5e7eb;">
                 <div class="filter-bar" style="margin-bottom:12px;">
                     <h2 style="margin:0;">📋 每周待办清单</h2>
@@ -599,7 +597,7 @@
         <div class="content-card" id="tasksTab" style="display:none;"><div class="search-box"><button class="btn btn-primary" onclick="createNewTask()">+ 新建营销任务</button></div><div id="tasksList"></div></div>
         <div class="content-card" id="companiesTab" style="display:none;">
             <div class="filter-bar" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
-                <span style="font-size:12px;color:#666;">🔍 筛选:</span>
+                <span style="font-size:12px;color:#666;">🔍 筛选：</span>
                 <select id="taskFilterSelect" onchange="filterByTask()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:140px;">
                     <option value="">全部企业</option>
                 </select>
@@ -644,7 +642,7 @@
                 </table>
             </div>
         </div>
-
+        
         <div class="content-card" id="referralsTab" style="display:none;">
             <div class="search-box" style="margin-bottom:16px;">
                 <button class="btn btn-primary" onclick="window.openAddReferralModal()">+ 新建转介</button>
@@ -658,7 +656,7 @@
                     <option value="invalid">❌ 无效</option>
                 </select>
             </div>
-
+            
             <!-- 仪表盘区域 -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
                 <div class="stat-card">
@@ -678,11 +676,11 @@
                     <div class="value" id="refTotalPoints">0</div>
                 </div>
             </div>
-
+            
             <!-- 图表区域 -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;margin-bottom:20px;">
                 <div class="content-card">
-                    <h3 style="margin-bottom:12px;">📈 转介流向(桑基图)</h3>
+                    <h3 style="margin-bottom:12px;">📈 转介流向（桑基图）</h3>
                     <div id="sankeyChart" style="height:300px;"></div>
                 </div>
                 <div class="content-card">
@@ -700,7 +698,7 @@
                     <div id="bulletChart" style="height:200px;"></div>
                 </div>
             </div>
-
+            
             <!-- 数据列表 -->
             <div class="table-wrapper">
                 <table>
@@ -723,13 +721,16 @@
                 </table>
             </div>
         </div>
-
+        
         <div class="content-card" id="remindersTab" style="display:none;">
             <div class="filter-bar"><h2 style="margin:0;">📌 智能提醒</h2><button class="btn btn-secondary" onclick="loadReminders()">🔄 刷新</button></div>
             <div id="remindersList"></div>
         </div>
     </div>
-        <div id="fusionTab" style="display:none;max-width:1400px;margin:0 auto;">
+
+    
+
+        <div id="fusionTab" style="display:none;">
             <div style="background:white;border-radius:12px;padding:14px;margin-bottom:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h2 style="font-size:16px;font-weight:600;color:#374151;margin:0;">融合攻坚目标追踪</h2>
@@ -752,25 +753,24 @@
                 <div id="fusionDashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:4px;"></div>
             </div>
             <!-- Column header -->
-            <div id="fusionListHeader" style="display:grid;grid-template-columns:20px 80px minmax(0,1fr) 60px 70px 55px 85px 70px 16px;min-width:0;align-items:center;padding:6px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-size:11px;color:#9ca3af;font-weight:500;gap:8px;min-width:0;width:100%;box-sizing:border-box;">
-                <div style="width:20px;box-sizing:border-box;"></div>
-                <div style="width:80px;box-sizing:border-box;">客户经理</div>
-                <div style="min-width:0;box-sizing:border-box;">企业进度</div>
-                <div style="width:60px;text-align:center;box-sizing:border-box;">任务/完成</div>
-                <div style="width:70px;text-align:center;box-sizing:border-box;">完成率</div>
-                <div style="width:55px;text-align:center;box-sizing:border-box;">状态</div>
-                <div style="width:85px;text-align:right;box-sizing:border-box;">最近跟进</div>
-                <div style="width:70px;text-align:center;box-sizing:border-box;"></div>
-                <div style="width:16px;box-sizing:border-box;"></div>
+            <div id="fusionListHeader" style="display:flex;align-items:center;padding:6px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-size:11px;color:#9ca3af;font-weight:500;gap:8px;">
+                <div style="width:20px;"></div>
+                <div style="min-width:80px;flex:1;">客户经理</div>
+                <div style="flex:2;min-width:0;">企业进度</div>
+                <div style="min-width:60px;text-align:center;">任务/完成</div>
+                <div style="min-width:70px;text-align:center;">完成率</div>
+                <div style="min-width:55px;text-align:center;">状态</div>
+                <div style="min-width:85px;text-align:right;">最近跟进</div>
+                <div style="width:16px;"></div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:white;border-bottom:1px solid #f3f4f6;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:white;border-bottom:1px solid #f3f4f6;">
                 <div style="font-size:12px;color:#6b7280;">共 <span id="fusionCount">0</span> 位客户经理</div>
                 <div style="display:flex;gap:4px;">
                     <button id="fusionViewTable" onclick="switchFusionView('table')" style="padding:4px 12px;font-size:11px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">📋 表格</button>
                     <button id="fusionViewKanban" onclick="switchFusionView('kanban')" style="padding:4px 12px;font-size:11px;background:white;color:#6b7280;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;">🎯 看板</button>
                 </div>
             </div>
-            <div id="fusionContent" style="padding:0;width:100%;min-width:700px;display:grid;grid-template-columns:minmax(0,1fr);overflow-x:auto;"></div>
+            <div id="fusionContent" style="padding:0;"></div>
         </div>
 <!-- 全局 Loading -->
     <div id="globalLoading">
@@ -798,26 +798,26 @@
         let currentTaskId = null;
         let targets = JSON.parse(localStorage.getItem('crm_targets') || '{}');
         const weekDays = ['周一','周二','周三','周四','周五','周六','周日'];
-
-        // XSS 防护:转义 HTML 特殊字符
+        
+        // XSS 防护：转义 HTML 特殊字符
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
+        
         // 统一错误日志函数
         function logError(context, error) {
             console.error(`[${context}]`, error);
-            // 可选:发送到日志服务器
-            // fetch('/api/log-error', {
-            //     method: 'POST',
+            // 可选：发送到日志服务器
+            // fetch('/api/log-error', { 
+            //     method: 'POST', 
             //     headers: { 'Content-Type': 'application/json' },
             //     body: JSON.stringify({ context, error: error.message, stack: error.stack, timestamp: new Date().toISOString() })
             // }).catch(() => {});
         }
-
+        
         // 统一错误提示函数
         function showError(message, context = '') {
             if (context) {
@@ -825,7 +825,7 @@
             }
             alert(message);
         }
-
+        
         // 全局 Loading 管理
         function showLoading(message = '加载中...') {
             const loading = document.getElementById('globalLoading');
@@ -835,14 +835,14 @@
                 loading.classList.add('active');
             }
         }
-
+        
         function hideLoading() {
             const loading = document.getElementById('globalLoading');
             if (loading) {
                 loading.classList.remove('active');
             }
         }
-
+        
         // 表单验证工具函数
         const validators = {
             // 必填验证
@@ -865,7 +865,7 @@
             isPositiveInteger: (value) => {
                 return !value || /^[1-9]\d*$/.test(value);
             },
-            // 手机号验证(中国大陆)
+            // 手机号验证（中国大陆）
             isPhone: (value) => {
                 return !value || /^1[3-9]\d{9}$/.test(value);
             },
@@ -874,76 +874,76 @@
                 return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
             }
         };
-
+        
         // 统一表单验证函数
         function validateForm(fields) {
             const errors = [];
-
+            
             fields.forEach(field => {
                 const value = field.value;
                 const label = field.label;
-
+                
                 // 必填验证
                 if (field.required && !validators.required(value)) {
                     errors.push(`${label}不能为空`);
                     return;
                 }
-
+                
                 // 跳过空值的可选字段
                 if (!value) return;
-
+                
                 // 最大长度验证
                 if (field.maxLength && !validators.maxLength(value, field.maxLength)) {
                     errors.push(`${label}不能超过${field.maxLength}个字`);
                 }
-
+                
                 // 最小长度验证
                 if (field.minLength && !validators.minLength(value, field.minLength)) {
                     errors.push(`${label}不能少于${field.minLength}个字`);
                 }
-
+                
                 // 数字验证
                 if (field.isNumber && !validators.isNumber(value)) {
                     errors.push(`${label}必须是数字`);
                 }
-
+                
                 // 正整数验证
                 if (field.isPositiveInteger && !validators.isPositiveInteger(value)) {
                     errors.push(`${label}必须是正整数`);
                 }
-
+                
                 // 手机号验证
                 if (field.isPhone && !validators.isPhone(value)) {
-                    errors.push(`${label}格式不正确(示例:13800138000)`);
+                    errors.push(`${label}格式不正确（示例：13800138000）`);
                 }
-
+                
                 // 邮箱验证
                 if (field.isEmail && !validators.isEmail(value)) {
-                    errors.push(`${label}格式不正确(示例:name@example.com)`);
+                    errors.push(`${label}格式不正确（示例：name@example.com）`);
                 }
             });
-
+            
             return errors;
         }
-
+        
         // 显示表单错误
         function showFormErrors(errors) {
             if (!errors || errors.length === 0) return;
             alert('❌ ' + errors.join('\n'));
         }
 
-        async function init() {
-            // 1. 首先加载企业数据,确保展示面板有数据
+        async function init() { 
+            // 1. 首先加载企业数据，确保展示面板有数据
             await loadData();
             // 2. 展示面板会通过 DataManager 监听器自动更新
             // 3. 加载其他模块数据
             await loadLeadBoards();
-            await loadLeads();
-            await loadTasks();
+            await loadLeads(); 
+            await loadTasks(); 
             // 4. 初始化其他组件
-            initWeekSelect();
-            updateTargetsDisplay();
-            loadWeekPlan();
+            initWeekSelect(); 
+            updateTargetsDisplay(); 
+            loadWeekPlan(); 
             // 5. 默认显示线索板块列表
             const boardsList = document.getElementById('leadBoardsList');
             const leadsContent = document.getElementById('leadsContent');
@@ -957,12 +957,12 @@
         function initWeekSelect() {
             const select = document.getElementById('weekSelect');
             const weeks = [];
-
+            
             for (let i = 0; i < 4; i++) {
                 const week = getWeekInfo(i);
                 weeks.push(week);
             }
-
+            
             select.innerHTML = weeks.map((w,i) => `<option value="${w.start}" ${i===0?'selected':''}>${w.start} 至 ${w.end}</option>`).join('');
         }
 
@@ -971,16 +971,16 @@
             const year = now.getFullYear();
             const month = now.getMonth();
             const day = now.getDate();
-
-            // 获取今天是周几 (0=周日,1=周一,..., 6=周六)
+            
+            // 获取今天是周几 (0=周日，1=周一，..., 6=周六)
             let jsDay = now.getDay();
             // 转换为周一=1, 周日=7
             let dayNum = jsDay === 0 ? 7 : jsDay;
-
+            
             // 计算本周一的日期
             const mondayOffset = dayNum - 1;
             const monday = new Date(year, month, day - mondayOffset + (offset * 7));
-
+            
             // 生成本周 7 天的日期
             const days = [];
             for (let i = 0; i < 7; i++) {
@@ -991,7 +991,7 @@
                 const dt = String(d.getDate()).padStart(2, '0');
                 days.push(`${y}-${m}-${dt}`);
             }
-
+            
             return { start: days[0], end: days[6], days };
         }
 
@@ -1000,28 +1000,28 @@
             return { start, end: (() => { const e=new Date(s); e.setDate(s.getDate()+6); return e.toISOString().split('T')[0]; })(), days: Array.from({length: 7}, (_, i) => { const d=new Date(s); d.setDate(s.getDate()+i); return d.toISOString().split('T')[0]; }) };
         }
 
-        async function loadTasks() {
+        async function loadTasks() { 
             showLoading('正在加载任务...');
-            try {
-                const res = await fetch(`${API_BASE}/marketing-tasks`);
-                allTasks = await res.json();
-                renderTasks();
+            try { 
+                const res = await fetch(`${API_BASE}/marketing-tasks`); 
+                allTasks = await res.json(); 
+                renderTasks(); 
                 updateTaskFilterSelect();
-            } catch (e) {
+            } catch (e) { 
                 logError('loadTasks', e);
-                allTasks = [];
+                allTasks = []; 
                 renderTasks();
-                showError('加载任务失败,请刷新页面重试', 'loadTasks');
+                showError('加载任务失败，请刷新页面重试', 'loadTasks');
             } finally {
                 hideLoading();
             }
         }
-        function renderTasks() {
-            const c = document.getElementById('tasksList');
-            if (!allTasks.length) {
-                c.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><p>暂无营销任务</p><p style="font-size:13px;margin-top:8px;">点击"+新建营销任务"并选择要关联的企业</p></div>';
-                return;
-            }
+        function renderTasks() { 
+            const c = document.getElementById('tasksList'); 
+            if (!allTasks.length) { 
+                c.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><p>暂无营销任务</p><p style="font-size:13px;margin-top:8px;">点击"+新建营销任务"并选择要关联的企业</p></div>'; 
+                return; 
+            } 
             c.innerHTML = allTasks.map(t => `
                 <div class="task-card">
                     <div style="display:flex;justify-content:space-between;align-items:start;">
@@ -1038,10 +1038,10 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `).join(''); 
         }
-        async function viewTaskCompanies(id) {
-            switchTab('companies');
+        async function viewTaskCompanies(id) { 
+            switchTab('companies'); 
             document.getElementById('taskFilterSelect').value = id;
             currentTaskId = id;
             try {
@@ -1055,28 +1055,28 @@
         }
 
         let contactFreqUpdated = false;
-
+        
         async function loadData() {
             showLoading('正在加载企业数据...');
             try {
                 const allCompanies = await fetchWithCache('/companies', {}, true);
                 dataManager.setCompanies(allCompanies);
-
+                
                 // 首次加载时自动更新联系频次
                 if (!contactFreqUpdated) {
                     await updateAllContactFrequency();
                     contactFreqUpdated = true;
                 }
-                // 保持当前排序,不自动重排
+                // 保持当前排序，不自动重排
                 const currentSort = document.getElementById('sortSelect').value;
                 if (currentSort && currentSort !== 'default') {
                     sortCompanies(currentSort);
                 } else {
                     renderCompanies(dataManager.getCompanies());
                 }
-            } catch (e) {
+            } catch (e) { 
                 logError('loadData', e);
-                document.getElementById('companiesTable').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#ef4444;">加载失败,请刷新页面重试</td></tr>';
+                document.getElementById('companiesTable').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#ef4444;">加载失败，请刷新页面重试</td></tr>';
                 showError('加载企业数据失败', 'loadData');
             } finally {
                 hideLoading();
@@ -1086,9 +1086,9 @@
         function renderCompanies(list) {
             const tb = document.getElementById('companiesTable');
             if (!list || !list.length) { tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;">暂无数据</td></tr>'; return; }
-
+            
             list.forEach(c => { if (c.selected === undefined) c.selected = false; });
-
+            
             tb.innerHTML = list.map(c => `
                 <tr style="${c.xinfutong_status==='applicable'?'background:#f0fdf4;':''}">
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
@@ -1113,7 +1113,7 @@
                 </tr>
             `).join('');
         }
-
+        
         function toggleCompanySelect(id) {
             const company = allCompanies.find(c => c.id === id);
             if (company) {
@@ -1126,12 +1126,12 @@
             input.type = 'text';
             input.value = currentValue || '';
             input.style.cssText = 'width:100%;padding:4px 8px;border:1px solid #667eea;border-radius:4px;font-size:13px;';
-
+            
             element.innerHTML = '';
             element.appendChild(input);
             input.focus();
             input.select();
-
+            
             const save = async () => {
                 const newValue = input.value;
                 if (newValue === currentValue) {
@@ -1166,7 +1166,7 @@
                     element.onclick = () => makeEditable(element, id, field, currentValue);
                 }
             };
-
+            
             input.onblur = save;
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') {
@@ -1223,9 +1223,9 @@
             const currentIndex = frequencies.indexOf(current);
             const nextIndex = (currentIndex + 1) % frequencies.length;
             const nextFreq = frequencies[nextIndex];
-
-            if (!confirm(`将 "${name}" 的联系频次从 ${current} 更新为 ${nextFreq}?`)) return;
-
+            
+            if (!confirm(`将 "${name}" 的联系频次从 ${current} 更新为 ${nextFreq}？`)) return;
+            
             try {
                 const res = await fetch(`${API_BASE}/companies/${id}`, {
                     method: 'PUT',
@@ -1241,18 +1241,18 @@
                 alert('网络错误');
             }
         }
-
-        // 自动计算所有企业的联系频次(基于每周待办完成情况)
+        
+        // 自动计算所有企业的联系频次（基于每周待办完成情况）
         async function updateAllContactFrequency() {
             try {
                 // 获取所有企业
                 const companiesRes = await fetch(`${API_BASE}/companies`);
                 const companies = await companiesRes.json();
-
+                
                 // 获取所有周待办
                 const weekTasksRes = await fetch(`${API_BASE}/week-tasks`);
                 const weekTasks = await weekTasksRes.json();
-
+                
                 const now = new Date();
                 const thisWeekStart = getWeekStart(now);
                 const lastWeekStart = new Date(thisWeekStart);
@@ -1261,27 +1261,27 @@
                 lastLastWeekStart.setDate(lastLastWeekStart.getDate() - 14);
                 const lastMonthStart = new Date(thisWeekStart);
                 lastMonthStart.setDate(lastMonthStart.getDate() - 30);
-
+                
                 for (const company of companies) {
                     // 查找该企业的已完成待办
-                    const companyTasks = weekTasks.filter(t =>
-                        t.company_id === company.id &&
+                    const companyTasks = weekTasks.filter(t => 
+                        t.company_id === company.id && 
                         t.status === 'completed' &&
                         t.plan_date
                     );
-
+                    
                     if (companyTasks.length === 0) {
-                        continue; // 没有待办记录,不更新
+                        continue; // 没有待办记录，不更新
                     }
-
+                    
                     // 找最近的完成日期
-                    const latestTask = companyTasks.sort((a, b) =>
+                    const latestTask = companyTasks.sort((a, b) => 
                         new Date(b.plan_date) - new Date(a.plan_date)
                     )[0];
-
+                    
                     const taskDate = new Date(latestTask.plan_date);
                     const daysDiff = Math.floor((now - taskDate) / (1000 * 60 * 60 * 24));
-
+                    
                     let newFreq = '一月前触达';
                     if (daysDiff <= 7) {
                         newFreq = '本周触达';
@@ -1290,7 +1290,7 @@
                     } else if (daysDiff <= 30) {
                         newFreq = '本月触达';
                     }
-
+                    
                     // 如果不同则更新
                     if (company.contact_frequency !== newFreq) {
                         await fetch(`${API_BASE}/companies/${company.id}`, {
@@ -1304,16 +1304,16 @@
                 console.error('更新联系频次失败:', e);
             }
         }
-
+        
         function getWeekStart(date) {
             const d = new Date(date);
             const day = d.getDay();
             const diff = d.getDate() - day + (day === 0 ? -6 : 1);
             return new Date(d.setDate(diff));
         }
-
+        
         function refreshCurrentView() {
-            // 保持当前排序和筛选,只刷新数据
+            // 保持当前排序和筛选，只刷新数据
             const currentSort = document.getElementById('sortSelect').value;
             if (currentTaskId) {
                 viewTaskCompanies(currentTaskId);
@@ -1322,9 +1322,9 @@
                 loadData();
             }
         }
-
+        
         async function deleteCompany(id) {
-            if (!confirm('⚠️ 确定删除该企业?删除后无法恢复!')) return;
+            if (!confirm('⚠️ 确定删除该企业？删除后无法恢复！')) return;
             try {
                 const res = await fetch(`${API_BASE}/companies/${id}`, { method: 'DELETE' });
                 if (res.ok) {
@@ -1340,19 +1340,19 @@
 
         function updateStats(list) {
             const stats = dataManager.getStats();
-
+            
             // 获取趋势数据
             const openedTrend = dataManager.getTrend('opened');
             const activeTrend = dataManager.getTrend('active');
             const hqTrend = dataManager.getTrend('hq');
-
+            
             // 渲染趋势箭头
             const renderTrend = (trend) => {
                 const icon = trend.direction === 'up' ? '🔼' : trend.direction === 'down' ? '🔽' : '➖';
                 return `<span class="trend ${trend.direction}">${icon} ${trend.percent > 0 ? trend.percent + '%' : '无变化'}</span>`;
             };
-
-            // 更新展示面板(添加趋势)
+            
+            // 更新展示面板（添加趋势）
             const updateStatCard = (id, value, trend, label) => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -1367,22 +1367,22 @@
                     el.parentElement.appendChild(trendEl);
                 }
             };
-
+            
             updateStatCard('openedAccounts', stats.opened, openedTrend, '已开户');
             updateStatCard('activeAccounts', stats.active, activeTrend, '有效户');
             updateStatCard('highQuality', stats.hq, hqTrend, '高质量');
             document.getElementById('totalCompanies').textContent = stats.total;
-
+            
             updateProgressBar('opened', stats.opened);
             updateProgressBar('active', stats.active);
             updateProgressBar('hq', stats.hq);
-
+            
             // 有效户完成和高质量完成 = 已落地企业数 / 任务目标数
             const activeTarget = targets['active'] || 0;
             const hqTarget = targets['hq'] || 0;
             const completedCount = dataManager.getCompletedCount();
-
-            // 统一格式,确保对齐(固定宽度)
+            
+            // 统一格式，确保对齐（固定宽度）
             const formatNumber = (num, target) => {
                 if (target > 0) {
                     return `${num} / ${target}`;
@@ -1391,38 +1391,38 @@
             };
             document.getElementById('activeProgress').textContent = formatNumber(dataManager.getActiveCount(), activeTarget);
             document.getElementById('hqProgress').textContent = formatNumber(dataManager.getHqCount(), hqTarget);
-
-            // 更新圆形进度(基于已落地企业数除以目标数)
+            
+            // 更新圆形进度（基于已落地企业数除以目标数）
             updateCircleProgressWithTarget('active', dataManager.getActiveCount(), activeTarget);
             updateCircleProgressWithTarget('hq', dataManager.getHqCount(), hqTarget);
-
+            
             // 储备进度 = 本月落地 + 三个月落地
             const monthCompanies = list.filter(c => c.landing_cycle === 'month');
             const quarterCompanies = list.filter(c => c.landing_cycle === 'quarter');
-
+            
             // 有效户储备
-            const reserveActive = monthCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0) +
+            const reserveActive = monthCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0) + 
                                   quarterCompanies.reduce((sum, c) => sum + (c.active_count || 0), 0);
             // 高质量储备
-            const reserveHq = monthCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0) +
+            const reserveHq = monthCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0) + 
                               quarterCompanies.reduce((sum, c) => sum + (c.hq_count || 0), 0);
-
+            
             document.getElementById('reserveActiveProgress').textContent = `${reserveActive}${activeTarget > 0 ? '/'+Math.max(0, activeTarget - dataManager.getActiveCount()) : ''}`;
             document.getElementById('reserveHqProgress').textContent = `${reserveHq}${hqTarget > 0 ? '/'+Math.max(0, hqTarget - dataManager.getHqCount()) : ''}`;
-
+            
             updateCircleProgressWithTarget('reserveActive', reserveActive, Math.max(0, activeTarget - dataManager.getActiveCount()));
             updateCircleProgressWithTarget('reserveHq', reserveHq, Math.max(0, hqTarget - dataManager.getHqCount()));
         }
-
+        
         function updateCircleProgressSimple(type, current) {
-            // 简单版本:只显示数值,不计算百分比
+            // 简单版本：只显示数值，不计算百分比
             const circle = document.getElementById(`${type}Circle`);
             const inner = document.getElementById(`${type}Percent`);
             if (circle && inner) {
                 inner.textContent = current > 0 ? '✅' : '-';
             }
         }
-
+        
         function updateCircleProgressWithTarget(type, current, target) {
             const circle = document.getElementById(`${type}Circle`);
             const inner = document.getElementById(`${type}Percent`);
@@ -1437,18 +1437,18 @@
             const target = targets[type] || 0;
             const percent = target > 0 ? Math.min(100, (current / target) * 100) : 0;
             document.getElementById(`${type}Progress`).style.width = percent + '%';
-            document.getElementById(`${type}Target`).textContent = `目标:${target}`;
+            document.getElementById(`${type}Target`).textContent = `目标：${target}`;
         }
-
+        
         // 展示面板点击下钻功能
         function filterByStat(type) {
             // 切换到企业列表
             switchTab('companies');
-
+            
             // 根据类型筛选
             const list = dataManager.getCompanies();
             let filtered = list;
-
+            
             switch(type) {
                 case 'opened':
                     filtered = list.filter(c => c.is_account_opened);
@@ -1462,9 +1462,9 @@
                 default:
                     filtered = list;
             }
-
+            
             renderCompanies(filtered);
-
+            
             // 高亮显示
             setTimeout(() => {
                 const table = document.getElementById('companiesTable');
@@ -1479,7 +1479,7 @@
         }
 
         function updateCircleProgress(type, current, label) {
-            // 此函数已废弃,使用 updateCircleProgressSimple 和 updateCircleProgressWithTarget 替代
+            // 此函数已废弃，使用 updateCircleProgressSimple 和 updateCircleProgressWithTarget 替代
         }
 
         function updatePipeline(list) {
@@ -1488,13 +1488,13 @@
             const year = list.filter(c => c.landing_cycle === 'year').length;
             const ongoing = list.filter(c => c.landing_cycle === 'ongoing').length;
             const completed = list.filter(c => c.landing_cycle === 'completed').length;
-
+            
             document.getElementById('monthCount').textContent = month;
             document.getElementById('quarterCount').textContent = quarter;
             document.getElementById('yearCount').textContent = year;
             document.getElementById('ongoingCount').textContent = ongoing;
-
-            // 更新已落地显示(添加到三个月落地卡片)
+            
+            // 更新已落地显示（添加到三个月落地卡片）
             const quarterCard = document.getElementById('quarterCount').parentNode;
             let completedBadge = quarterCard.querySelector('.completed-badge');
             if (!completedBadge) {
@@ -1503,7 +1503,7 @@
                 completedBadge.style.cssText = 'margin-top:6px;font-size:11px;color:#22c55e;font-weight:600;';
                 quarterCard.appendChild(completedBadge);
             }
-            completedBadge.textContent = `✅ 已落地:${completed}`;
+            completedBadge.textContent = `✅ 已落地：${completed}`;
         }
 
         function updateTargetsDisplay() {
@@ -1536,12 +1536,12 @@
         }
 
         function searchCompanies() { const q = document.getElementById('searchInput').value.toLowerCase(); renderCompanies(allCompanies.filter(c => (c.name&&c.name.toLowerCase().includes(q))||(c.contact_names&&c.contact_names.toLowerCase().includes(q)))); }
-
+        
         function sortCompanies(field) {
             const select = document.getElementById('sortSelect');
             const value = field || select.value;
             let sorted = [...allCompanies];
-
+            
             if (value === 'active_count_desc') sorted.sort((a,b) => (b.active_count||0) - (a.active_count||0));
             else if (value === 'active_count_asc') sorted.sort((a,b) => (a.active_count||0) - (b.active_count||0));
             else if (value === 'hq_count_desc') sorted.sort((a,b) => (b.hq_count||0) - (a.hq_count||0));
@@ -1558,11 +1558,11 @@
                 const order = { 'completed': 1, 'ongoing': 2, 'year': 3, 'quarter': 4, 'month': 5 };
                 sorted.sort((a,b) => (order[a.landing_cycle]||99) - (order[b.landing_cycle]||99));
             }
-            // default: 按创建顺序(数据库返回顺序)
-
+            // default: 按创建顺序（数据库返回顺序）
+            
             renderCompanies(sorted);
         }
-
+        
         function filterByXinfutong(value) {
             if (value === 'all') {
                 loadData();
@@ -1575,7 +1575,7 @@
             });
             renderCompanies(filtered);
         }
-
+        
         function filterByTask() {
             const taskId = document.getElementById('taskFilterSelect').value;
             if (taskId) {
@@ -1584,7 +1584,7 @@
                 showAllCompanies();
             }
         }
-
+        
         async function showAllCompanies() {
             document.getElementById('taskFilterSelect').value = '';
             try {
@@ -1595,48 +1595,48 @@
                 updatePipeline(allCompanies);
             } catch (e) { alert('加载失败'); }
         }
-
+        
         function updateTaskFilterSelect() {
             const select = document.getElementById('taskFilterSelect');
             const options = '<option value="">全部企业</option>' + allTasks.map(t => `<option value="${t.id}">${t.name||'未命名'} (${t.company_count||0}家)</option>`).join('');
             select.innerHTML = options;
         }
-
+        
         function updateWeekTaskSummary() {
             const summary = document.getElementById('weekTaskSummary');
             const today = new Date().toISOString().split('T')[0];
-
+            
             // 计算本周一和周日的日期
             const now = new Date();
-            const day = now.getDay() || 7; // 获取今天是周几 (1=周一,7=周日)
+            const day = now.getDay() || 7; // 获取今天是周几 (1=周一，7=周日)
             const mondayOffset = day - 1;
             const monday = new Date(now);
             monday.setDate(now.getDate() - mondayOffset);
             const sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
-
+            
             const weekStart = monday.toISOString().split('T')[0];
             const weekEnd = sunday.toISOString().split('T')[0];
-
-            // 统计本周待办(本周一到周日)
+            
+            // 统计本周待办（本周一到周日）
             const pendingThisWeek = allWeekTasks.filter(t => {
                 return t.plan_date >= weekStart && t.plan_date <= weekEnd && t.status === 'pending';
             }).length;
-
+            
             // 统计今日待办
             const pendingToday = allWeekTasks.filter(t => t.plan_date === today && t.status === 'pending').length;
-
+            
             if (pendingThisWeek === 0) {
                 summary.innerHTML = '<div style="color:#fff;font-size:13px;">✅ 本周无待办</div>';
             } else {
                 summary.innerHTML = `
                     <div style="color:#fff;font-size:13px;margin-bottom:4px;">📋 本周待办</div>
                     <div style="color:#fff;font-size:20px;font-weight:bold;">${pendingThisWeek} <span style="font-size:12px;font-weight:normal;">项未完成</span></div>
-                    ${pendingToday > 0 ? `<div style="color:#fbbf24;font-size:12px;margin-top:4px;">⚠️ 今日:${pendingToday}项</div>` : ''}
+                    ${pendingToday > 0 ? `<div style="color:#fbbf24;font-size:12px;margin-top:4px;">⚠️ 今日：${pendingToday}项</div>` : ''}
                 `;
             }
         }
-
+        
         // 待办提醒下拉弹窗管理
         function toggleTodoDropdown() {
             const dropdown = document.getElementById('todoDropdown');
@@ -1647,21 +1647,21 @@
                 }
             }
         }
-
+        
         function closeTodoDropdown() {
             const dropdown = document.getElementById('todoDropdown');
             if (dropdown) {
                 dropdown.classList.remove('active');
             }
         }
-
+        
         function renderTodoDropdown() {
             const list = document.getElementById('todoDropdownList');
             const summary = document.getElementById('todoDropdownSummary');
             if (!list || !summary) return;
-
+            
             const today = new Date().toISOString().split('T')[0];
-
+            
             // 计算本周范围
             const now = new Date();
             const day = now.getDay() || 7;
@@ -1672,27 +1672,27 @@
             sunday.setDate(monday.getDate() + 6);
             const weekStart = monday.toISOString().split('T')[0];
             const weekEnd = sunday.toISOString().split('T')[0];
-
+            
             // 获取本周待办
             const pendingTasks = allWeekTasks.filter(t => {
                 return t.plan_date >= weekStart && t.plan_date <= weekEnd && t.status === 'pending';
             });
-
+            
             summary.textContent = `${pendingTasks.length} 项未完成`;
-
+            
             if (pendingTasks.length === 0) {
                 list.innerHTML = '<div class="todo-dropdown-empty">✅ 暂无待办事项</div>';
                 return;
             }
-
+            
             // 按日期排序
             pendingTasks.sort((a, b) => a.plan_date.localeCompare(b.plan_date));
-
+            
             list.innerHTML = pendingTasks.map(t => {
                 const isToday = t.plan_date === today;
                 const urgencyClass = isToday ? 'today' : '';
                 const timeLabel = isToday ? '今天' : t.plan_date;
-
+                
                 return `
                     <div class="todo-dropdown-item ${urgencyClass}" onclick="goToWeekTask(${t.id})">
                         <input type="checkbox" class="todo-dropdown-checkbox" onclick="event.stopPropagation(); quickCompleteTodo(${t.id}, this)">
@@ -1705,7 +1705,7 @@
                 `;
             }).join('');
         }
-
+        
         function quickCompleteTodo(id, checkbox) {
             showLoading('正在完成...');
             fetch(`${API_BASE}/week-tasks/${id}`, {
@@ -1732,7 +1732,7 @@
                 hideLoading();
             });
         }
-
+        
         function goToWeekTask(id) {
             // 跳转到每周计划模块并滚动到该任务
             switchTab('weekly');
@@ -1747,7 +1747,7 @@
                 }
             }, 300);
         }
-
+        
         // 点击外部关闭下拉框
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('todoDropdown');
@@ -1756,8 +1756,8 @@
                 closeTodoDropdown();
             }
         });
-
-        // ========== 数据管理器(消除重复代码)==========
+        
+        // ========== 数据管理器（消除重复代码）==========
         class DataManager {
             constructor() {
                 this.companies = [];
@@ -1768,22 +1768,22 @@
                     hq: []
                 };
             }
-
+            
             // 设置企业数据并通知所有监听器
             setCompanies(data) {
                 const oldStats = this.getStats();
                 this.companies = data;
                 this.notifyListeners();
-
+                
                 // 记录历史数据用于趋势计算
                 this.recordHistory(oldStats);
             }
-
+            
             // 记录历史数据
             recordHistory(oldStats) {
                 const now = Date.now();
                 const newStats = this.getStats();
-
+                
                 // 只记录有变化的数据
                 if (oldStats.opened !== newStats.opened) {
                     this.history.opened.push({ value: newStats.opened, timestamp: now });
@@ -1798,26 +1798,26 @@
                     if (this.history.hq.length > 10) this.history.hq.shift();
                 }
             }
-
+            
             // 获取趋势
             getTrend(type) {
                 const history = this.history[type] || [];
                 if (history.length < 2) return { direction: 'flat', percent: 0 };
-
+                
                 const last = history[history.length - 1].value;
                 const prev = history[history.length - 2].value;
-
+                
                 if (prev === 0) return { direction: 'flat', percent: 0 };
-
+                
                 const change = last - prev;
                 const percent = Math.round((change / prev) * 100);
-
+                
                 return {
                     direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat',
                     percent: Math.abs(percent)
                 };
             }
-
+            
             // 获取当前统计数据
             getStats() {
                 return {
@@ -1827,12 +1827,12 @@
                     hq: this.getHqCount()
                 };
             }
-
+            
             // 添加数据更新监听器
             addListener(callback) {
                 this.listeners.push(callback);
             }
-
+            
             // 通知所有监听器数据已更新
             notifyListeners() {
                 this.listeners.forEach(cb => {
@@ -1843,53 +1843,53 @@
                     }
                 });
             }
-
+            
             // 获取企业数据
             getCompanies() {
                 return this.companies;
             }
-
+            
             // 获取已开户数量
             getOpenedCount() {
                 return this.companies.filter(c => c.is_account_opened).length;
             }
-
-            // 获取有效户总数(仅统计已落地企业)
+            
+            // 获取有效户总数（仅统计已落地企业）
             getActiveCount() {
                 const completed = this.companies.filter(c => c.landing_cycle === 'completed');
                 return completed.reduce((sum, c) => sum + (c.active_count || 0), 0);
             }
-
-            // 获取高质量客户总数(仅统计已落地企业)
+            
+            // 获取高质量客户总数（仅统计已落地企业）
             getHqCount() {
                 const completed = this.companies.filter(c => c.landing_cycle === 'completed');
                 return completed.reduce((sum, c) => sum + (c.hq_count || 0), 0);
             }
-
+            
             // 获取已落地企业数量
             getCompletedCount() {
                 return this.companies.filter(c => c.landing_cycle === 'completed').length;
             }
         }
-
+        
         // ========== API 缓存管理器 ==========
         class ApiCache {
             constructor() {
                 this.cache = {};
                 this.TTL = 5 * 60 * 1000; // 5 分钟默认缓存时间
             }
-
+            
             // 生成缓存键
             _getKey(endpoint, params = {}) {
                 return `${endpoint}:${JSON.stringify(params)}`;
             }
-
+            
             // 检查缓存是否有效
             isValid(key) {
                 const item = this.cache[key];
                 return item && (Date.now() - item.timestamp < this.TTL);
             }
-
+            
             // 获取缓存数据
             get(key) {
                 if (this.isValid(key)) {
@@ -1897,7 +1897,7 @@
                 }
                 return null;
             }
-
+            
             // 设置缓存
             set(key, data) {
                 this.cache[key] = {
@@ -1905,7 +1905,7 @@
                     timestamp: Date.now()
                 };
             }
-
+            
             // 清除缓存
             clear(endpoint) {
                 Object.keys(this.cache).forEach(key => {
@@ -1914,39 +1914,39 @@
                     }
                 });
             }
-
+            
             // 清除所有缓存
             clearAll() {
                 this.cache = {};
             }
         }
-
+        
         // 创建全局缓存实例
         const apiCache = new ApiCache();
-
-        // ========== API 请求控制器(取消过期请求)==========
+        
+        // ========== API 请求控制器（取消过期请求）==========
         class RequestController {
             constructor() {
                 this.controllers = new Map(); // 存储 AbortController
             }
-
+            
             // 创建或获取请求控制器
             getController(key) {
-                // 如果已有相同请求,取消它
+                // 如果已有相同请求，取消它
                 if (this.controllers.has(key)) {
                     this.controllers.get(key).abort();
                 }
-
+                
                 const controller = new AbortController();
                 this.controllers.set(key, controller);
                 return controller;
             }
-
+            
             // 清除请求控制器
             clear(key) {
                 this.controllers.delete(key);
             }
-
+            
             // 清除所有请求控制器
             clearAll() {
                 this.controllers.forEach(controller => {
@@ -1957,10 +1957,10 @@
                 this.controllers.clear();
             }
         }
-
+        
         // 创建全局请求控制器实例
         const requestController = new RequestController();
-
+        
         // 防抖函数
         function debounce(func, wait) {
             let timeout;
@@ -1973,7 +1973,7 @@
                 timeout = setTimeout(later, wait);
             };
         }
-
+        
         // 节流函数
         function throttle(func, limit) {
             let inThrottle;
@@ -1985,12 +1985,12 @@
                 }
             };
         }
-
+        
         // 带缓存和取消功能的 API 请求函数
         async function fetchWithCache(endpoint, options = {}, useCache = true) {
             const cacheKey = apiCache._getKey(endpoint, options.params);
             const requestKey = `req:${cacheKey}`;
-
+            
             // 尝试从缓存获取
             if (useCache) {
                 const cached = apiCache.get(cacheKey);
@@ -1999,24 +1999,24 @@
                     return cached;
                 }
             }
-
+            
             console.log(`[Cache Miss] ${endpoint}`);
-
-            // 获取请求控制器(会自动取消相同请求)
+            
+            // 获取请求控制器（会自动取消相同请求）
             const controller = requestController.getController(requestKey);
-
+            
             try {
                 const res = await fetch(`${API_BASE}${endpoint}`, {
                     ...options,
                     signal: controller.signal
                 });
                 const data = await res.json();
-
+                
                 // 缓存 GET 请求结果
                 if (useCache && (!options.method || options.method === 'GET')) {
                     apiCache.set(cacheKey, data);
                 }
-
+                
                 requestController.clear(requestKey);
                 return data;
             } catch (error) {
@@ -2027,59 +2027,59 @@
                 throw error;
             }
         }
-
+        
         // 创建全局数据管理器实例
         const dataManager = new DataManager();
-
+        
         // 注册展示面板更新监听器
         dataManager.addListener((companies) => {
             updateStats(companies);
             updatePipeline(companies);
         });
-
+        
         let draggedSrc = null;
-
+        
         function dragStart(e) {
             draggedSrc = e.target;
             e.dataTransfer.effectAllowed = 'move';
             setTimeout(() => e.target.style.opacity = '0.4', 0);
         }
-
+        
         function dragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             return false;
         }
-
+        
         function drop(e) {
             e.stopPropagation();
             const target = e.target.closest('th');
             if (!draggedSrc || !target || draggedSrc === target) return false;
-
+            
             const thead = document.getElementById('companiesTableHead');
             const ths = Array.from(thead.querySelectorAll('th[data-col]'));
             const srcIdx = ths.indexOf(draggedSrc);
             const targetIdx = ths.indexOf(target);
-
+            
             if (srcIdx < targetIdx) {
                 target.parentNode.insertBefore(draggedSrc, target.nextSibling);
             } else {
                 target.parentNode.insertBefore(draggedSrc, target);
             }
-
+            
             draggedSrc.style.opacity = '1';
             draggedSrc = null;
             return false;
         }
-
+        
         let currentSortField = null;
         let currentSortOrder = 'desc';
-
+        
         function handleSortClick(event, field) {
             // 防止拖拽时触发点击
             if (draggedSrc) return;
             event.stopPropagation();
-
+            
             const sortMap = {
                 'name': { asc: 'name_asc', desc: 'name_desc' },
                 'contact_frequency': { asc: 'default', desc: 'default' },
@@ -2089,10 +2089,10 @@
                 'is_account_opened': { asc: 'default', desc: 'default' },
                 'landing_cycle': { asc: 'landing_cycle_asc', desc: 'landing_cycle_desc' }
             };
-
+            
             const fieldMap = sortMap[field];
             if (!fieldMap) return;
-
+            
             // 切换排序方向
             if (currentSortField === field) {
                 currentSortOrder = currentSortOrder === 'desc' ? 'asc' : 'desc';
@@ -2100,15 +2100,15 @@
                 currentSortField = field;
                 currentSortOrder = 'desc';
             }
-
+            
             const sortValue = fieldMap[currentSortOrder];
-
+            
             // 更新表头样式
             document.querySelectorAll('th.sortable').forEach(th => {
                 th.classList.remove('sorted');
             });
             event.currentTarget.classList.add('sorted');
-
+            
             // 执行排序
             if (sortValue !== 'default') {
                 document.getElementById('sortSelect').value = sortValue;
@@ -2120,18 +2120,17 @@
 
         async function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            var btn = event && event.target && event.target.closest ? event.target.closest('.tab') : null;
-            if (btn) btn.classList.add('active');
-            ['leads','tasks','companies','referrals','todo','weekly','reminders','fusion'].forEach(t => {
-                document.getElementById(t+'Tab').style.display = t===tab?'block':'none';
+            event.target.classList.add('active');
+            ['leads','tasks','companies','referrals','todo','weekly','reminders','fusion'].forEach(t => { 
+                document.getElementById(t+'Tab').style.display = t===tab?'block':'none'; 
             });
-            if (tab==='companies') {
-                loadData();
-                updateWeekTaskSummary();
+            if (tab==='companies') { 
+                loadData(); 
+                updateWeekTaskSummary(); 
             }
-            if (tab==='leads') {
-                loadLeadBoards();
-                updateWeekTaskSummary();
+            if (tab==='leads') { 
+                loadLeadBoards(); 
+                updateWeekTaskSummary(); 
                 // 切换回线索挖掘时显示板块列表
                 const boardsList = document.getElementById('leadBoardsList');
                 const leadsContent = document.getElementById('leadsContent');
@@ -2139,9 +2138,9 @@
                 if (leadsContent) leadsContent.style.display = 'none';
                 currentLeadBoardId = null;
             }
-            if (tab==='tasks') {
-                loadTasks();
-                updateWeekTaskSummary();
+            if (tab==='tasks') { 
+                loadTasks(); 
+                updateWeekTaskSummary(); 
             }
             if (tab==='referrals') { loadReferrals(); updateWeekTaskSummary(); }
             if (tab==='weekly') { loadWeekPlan(); updateWeekTaskSummary(); }
@@ -2154,25 +2153,25 @@
             const weekStart = document.getElementById('weekSelect').value;
             const week = getWeekInfoFromStart(weekStart);
             const container = document.getElementById('weekPlan');
-
+            
             try {
                 const res = await fetch(`${API_BASE}/week-tasks`);
                 allWeekTasks = await res.json();
                 allTodos = allWeekTasks;
                 updateWeekTaskSummary();
                 renderWeekTaskList();
-            } catch (e) {
-                allWeekTasks = [];
+            } catch (e) { 
+                allWeekTasks = []; 
                 allTodos = [];
             }
-
+            
             const today = new Date().toISOString().split('T')[0];
-
+            
             if (!allWeekTasks.length) {
-                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#999;">本周暂无待办,点击"添加待办"开始规划</div>';
+                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#999;">本周暂无待办，点击"添加待办"开始规划</div>';
                 return;
             }
-
+            
             container.innerHTML = weekDays.map((day, i) => {
                 const date = week.days[i];
                 const isToday = date === today;
@@ -2210,7 +2209,7 @@
                 `;
             }).join('');
         }
-
+        
         async function toggleWeekTask(id, btn) {
             const task = allWeekTasks.find(t => t.id === id);
             try {
@@ -2243,35 +2242,35 @@
             document.getElementById('weekTaskModalTitle').textContent = type === 'other' ? '添加其他事项' : '添加企业待办';
             const weekStart = document.getElementById('weekSelect').value;
             const week = getWeekInfoFromStart(weekStart);
-
+            
             // 重新加载最新数据
             try {
                 const res = await fetch(`${API_BASE}/week-tasks?week_start=${weekStart}`);
                 allWeekTasks = await res.json();
             } catch (e) { allWeekTasks = []; }
-
+            
             try {
                 const res = await fetch(`${API_BASE}/companies`);
                 allCompanies = await res.json();
             } catch (e) {}
-
+            
             if (type === 'other') {
                 document.getElementById('weekTaskModalBody').innerHTML = `
-                    <div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#0369a1;">💡 添加与企业无关的其他事项,如:周例会、培训、资料整理等</div>
+                    <div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#0369a1;">💡 添加与企业无关的其他事项，如：周例会、培训、资料整理等</div>
                     <div class="info-item"><label>选择日期 *</label><select id="weekDate" required>${weekDays.map((d,i) => `<option value="${week.days[i]}">${d} (${week.days[i]})</option>`).join('')}</select></div>
                     <div class="info-item"><label>时间段 *</label><select id="weekTimePeriod" required><option value="am">上午</option><option value="pm">下午</option></select></div>
-                    <div class="info-item"><label>事项标题 *</label><input type="text" id="weekAction" required placeholder="如:周例会、培训、资料整理"></div>
+                    <div class="info-item"><label>事项标题 *</label><input type="text" id="weekAction" required placeholder="如：周例会、培训、资料整理"></div>
                     <div class="info-item"><label>详细描述</label><textarea id="weekDesc" rows="3" placeholder="事项的详细说明..."></textarea></div>
                     <div class="info-item"><label>优先级</label><select id="weekPriority"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
                     <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeWeekTaskModal()">取消</button><button type="button" class="btn btn-primary" onclick="submitWeekTask('other')">添加</button></div>
                 `;
             } else {
                 document.getElementById('weekTaskModalBody').innerHTML = `
-                    <div style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#166534;">💡 添加与企业相关的待办,如:上门拜访、电话跟进等,完成后可同步更新企业联系频次</div>
+                    <div style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#166534;">💡 添加与企业相关的待办，如：上门拜访、电话跟进等，完成后可同步更新企业联系频次</div>
                     <div class="info-item"><label>搜索并选择企业 *</label><div class="company-search-container"><input type="text" id="weekCompanySearch" placeholder="输入企业名称搜索..." onkeyup="searchCompanyForTask()" autocomplete="off"><div id="companySearchResults" class="company-search-results" style="display:none;"></div></div><div id="selectedCompanyDisplay"></div></div>
                     <div class="info-item"><label>选择日期 *</label><select id="weekDate" required>${weekDays.map((d,i) => `<option value="${week.days[i]}">${d} (${week.days[i]})</option>`).join('')}</select></div>
                     <div class="info-item"><label>时间段 *</label><select id="weekTimePeriod" required><option value="am">上午</option><option value="pm">下午</option></select></div>
-                    <div class="info-item"><label>待办事项 *</label><input type="text" id="weekAction" required placeholder="如:电话拜访、上门拜访"></div>
+                    <div class="info-item"><label>待办事项 *</label><input type="text" id="weekAction" required placeholder="如：电话拜访、上门拜访"></div>
                     <div class="info-item"><label>优先级</label><select id="weekPriority"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
                     <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeWeekTaskModal()">取消</button><button type="button" class="btn btn-primary" onclick="submitWeekTask('company')">添加</button></div>
                 `;
@@ -2292,7 +2291,7 @@
             selectedCompany = { id, name };
             document.getElementById('weekCompanySearch').value = name;
             document.getElementById('companySearchResults').style.display = 'none';
-            document.getElementById('selectedCompanyDisplay').innerHTML = `<div class="selected-company">✅ 已选择:<strong>${name}</strong></div>`;
+            document.getElementById('selectedCompanyDisplay').innerHTML = `<div class="selected-company">✅ 已选择：<strong>${name}</strong></div>`;
         }
 
         async function submitWeekTask(type = 'company') {
@@ -2305,15 +2304,15 @@
                 week_start: weekStart,
                 description: document.getElementById('weekDesc') ? document.getElementById('weekDesc').value : null
             };
-
+            
             if (type === 'company') {
                 if (!selectedCompany) { alert('请选择企业'); return; }
                 data.company_id = selectedCompany.id;
                 data.company_name = selectedCompany.name;
             }
-
+            
             if (!data.action) { alert('请填写事项标题'); return; }
-
+            
             try {
                 const res = await fetch(`${API_BASE}/week-tasks`, {
                     method: 'POST',
@@ -2333,27 +2332,27 @@
             }
         }
 
-        async function editWeekTask(id) { const task = weekTasks.find(t=>t.id===id); if(!task) return; const modal = document.getElementById('taskEditModal'); document.getElementById('editTaskId').value = id; document.getElementById('editCompany').value = task.company_name||''; document.getElementById('editAction').value = task.action||''; document.getElementById('editTimePeriod').value = task.time_period||'am'; document.getElementById('editPriority').value = task.priority||'medium'; modal.classList.add('active'); } async function closeEditModal() { document.getElementById('taskEditModal').classList.remove('active'); } async function saveEditTask() { const id = document.getElementById('editTaskId').value; const data = { company_name: document.getElementById('editCompany').value, action: document.getElementById('editAction').value, time_period: document.getElementById('editTimePeriod').value, priority: document.getElementById('editPriority').value }; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); closeEditModal(); loadWeekPlan(); renderWeekTaskList(); alert('保存成功'); } catch (e) { alert('保存失败'); } } async function deleteWeekTask(id) { if (!confirm('确定删除?')) return; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' }); loadWeekPlan(); renderWeekTaskList(); } catch (e) { alert('删除失败'); } }
+        async function editWeekTask(id) { const task = weekTasks.find(t=>t.id===id); if(!task) return; const modal = document.getElementById('taskEditModal'); document.getElementById('editTaskId').value = id; document.getElementById('editCompany').value = task.company_name||''; document.getElementById('editAction').value = task.action||''; document.getElementById('editTimePeriod').value = task.time_period||'am'; document.getElementById('editPriority').value = task.priority||'medium'; modal.classList.add('active'); } async function closeEditModal() { document.getElementById('taskEditModal').classList.remove('active'); } async function saveEditTask() { const id = document.getElementById('editTaskId').value; const data = { company_name: document.getElementById('editCompany').value, action: document.getElementById('editAction').value, time_period: document.getElementById('editTimePeriod').value, priority: document.getElementById('editPriority').value }; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); closeEditModal(); loadWeekPlan(); renderWeekTaskList(); alert('保存成功'); } catch (e) { alert('保存失败'); } } async function deleteWeekTask(id) { if (!confirm('确定删除？')) return; try { await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' }); loadWeekPlan(); renderWeekTaskList(); } catch (e) { alert('删除失败'); } }
 
         function renderWeekTaskList() {
             const filter = document.getElementById('weekListFilter').value;
             const weekStart = document.getElementById('weekSelect').value;
             const week = getWeekInfoFromStart(weekStart);
             const tbody = document.getElementById('weekTaskList');
-
+            
             // 只显示当周的待办
             let filtered = allWeekTasks.filter(t => t.plan_date >= week.days[0] && t.plan_date <= week.days[6]);
-
+            
             if (filter === 'pending') filtered = filtered.filter(t => t.status !== 'completed');
             else if (filter === 'completed') filtered = filtered.filter(t => t.status === 'completed');
             else if (filter === 'company') filtered = filtered.filter(t => t.company_id);
             else if (filter === 'other') filtered = filtered.filter(t => !t.company_id);
-
+            
             if (!filtered.length) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">暂无待办事项</td></tr>';
                 return;
             }
-
+            
             tbody.innerHTML = filtered.map(t => `
                 <tr style="${t.status==='completed'?'opacity:0.6;background:#f0fdf4;':''}">
                     <td style="text-align:center;">
@@ -2412,7 +2411,7 @@
                             <div class="info-item"><label>开户状态</label><div>${c.is_account_opened?'<span class="badge badge-success">已开户</span>':'<span class="badge badge-warning">未开户</span>'}</div></div>
                             <div class="info-item"><label>薪福通</label><div>${c.xinfutong?'<span class="badge badge-success">✅ 已标记</span>':'<span class="badge badge-gray">❌ 未标记</span>'}</div></div>
                         </div>
-
+                        
                         <!-- 跟进记录 -->
                         <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -2423,11 +2422,11 @@
                                 <p style="text-align:center;color:#999;">加载中...</p>
                             </div>
                         </div>
-
+                        
                         <!-- 企业尽调信息 -->
                         <div style="border-top:2px solid #e5e7eb;padding-top:16px;margin-top:16px;">
                             <h3 style="font-size:16px;margin-bottom:12px;color:#333;">📋 企业尽调信息</h3>
-
+                            
                             <!-- 基本信息 -->
                             <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:12px;">
                                 <h4 style="font-size:14px;color:#0369a1;margin-bottom:8px;">📌 基本信息</h4>
@@ -2440,7 +2439,7 @@
                                     <div class="info-item"><label>所得税纳税额</label><div>${c.income_tax||'-'}</div></div>
                                 </div>
                             </div>
-
+                            
                             <!-- 结算模式 -->
                             <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:12px;">
                                 <h4 style="font-size:14px;color:#92400e;margin-bottom:8px;">💰 结算模式</h4>
@@ -2449,13 +2448,13 @@
                                     <div class="info-item"><label>跨境业务</label><div>${getCrossBorderLabel(c.cross_border)||'-'}</div></div>
                                 </div>
                             </div>
-
+                            
                             <!-- 合作银行 -->
                             <div style="background:#dbeafe;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:12px;">
                                 <h4 style="font-size:14px;color:#1e40af;margin-bottom:8px;">🏦 合作银行</h4>
                                 <div class="info-item"><label>主要合作银行及业务</label><div>${c.main_banks||'-'}</div></div>
                             </div>
-
+                            
                             <!-- 零售业务 -->
                             <div style="background:#f3e8ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px;margin-bottom:12px;">
                                 <h4 style="font-size:14px;color:#6b21a8;margin-bottom:8px;">👤 零售业务</h4>
@@ -2465,7 +2464,7 @@
                                     <div class="info-item"><label>家庭情况</label><div>${c.family_status||'-'}</div></div>
                                 </div>
                             </div>
-
+                            
                             <!-- 资本市场 -->
                             <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:12px;">
                                 <h4 style="font-size:14px;color:#166534;margin-bottom:8px;">📈 资本市场</h4>
@@ -2476,21 +2475,21 @@
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:white;padding-top:12px;border-top:1px solid #e5e7eb;">
                             <button class="btn btn-primary" onclick="editCompanyDetail(${c.id})">✏️ 编辑</button>
                             <button class="btn btn-secondary" onclick="closeCompanyModal()">关闭</button>
                         </div>
                     </div>
                 `;
-
+                
                 // 加载跟进记录
                 loadFollowUps(c.id);
             } catch (e) {
                 document.getElementById('modalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
             }
         }
-
+        
         // 辅助函数
         function getLandingLabel(value) {
             const map = { 'month':'本月落地', 'quarter':'3 个月落地', 'year':'本年落地', 'ongoing':'持续跟进' };
@@ -2520,7 +2519,7 @@
             const map = { '1':'境内上市', '2':'境外上市', '3':'计划中' };
             return map[value] || '无';
         }
-
+        
         async function editCompanyDetail(id) {
             try {
                 const res = await fetch(`${API_BASE}/companies/${id}`);
@@ -2554,7 +2553,7 @@
                                 <div class="info-item"><label>所得税纳税额</label><input type="text" id="editIncomeTax" value="${c.income_tax||''}"></div>
                             </div>
                         </div>
-
+                        
                         <!-- 结算模式 -->
                         <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:12px;">
                             <h4 style="font-size:14px;color:#92400e;margin-bottom:8px;">💰 结算模式</h4>
@@ -2576,13 +2575,13 @@
                                 </div>
                             </div>
                         </div>
-
+                        
                         <!-- 合作银行 -->
                         <div style="background:#dbeafe;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:12px;">
                             <h4 style="font-size:14px;color:#1e40af;margin-bottom:8px;">🏦 合作银行</h4>
                             <div class="info-item"><label>主要合作银行及业务</label><textarea id="editMainBanks" rows="2" placeholder="银行名称及主要业务">${c.main_banks||''}</textarea></div>
                         </div>
-
+                        
                         <!-- 零售业务 -->
                         <div style="background:#f3e8ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px;margin-bottom:12px;">
                             <h4 style="font-size:14px;color:#6b21a8;margin-bottom:8px;">👤 零售业务</h4>
@@ -2598,7 +2597,7 @@
                                 <div class="info-item"><label>家庭情况</label><input type="text" id="editFamilyStatus" value="${c.family_status||''}" placeholder="夫妻、儿女情况"></div>
                             </div>
                         </div>
-
+                        
                         <!-- 资本市场 -->
                         <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:12px;">
                             <h4 style="font-size:14px;color:#166534;margin-bottom:8px;">📈 资本市场</h4>
@@ -2626,14 +2625,14 @@
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:white;padding-top:12px;border-top:1px solid #e5e7eb;">
                             <button type="button" class="btn btn-secondary" onclick="showCompanyDetail(${id})">取消</button>
                             <button type="submit" class="btn btn-primary">保存</button>
                         </div>
                     </form>
                 `;
-
+                
                 document.getElementById('editCompanyForm').onsubmit = async function(e) {
                     e.preventDefault();
                     try {
@@ -2690,19 +2689,19 @@
             `;
             document.getElementById('addCompanyForm').onsubmit = async function(e) {
                 e.preventDefault();
-
+                
                 // 表单验证
                 const errors = validateForm([
                     { label: '企业名称', value: document.getElementById('addName').value, required: true, maxLength: 100 },
                     { label: '行业', value: document.getElementById('addIndustry').value, required: false, maxLength: 50 },
                     { label: '年营业额', value: document.getElementById('addFinancial').value, required: false, maxLength: 50 }
                 ]);
-
+                
                 if (errors.length > 0) {
                     showFormErrors(errors);
                     return;
                 }
-
+                
                 const data = {
                     name: document.getElementById('addName').value.trim(),
                     industry: document.getElementById('addIndustry').value.trim(),
@@ -2731,7 +2730,7 @@
                             renderCompanies(allCompanies);
                             updateStats(allCompanies);
                             updatePipeline(allCompanies);
-                            alert(`✅ 已添加,企业 "${data.name}" 已关联到此任务`);
+                            alert(`✅ 已添加，企业 "${data.name}" 已关联到此任务`);
                         } else {
                             loadData();
                             alert('✅ 已添加');
@@ -2775,20 +2774,20 @@
                 <div class="template-box">
                     <h4>📄 CSV 模板说明</h4>
                     <ul>
-                        <li><strong>格式</strong>:CSV 格式(逗号分隔),WPS/Excel 均可打开</li>
-                        <li><strong>企业名称</strong>:必填,如"XX 科技公司"</li>
-                        <li><strong>行业</strong>:必填,如"信息技术"</li>
-                        <li><strong>年营业额</strong>:选填,如"5000 万"</li>
-                        <li><strong>有效户数</strong>:数字,如"10"</li>
-                        <li><strong>高质量数</strong>:数字,如"5"</li>
-                        <li><strong>开户状态</strong>:"已开户"或"未开户"</li>
-                        <li><strong>落地周期</strong>:month(本月)/quarter(3 个月)/year(本年)/ongoing(持续跟进)</li>
-                        <li><strong>对公客户经理</strong>:选填,如"张三"</li>
-                        <li><strong>备注</strong>:选填,任意文本</li>
+                        <li><strong>格式</strong>：CSV 格式（逗号分隔），WPS/Excel 均可打开</li>
+                        <li><strong>企业名称</strong>：必填，如"XX 科技公司"</li>
+                        <li><strong>行业</strong>：必填，如"信息技术"</li>
+                        <li><strong>年营业额</strong>：选填，如"5000 万"</li>
+                        <li><strong>有效户数</strong>：数字，如"10"</li>
+                        <li><strong>高质量数</strong>：数字，如"5"</li>
+                        <li><strong>开户状态</strong>："已开户"或"未开户"</li>
+                        <li><strong>落地周期</strong>：month(本月)/quarter(3 个月)/year(本年)/ongoing(持续跟进)</li>
+                        <li><strong>对公客户经理</strong>：选填，如"张三"</li>
+                        <li><strong>备注</strong>：选填，任意文本</li>
                     </ul>
                     <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="downloadTemplate()">📄 下载 CSV 模板</button>
                 </div>
-                <div class="info-item"><label>粘贴数据(从 Excel 复制)</label><textarea id="importData" rows="8" placeholder="从 Excel 复制后直接粘贴到这里"></textarea></div>
+                <div class="info-item"><label>粘贴数据（从 Excel 复制）</label><textarea id="importData" rows="8" placeholder="从 Excel 复制后直接粘贴到这里"></textarea></div>
                 <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button><button type="button" class="btn btn-primary" onclick="doImport()">导入</button></div>
             `;
         }
@@ -2823,30 +2822,30 @@
                     s++;
                 } catch (e) { f++; }
             }
-            alert(`✅ 导入完成!成功:${s} 失败:${f}`); closeImportModal(); loadData();
+            alert(`✅ 导入完成！成功:${s} 失败:${f}`); closeImportModal(); loadData();
         }
 
         function exportCompanies() {
             if (!allCompanies.length) { alert('无数据'); return; }
             const headers = ['企业名称', '行业', '年营业额', '有效户数', '高质量数', '关键人', '开户状态', '落地周期', '进度状态', '备注'];
             const rows = allCompanies.map(c => [
-                c.name||'',
-                c.industry||'',
-                c.financial_info||'',
-                c.active_count||0,
-                c.hq_count||0,
-                c.contact_names||'',
-                c.is_account_opened?'已开户':'未开户',
-                c.landing_cycle==='month'?'本月落地':c.landing_cycle==='quarter'?'3 个月落地':c.landing_cycle==='year'?'本年落地':'持续跟进',
+                c.name||'', 
+                c.industry||'', 
+                c.financial_info||'', 
+                c.active_count||0, 
+                c.hq_count||0, 
+                c.contact_names||'', 
+                c.is_account_opened?'已开户':'未开户', 
+                c.landing_cycle==='month'?'本月落地':c.landing_cycle==='quarter'?'3 个月落地':c.landing_cycle==='year'?'本年落地':'持续跟进', 
                 c.progress_status||'',
                 c.remarks||''
             ]);
-            // 使用标准 CSV 格式,WPS 兼容性最好
+            // 使用标准 CSV 格式，WPS 兼容性最好
             let csv = '\uFEFF'; // BOM 标记
             csv += headers.join(',') + '\n';
             csv += rows.map(row => row.map(cell => {
                 const str = String(cell||'');
-                // 如果包含逗号、引号或换行,用引号包裹并转义
+                // 如果包含逗号、引号或换行，用引号包裹并转义
                 if (str.includes(',') || str.includes('"') || str.includes('\n')) {
                     return '"' + str.replace(/"/g, '""') + '"';
                 }
@@ -2878,9 +2877,9 @@
             const companyOptions = allCompanies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('taskModalBody').innerHTML = `
                 <form id="taskForm">
-                    <div class="info-item"><label>任务名称 *</label><input type="text" id="taskName" required placeholder="如:薪福通专项营销"></div>
+                    <div class="info-item"><label>任务名称 *</label><input type="text" id="taskName" required placeholder="如：薪福通专项营销"></div>
                     <div class="info-item"><label>描述</label><textarea id="taskDesc" rows="3" placeholder="任务目标、策略等"></textarea></div>
-                    <div class="info-item"><label>关联企业信息</label><select id="taskCompanySelect" multiple style="width:100%;min-height:120px;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;">${companyOptions}</select><div style="font-size:11px;color:#999;margin-top:4px;">💡 按住 Ctrl/Cmd 可多选,创建后仍可修改</div></div>
+                    <div class="info-item"><label>关联企业信息</label><select id="taskCompanySelect" multiple style="width:100%;min-height:120px;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;">${companyOptions}</select><div style="font-size:11px;color:#999;margin-top:4px;">💡 按住 Ctrl/Cmd 可多选，创建后仍可修改</div></div>
                     <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeTaskModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div>
                 </form>`;
             document.getElementById('taskForm').onsubmit = async function(e) {
@@ -2913,14 +2912,14 @@
                 const res = await fetch(`${API_BASE}/follow-ups/company/${companyId}`);
                 const followUps = await res.json();
                 const container = document.getElementById(`followUpList_${companyId}`);
-
+                
                 if (!followUps.length) {
-                    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">暂无跟进记录,点击右上角添加</p>';
+                    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">暂无跟进记录，点击右上角添加</p>';
                     return;
                 }
-
+                
                 const typeIcons = { '电话': '📞', '上门': '🚗', '微信': '💬', '邮件': '📧', '会议': '🤝', '其他': '📝' };
-
+                
                 let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
                 followUps.forEach(fu => {
                     const icon = typeIcons[fu.follow_type] || '📝';
@@ -2938,8 +2937,8 @@
                                 </div>
                             </div>
                             <div style="color:#333;font-size:13px;line-height:1.6;margin-bottom:8px;">${escapeHtml(fu.follow_content)}</div>
-                            ${fu.next_follow_date ? `<div style="font-size:11px;color:#667eea;background:#dbeafe;padding:4px 8px;border-radius:4px;display:inline-block;">⏰ 下次跟进:${fu.next_follow_date}</div>` : ''}
-                            ${fu.notes ? `<div style="font-size:11px;color:#999;margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">备注:${escapeHtml(fu.notes)}</div>` : ''}
+                            ${fu.next_follow_date ? `<div style="font-size:11px;color:#667eea;background:#dbeafe;padding:4px 8px;border-radius:4px;display:inline-block;">⏰ 下次跟进：${fu.next_follow_date}</div>` : ''}
+                            ${fu.notes ? `<div style="font-size:11px;color:#999;margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">备注：${escapeHtml(fu.notes)}</div>` : ''}
                         </div>
                     `;
                 });
@@ -2950,7 +2949,7 @@
                 container.innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
             }
         }
-
+        
         window.openAddFollowUpModal = function(companyId, companyName) {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('addModal').classList.add('active');
@@ -3033,16 +3032,16 @@
                 }
             };
         };
-
+        
         window.editFollowUp = async function(id, companyId) {
             try {
                 const res = await fetch(`${API_BASE}/follow-ups/company/${companyId}`);
                 const followUps = await res.json();
                 const fu = followUps.find(f => f.id === id);
                 if (!fu) return;
-
+                
                 const timeMapReverse = { 'am': '上午', 'pm': '下午', 'evening': '晚上' };
-
+                
                 document.getElementById('addModal').classList.add('active');
                 document.getElementById('addModalTitle').textContent = '编辑跟进记录';
                 document.getElementById('addModalBody').innerHTML = `
@@ -3121,9 +3120,9 @@
                 alert('加载失败');
             }
         };
-
+        
         window.deleteFollowUp = async function(id, companyId) {
-            if (!confirm('确定删除这条跟进记录?')) return;
+            if (!confirm('确定删除这条跟进记录？')) return;
             try {
                 const res = await fetch(`${API_BASE}/follow-ups/${id}`, { method: 'DELETE' });
                 if (res.ok) {
@@ -3136,31 +3135,31 @@
                 alert('网络错误');
             }
         };
-
+        
         function closeCompanyModal() { document.getElementById('companyModal').classList.remove('active'); }
         function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
         function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
         function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
         function closeWeekTaskModal() { document.getElementById('weekTaskModal').classList.remove('active'); }
         function closeTargetModal() { document.getElementById('targetModal').classList.remove('active'); }
-
+        
         async function editTaskCompanies(taskId) {
             const task = allTasks.find(t => t.id === taskId);
             if (!task) return;
-
+            
             // 获取该任务的所有企业
             try {
                 const res = await fetch(`${API_BASE}/companies`);
                 const all = await res.json();
                 const taskCompanies = all.filter(c => c.task_id === taskId).map(c => c.id);
-
+                
                 document.getElementById('taskModal').classList.add('active');
                 document.getElementById('taskModalTitle').textContent = `管理企业 - ${task.name}`;
-
+                
                 const companyOptions = all.map(c => `<option value="${c.id}" ${taskCompanies.includes(c.id)?'selected':''}>${c.name}</option>`).join('');
                 document.getElementById('taskModalBody').innerHTML = `
                     <div class="info-item">
-                        <label>关联企业(按住 Ctrl/Cmd 多选)</label>
+                        <label>关联企业（按住 Ctrl/Cmd 多选）</label>
                         <select id="editTaskCompanySelect" multiple style="width:100%;min-height:200px;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;">${companyOptions}</select>
                         <div style="font-size:11px;color:#999;margin-top:4px;">当前已选 ${taskCompanies.length} 家企业</div>
                     </div>
@@ -3173,15 +3172,15 @@
                 alert('加载失败');
             }
         }
-
+        
         async function saveTaskCompanies(taskId) {
             const selectedCompanyIds = Array.from(document.getElementById('editTaskCompanySelect').selectedOptions).map(opt => parseInt(opt.value));
-
+            
             // 先清空所有关联到该任务的企业
             try {
                 const res = await fetch(`${API_BASE}/companies`);
                 const all = await res.json();
-
+                
                 // 取消所有原关联
                 const oldCompanies = all.filter(c => c.task_id === taskId);
                 for (const c of oldCompanies) {
@@ -3191,7 +3190,7 @@
                         body: JSON.stringify({ task_id: null })
                     });
                 }
-
+                
                 // 关联新选择的企业
                 for (const companyId of selectedCompanyIds) {
                     await fetch(`${API_BASE}/companies/${companyId}`, {
@@ -3200,7 +3199,7 @@
                         body: JSON.stringify({ task_id: taskId })
                     });
                 }
-
+                
                 alert('✅ 已保存');
                 closeTaskModal();
                 loadTasks();
@@ -3208,15 +3207,15 @@
                 alert('保存失败');
             }
         }
-
+        
         async function deleteTask(taskId) {
-            if (!confirm('⚠️ 确定删除此任务?\n\n删除任务后,关联的企业将自动解除关联(企业本身不会被删除)。')) return;
+            if (!confirm('⚠️ 确定删除此任务？\n\n删除任务后，关联的企业将自动解除关联（企业本身不会被删除）。')) return;
             try {
                 // 先获取该任务关联的所有企业
                 const res = await fetch(`${API_BASE}/companies`);
                 const allCompanies = await res.json();
                 const taskCompanies = allCompanies.filter(c => c.task_id === taskId);
-
+                
                 // 解除所有关联企业的 task_id
                 for (const company of taskCompanies) {
                     await fetch(`${API_BASE}/companies/${company.id}`, {
@@ -3225,10 +3224,10 @@
                         body: JSON.stringify({ task_id: null })
                     });
                 }
-
+                
                 // 删除任务
                 await fetch(`${API_BASE}/marketing-tasks/${taskId}`, { method: 'DELETE' });
-                alert('✅ 任务已删除,关联企业已解除关联');
+                alert('✅ 任务已删除，关联企业已解除关联');
                 loadTasks();
                 if (currentTaskId === taskId) {
                     currentTaskId = null;
@@ -3240,15 +3239,15 @@
                 alert('删除失败');
             }
         }
-
+        
         async function manageContacts(companyId, companyName) {
             document.getElementById('contactModal').classList.add('active');
             document.getElementById('contactModalTitle').textContent = `关键人管理 - ${companyName}`;
-
+            
             try {
                 const res = await fetch(`${API_BASE}/contacts/company/${companyId}`);
                 const contacts = await res.json();
-
+                
                 let html = `
                     <div style="margin-bottom:16px;">
                         <button class="btn btn-primary" onclick="addContact(${companyId})">+ 添加关键人</button>
@@ -3281,19 +3280,19 @@
                                 `).join('')}
                             </tbody>
                         </table>
-                    ` : '<p style="text-align:center;color:#999;padding:40px;">暂无关键人,点击"添加关键人"开始添加</p>'}
+                    ` : '<p style="text-align:center;color:#999;padding:40px;">暂无关键人，点击"添加关键人"开始添加</p>'}
                 `;
-
+                
                 document.getElementById('contactModalBody').innerHTML = html;
                 currentCompanyId = companyId;
             } catch (e) {
                 document.getElementById('contactModalBody').innerHTML = '<p style="text-align:center;color:#ef4444;">加载失败</p>';
             }
         }
-
+        
         let currentCompanyId = null;
         let editingContactId = null;
-
+        
         function addContact(companyId) {
             editingContactId = null;
             document.getElementById('contactModalBody').innerHTML = `
@@ -3303,7 +3302,7 @@
                         <div class="info-item"><label>职位</label><input type="text" id="contactPosition"></div>
                         <div class="info-item"><label>生日</label><input type="date" id="contactBirth"></div>
                         <div class="info-item"><label>家庭信息</label><input type="text" id="contactFamily"></div>
-                        <div class="info-item"><label>喜好</label><input type="text" id="contactPreferences" placeholder="如:喝茶、高尔夫"></div>
+                        <div class="info-item"><label>喜好</label><input type="text" id="contactPreferences" placeholder="如：喝茶、高尔夫"></div>
                         <div class="info-item"><label>推荐送礼</label><input type="text" id="contactGifts"></div>
                     </div>
                     <div class="info-item"><label>设为主要联系人</label><select id="contactIsPrimary"><option value="0">否</option><option value="1">是</option></select></div>
@@ -3313,7 +3312,7 @@
                     </div>
                 </form>
             `;
-
+            
             document.getElementById('contactForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
@@ -3342,13 +3341,13 @@
                 }
             };
         }
-
+        
         async function editContact(contactId) {
             try {
                 const res = await fetch(`${API_BASE}/contacts/${contactId}`);
                 const ct = await res.json();
                 editingContactId = contactId;
-
+                
                 document.getElementById('contactModalBody').innerHTML = `
                     <form id="editContactForm">
                         <div class="info-grid">
@@ -3366,7 +3365,7 @@
                         </div>
                     </form>
                 `;
-
+                
                 document.getElementById('editContactForm').onsubmit = async function(e) {
                     e.preventDefault();
                     try {
@@ -3397,9 +3396,9 @@
                 alert('加载失败');
             }
         }
-
+        
         async function deleteContact(contactId) {
-            if (!confirm('确定删除此关键人?')) return;
+            if (!confirm('确定删除此关键人？')) return;
             try {
                 await fetch(`${API_BASE}/contacts/${contactId}`, { method: 'DELETE' });
                 alert('✅ 已删除');
@@ -3408,15 +3407,15 @@
                 alert('删除失败');
             }
         }
-
+        
         function closeContactModal() {
             document.getElementById('contactModal').classList.remove('active');
         }
-
+        
         function closeXinfutongModal() {
             document.getElementById('xinfutongModal').classList.remove('active');
         }
-
+        
         async function viewXinfutongDetails(companyId, companyName) {
             document.getElementById('xinfutongModal').classList.add('active');
             document.getElementById('xinfutongModalTitle').textContent = `薪福通详情 - ${companyName}`;
@@ -3426,25 +3425,25 @@
                 document.getElementById('xinfutongModalBody').innerHTML = `<div style="padding:20px;"><div class="info-grid"><div class="info-item"><label>是否注册</label><div>${xfDetails.is_registered ? '✅ 已注册' : '❌ 未注册'}</div></div><div class="info-item"><label>适用板块</label><div>${xfDetails.modules||'-'}</div></div><div class="info-item"><label>配置情况</label><div style="white-space:pre-wrap;">${xfDetails.config_status||'-'}</div></div><div class="info-item"><label>配置老师</label><div>${xfDetails.config_teacher||'-'}</div></div></div><div style="margin-top:20px;display:flex;justify-content:flex-end;"><button class="btn btn-secondary" onclick="closeXinfutongModal()">关闭</button><button class="btn btn-primary" style="margin-left:12px;" onclick="closeXinfutongModal();editXinfutong(${companyId},'${companyName}')">✏️ 编辑</button></div></div>`;
             } catch (e) { alert('加载失败'); }
         }
-
+        
         function closeExportModal() {
             document.getElementById('exportModal').classList.remove('active');
         }
-
+        
         async function editXinfutong(companyId, companyName) {
             document.getElementById('xinfutongModal').classList.add('active');
             document.getElementById('xinfutongModalTitle').textContent = `薪福通配置 - ${companyName}`;
-
+            
             try {
                 const res = await fetch(`${API_BASE}/companies/${companyId}`);
                 const c = await res.json();
-
+                
                 let xfDetails = {};
                 try {
                     const res2 = await fetch(`${API_BASE}/xinfutong/${companyId}`);
                     xfDetails = await res2.json();
                 } catch (e) {}
-
+                
                 document.getElementById('xinfutongModalBody').innerHTML = `
                     <form id="xinfutongForm">
                         <div class="info-item"><label>薪福通适用性</label>
@@ -3461,7 +3460,7 @@
                                     <option value="0" ${!xfDetails.is_registered?'selected':''}>❌ 未注册</option>
                                 </select>
                             </div>
-                            <div class="info-item"><label>适用板块</label><input type="text" id="xfModules" value="${xfDetails.modules||''}" placeholder="如:工资代发、企业缴费、党费云"></div>
+                            <div class="info-item"><label>适用板块</label><input type="text" id="xfModules" value="${xfDetails.modules||''}" placeholder="如：工资代发、企业缴费、党费云"></div>
                             <div class="info-item"><label>配置情况</label><textarea id="xfConfig" rows="3" placeholder="配置进度、遇到的问题等">${xfDetails.config_status||''}</textarea></div>
                             <div class="info-item"><label>配置老师</label><input type="text" id="xfTeacher" value="${xfDetails.config_teacher||''}" placeholder="负责配置的老师姓名"></div>
                         </div>
@@ -3471,7 +3470,7 @@
                         </div>
                     </form>
                 `;
-
+                
                 document.getElementById('xinfutongForm').onsubmit = async function(e) {
                     e.preventDefault();
                     try {
@@ -3482,7 +3481,7 @@
                                 xinfutong_status: document.getElementById('xfStatus').value
                             })
                         });
-
+                        
                         if (document.getElementById('xfStatus').value === 'applicable') {
                             await fetch(`${API_BASE}/xinfutong`, {
                                 method: 'POST',
@@ -3496,7 +3495,7 @@
                                 })
                             });
                         }
-
+                        
                         alert('✅ 已保存');
                         closeXinfutongModal();
                         apiCache.clear('/companies');
@@ -3509,12 +3508,12 @@
                 alert('加载失败');
             }
         }
-
+        
         function toggleXfFields() {
             const status = document.getElementById('xfStatus').value;
             document.getElementById('xfDetailsFields').style.display = status === 'applicable' ? 'block' : 'none';
         }
-
+        
         function toggleSelectAll() {
             const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.export-checkbox');
@@ -3525,17 +3524,17 @@
                 if (company) company.selected = selectAll.checked;
             });
         }
-
+        
         function doExportSelected() {
             const selected = allCompanies.filter(c => c.selected);
-            if (!selected.length) {
-                alert('请先在企业列表中勾选要导出的企业(点击每行前面的复选框)');
-                return;
+            if (!selected.length) { 
+                alert('请先在企业列表中勾选要导出的企业（点击每行前面的复选框）'); 
+                return; 
             }
-
+            
             const checkboxes = document.querySelectorAll('#exportModal input[type="checkbox"]:checked');
             const fields = Array.from(checkboxes).map(cb => cb.value);
-
+            
             const headers = {
                 name: '企业名称', manager_name: '对公客户经理', active_count: '有效户数',
                 hq_count: '高质量数', is_account_opened: '开户状态', landing_cycle: '落地周期',
@@ -3553,7 +3552,7 @@
                 asset_status: '资产情况', family_status: '家庭情况',
                 venture_status: '风投情况', executive_stock: '高管持股', listing_plan: '上市计划'
             };
-
+            
             // 使用标准 CSV 格式
             let csv = '\uFEFF'; // BOM 标记
             csv += fields.map(f => headers[f]).join(',') + '\n';
@@ -3567,15 +3566,15 @@
                 else if (f === 'is_high_quality') val = c.is_high_quality ? '是' : '否';
                 else if (f === 'executive_stock') val = c.executive_stock ? '是' : '否';
                 else val = c[f] || '';
-
+                
                 const str = String(val);
-                // 如果包含逗号、引号或换行,用引号包裹并转义
+                // 如果包含逗号、引号或换行，用引号包裹并转义
                 if (str.includes(',') || str.includes('"') || str.includes('\n')) {
                     return '"' + str.replace(/"/g, '""') + '"';
                 }
                 return str;
             }).join(',')).join('\n');
-
+            
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -3583,7 +3582,7 @@
             link.click();
             closeExportModal();
         }
-
+        
         function openExportModal() {
             const selected = allCompanies.filter(c => c.selected);
             document.getElementById('exportModal').classList.add('active');
@@ -3638,15 +3637,15 @@
                 </div>
             `;
         }
-
+        
         function filterCompanies() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const taskFilter = document.getElementById('taskFilterSelect').value;
             const xfFilter = document.getElementById('xinfutongFilterSelect').value;
             const managerFilter = document.getElementById('managerFilterSelect').value;
-
+            
             let filtered = dataManager.getCompanies();
-
+            
             if (taskFilter) filtered = filtered.filter(c => c.task_id == taskFilter);
             if (xfFilter) {
                 if (xfFilter === 'applicable') filtered = filtered.filter(c => c.xinfutong_status === 'applicable');
@@ -3655,20 +3654,20 @@
             }
             if (managerFilter) filtered = filtered.filter(c => c.manager_name === managerFilter);
             if (search) filtered = filtered.filter(c => (c.name&&c.name.toLowerCase().includes(search))||(c.contact_names&&c.contact_names.toLowerCase().includes(search))||(c.manager_name&&c.manager_name.toLowerCase().includes(search)));
-
+            
             renderCompanies(filtered);
         }
-
-        // 防抖版本的搜索(300ms 延迟)
+        
+        // 防抖版本的搜索（300ms 延迟）
         const debouncedFilterCompanies = debounce(filterCompanies, 300);
-
-        // 绑定搜索输入事件(使用防抖)
+        
+        // 绑定搜索输入事件（使用防抖）
         document.getElementById('searchInput').addEventListener('input', debouncedFilterCompanies);
-
+        
         // ========== 搜索历史管理 ==========
         const SEARCH_HISTORY_KEY = 'crm_search_history';
         const MAX_HISTORY = 10;
-
+        
         // 获取搜索历史
         function getSearchHistory() {
             try {
@@ -3677,11 +3676,11 @@
                 return [];
             }
         }
-
+        
         // 保存搜索历史
         function saveSearchHistory(query) {
             if (!query || query.trim().length === 0) return;
-
+            
             let history = getSearchHistory();
             // 移除重复项
             history = history.filter(item => item !== query);
@@ -3693,7 +3692,7 @@
             }
             localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
         }
-
+        
         // 删除搜索历史项
         function deleteSearchHistoryItem(query, event) {
             event.stopPropagation();
@@ -3702,33 +3701,33 @@
             localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
             renderSearchHistory();
         }
-
+        
         // 清空搜索历史
         function clearSearchHistory() {
             localStorage.removeItem(SEARCH_HISTORY_KEY);
             renderSearchHistory();
         }
-
+        
         // 渲染搜索历史下拉框
         function renderSearchHistory() {
             const dropdown = document.getElementById('searchHistoryDropdown');
             const history = getSearchHistory();
-
+            
             if (history.length === 0) {
                 dropdown.classList.remove('active');
                 return;
             }
-
+            
             dropdown.innerHTML = history.map(item => `
                 <div class="search-history-item" onclick="selectHistoryItem('${item.replace(/'/g, "\\'")}')">
                     <span class="search-history-text">🔍 ${escapeHtml(item)}</span>
                     <span class="search-history-delete" onclick="deleteSearchHistoryItem('${item.replace(/'/g, "\\'")}', event)">✕</span>
                 </div>
             `).join('') + `<div class="search-history-clear" onclick="clearSearchHistory()">清空搜索历史</div>`;
-
+            
             dropdown.classList.add('active');
         }
-
+        
         // 选择搜索历史项
         function selectHistoryItem(query) {
             document.getElementById('searchInput').value = query;
@@ -3736,12 +3735,12 @@
             saveSearchHistory(query);
             document.getElementById('searchHistoryDropdown').classList.remove('active');
         }
-
+        
         // 显示/隐藏搜索历史
         function toggleSearchHistory() {
             const dropdown = document.getElementById('searchHistoryDropdown');
             const input = document.getElementById('searchInput');
-
+            
             if (input.value.trim().length === 0) {
                 if (dropdown.classList.contains('active')) {
                     dropdown.classList.remove('active');
@@ -3750,10 +3749,10 @@
                 }
             }
         }
-
+        
         // 绑定搜索历史事件
         document.getElementById('searchInput').addEventListener('focus', toggleSearchHistory);
-
+        
         // 点击外部关闭搜索历史
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('searchHistoryDropdown');
@@ -3762,16 +3761,16 @@
                 dropdown.classList.remove('active');
             }
         });
-
+        
         // ========== 搜索高亮功能 ==========
         function highlightText(text, keyword) {
             if (!keyword || !text) return escapeHtml(text);
-
+            
             const escaped = escapeHtml(text);
             const regex = new RegExp(`(${escapeHtml(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
             return escaped.replace(regex, '<span class="search-highlight">$1</span>');
         }
-
+        
         // 更新 filterCompanies 函数以支持高亮
         const originalFilterCompanies = filterCompanies;
         filterCompanies = function() {
@@ -3779,9 +3778,9 @@
             const taskFilter = document.getElementById('taskFilterSelect').value;
             const xfFilter = document.getElementById('xinfutongFilterSelect').value;
             const managerFilter = document.getElementById('managerFilterSelect').value;
-
+            
             let filtered = dataManager.getCompanies();
-
+            
             if (taskFilter) filtered = filtered.filter(c => c.task_id == taskFilter);
             if (xfFilter) {
                 if (xfFilter === 'applicable') filtered = filtered.filter(c => c.xinfutong_status === 'applicable');
@@ -3790,32 +3789,32 @@
             }
             if (managerFilter) filtered = filtered.filter(c => c.manager_name === managerFilter);
             if (search) {
-                filtered = filtered.filter(c =>
+                filtered = filtered.filter(c => 
                     (c.name && c.name.toLowerCase().includes(search)) ||
                     (c.contact_names && c.contact_names.toLowerCase().includes(search)) ||
                     (c.manager_name && c.manager_name.toLowerCase().includes(search))
                 );
             }
-
+            
             // 保存搜索历史
             if (search) {
                 saveSearchHistory(document.getElementById('searchInput').value.trim());
             }
-
+            
             renderCompanies(filtered, search);
         }
-
+        
         // 更新 renderCompanies 函数以支持高亮
         const originalRenderCompanies = renderCompanies;
         renderCompanies = function(list, searchKeyword = '') {
             const tb = document.getElementById('companiesTable');
-            if (!list || !list.length) {
-                tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;">暂无数据</td></tr>';
-                return;
+            if (!list || !list.length) { 
+                tb.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#999;">暂无数据</td></tr>'; 
+                return; 
             }
-
+            
             list.forEach(c => { if (c.selected === undefined) c.selected = false; });
-
+            
             tb.innerHTML = list.map(c => `
                 <tr style="${c.xinfutong_status==='applicable'?'background:#f0fdf4;':''}">
                     <td style="width:30px;"><input type="checkbox" class="export-checkbox" value="${c.id}" ${c.selected?'checked':''} onchange="toggleCompanySelect(${c.id})"></td>
@@ -3840,18 +3839,18 @@
                 </tr>
             `).join('');
         }
-
+        
         function updateManagerFilter() {
             const managers = [...new Set(allCompanies.map(c => c.manager_name).filter(m => m))];
             const select = document.getElementById('managerFilterSelect');
             select.innerHTML = '<option value="">对公客户经理</option>' + managers.map(m => `<option value="${m}">${m}</option>`).join('');
         }
 
-        // 待办清单功能 - 增强版(支持分页、筛选、折叠)
+        // 待办清单功能 - 增强版（支持分页、筛选、折叠）
         let todoCurrentPage = 1;
         const todoPageSize = 20;
         let todoShowCompleted = true;
-
+        
         async function loadTodos() {
             try {
                 const res = await fetch(`${API_BASE}/week-tasks`);
@@ -3862,23 +3861,23 @@
                 updateWeekTaskSummary();
             } catch (e) { allTodos = []; allWeekTasks = []; }
         }
-
+        
         function getFilteredTodos() {
             const statusFilter = document.getElementById('todoFilterStatus')?.value || 'all';
             const dateFilter = document.getElementById('todoFilterDate')?.value || '';
             const today = new Date().toISOString().split('T')[0];
             const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0];
             const weekStart = calculateWeekStart(today);
-
+            
             let filtered = [...allTodos];
-
+            
             // 状态筛选
             if (statusFilter === 'pending') {
                 filtered = filtered.filter(t => t.status === 'pending');
             } else if (statusFilter === 'completed') {
                 filtered = filtered.filter(t => t.status === 'completed');
             }
-
+            
             // 日期筛选
             if (dateFilter === 'today') {
                 filtered = filtered.filter(t => t.plan_date === today);
@@ -3889,8 +3888,8 @@
             } else if (dateFilter === 'overdue') {
                 filtered = filtered.filter(t => t.plan_date && t.plan_date < today && t.status === 'pending');
             }
-
-            // 排序:未完成优先,然后按日期
+            
+            // 排序：未完成优先，然后按日期
             filtered.sort((a, b) => {
                 const aCompleted = a.status === 'completed' ? 1 : 0;
                 const bCompleted = b.status === 'completed' ? 1 : 0;
@@ -3900,29 +3899,29 @@
                 if (!b.plan_date) return -1;
                 return a.plan_date.localeCompare(b.plan_date);
             });
-
+            
             return filtered;
         }
-
+        
         function renderPagination(filteredTodos, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-
+            
             const totalPages = Math.ceil(filteredTodos.length / todoPageSize);
             if (totalPages <= 1) {
                 container.innerHTML = '';
                 return;
             }
-
+            
             let html = '';
             const startPage = Math.max(1, todoCurrentPage - 2);
             const endPage = Math.min(totalPages, todoCurrentPage + 2);
-
+            
             if (startPage > 1) {
                 html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(1)">1</button>`;
                 if (startPage > 2) html += `<span style="color:#999;">...</span>`;
             }
-
+            
             for (let i = startPage; i <= endPage; i++) {
                 if (i === todoCurrentPage) {
                     html += `<button class="btn btn-sm btn-primary">${i}</button>`;
@@ -3930,22 +3929,22 @@
                     html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(${i})">${i}</button>`;
                 }
             }
-
+            
             if (endPage < totalPages) {
                 if (endPage < totalPages - 1) html += `<span style="color:#999;">...</span>`;
                 html += `<button class="btn btn-sm btn-secondary" onclick="setTodoPage(${totalPages})">${totalPages}</button>`;
             }
-
+            
             html += `<span style="font-size:12px;color:#666;margin-left:8px;">${todoCurrentPage}/${totalPages}页</span>`;
-
+            
             container.innerHTML = html;
         }
-
+        
         function setTodoPage(page) {
             todoCurrentPage = page;
             renderTodos();
         }
-
+        
         function toggleCompleted() {
             todoShowCompleted = !todoShowCompleted;
             const btn = document.getElementById('toggleCompletedBtn');
@@ -3955,41 +3954,41 @@
             todoCurrentPage = 1;
             renderTodos();
         }
-
+        
         function renderTodos() {
             const container = document.getElementById('todoList');
             const countSpan = document.getElementById('todoCount');
-
+            
             let filteredTodos = getFilteredTodos();
-
+            
             // 折叠已完成
             if (!todoShowCompleted) {
                 filteredTodos = filteredTodos.filter(t => t.status === 'pending');
             }
-
+            
             const totalCount = allTodos.length;
             const pendingCount = allTodos.filter(t => t.status === 'pending').length;
             const completedCount = allTodos.filter(t => t.status === 'completed').length;
-
+            
             if (countSpan) {
                 countSpan.textContent = `共${totalCount}项 (未完成${pendingCount} | 已完成${completedCount})`;
             }
-
+            
             if (!filteredTodos.length) {
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无待办事项</div>';
                 document.getElementById('todoPagination')?.remove();
                 document.getElementById('todoPaginationBottom')?.remove();
                 return;
             }
-
+            
             // 分页
             const totalPages = Math.ceil(filteredTodos.length / todoPageSize);
             if (todoCurrentPage > totalPages) todoCurrentPage = totalPages;
-
+            
             const startIndex = (todoCurrentPage - 1) * todoPageSize;
             const endIndex = startIndex + todoPageSize;
             const pageTodos = filteredTodos.slice(startIndex, endIndex);
-
+            
             container.innerHTML = pageTodos.map(t => {
                 const isCompleted = t.status === 'completed';
                 return `<div class="todo-item ${isCompleted?'completed':''}" data-id="${t.id}">
@@ -4000,7 +3999,7 @@
                     <div class="todo-actions"><button class="btn btn-sm btn-secondary" data-id="${t.id}" onclick="deleteTodo(${t.id})">删除</button></div>
                 </div>`;
             }).join('');
-
+            
             // 绑定事件
             container.querySelectorAll('.todo-checkbox').forEach(cb => {
                 cb.addEventListener('change', function() {
@@ -4008,7 +4007,7 @@
                     toggleTodo(id);
                 });
             });
-
+            
             container.querySelectorAll('.todo-date').forEach(input => {
                 input.addEventListener('change', function() {
                     const id = parseInt(this.getAttribute('data-id'));
@@ -4016,7 +4015,7 @@
                     updateTodoDate(id, value);
                 });
             });
-
+            
             // 渲染分页
             renderPagination(filteredTodos, 'todoPagination');
             renderPagination(filteredTodos, 'todoPaginationBottom');
@@ -4059,7 +4058,7 @@
                 }
             } catch (e) { alert('添加失败'); }
         }
-
+        
         function calculateWeekStart(plan_date) {
             const d = new Date(plan_date + 'T00:00:00');
             let day = d.getUTCDay();
@@ -4084,9 +4083,9 @@
                     renderWeekTaskList();
                     updateWeekTaskSummary();
                 }
-            } catch (e) {
+            } catch (e) { 
                 console.error('勾选失败:', e);
-                alert('更新失败');
+                alert('更新失败'); 
             }
         }
         async function updateTodoDate(id, date) {
@@ -4112,13 +4111,13 @@
                     renderWeekTaskList();
                     updateWeekTaskSummary();
                 }
-            } catch (e) {
+            } catch (e) { 
                 console.error('日期更新失败:', e);
-                alert('更新失败');
+                alert('更新失败'); 
             }
         }
         async function deleteTodo(id) {
-            if (!confirm('确定删除?')) return;
+            if (!confirm('确定删除？')) return;
             try {
                 await fetch(`${API_BASE}/week-tasks/${id}`, { method: 'DELETE' });
                 loadTodos();
@@ -4177,14 +4176,14 @@
         window.viewLeadBoard = async function(boardId, showBackButton = true) {
             currentLeadBoardId = boardId;
             const board = allLeadBoards.find(b => b.id === boardId);
-
+            
             showLoading('正在加载线索...');
-
-            // 隐藏板块列表,显示线索列表
+            
+            // 隐藏板块列表，显示线索列表
             document.getElementById('leadBoardsList').style.display = 'none';
             document.getElementById('leadsContent').style.display = 'block';
-
-            // 渲染线索列表头部(首页默认不显示返回按钮)
+            
+            // 渲染线索列表头部（首页默认不显示返回按钮）
             const container = document.getElementById('leadsContent');
             container.innerHTML = `
                 <div class="search-box" style="margin-bottom:16px;">
@@ -4199,12 +4198,12 @@
                 </div>
                 <div id="leadsTableContainer"></div>
             `;
-
+            
             try {
                 const res = await fetch(`${API_BASE}/leads/boards/${boardId}/leads`);
                 allLeads = await res.json();
                 renderLeads();
-            } catch (e) {
+            } catch (e) { 
                 logError('viewLeadBoard', e);
                 showError('加载线索失败', 'viewLeadBoard');
             } finally {
@@ -4217,16 +4216,16 @@
             document.getElementById('leadsContent').style.display = 'none';
             currentLeadBoardId = null;
         }
-
-        // 首页加载时自动显示第一个线索板块的内容(不显示返回按钮)
+        
+        // 首页加载时自动显示第一个线索板块的内容（不显示返回按钮）
         async function showDefaultLeads() {
-            // 显示板块列表,不自动进入第一个板块
+            // 显示板块列表，不自动进入第一个板块
             const boardsList = document.getElementById('leadBoardsList');
             const leadsContent = document.getElementById('leadsContent');
-
+            
             if (boardsList) boardsList.style.display = 'block';
             if (leadsContent) leadsContent.style.display = 'none';
-
+            
             // 重置当前板块 ID
             currentLeadBoardId = null;
         }
@@ -4239,18 +4238,18 @@
                     <div class="template-box" style="background:#f0f9ff;border:1px solid #0284c7;border-radius:8px;padding:12px;margin-bottom:16px;">
                         <h4 style="color:#0369a1;font-size:13px;margin-bottom:8px;">📋 导入说明</h4>
                         <ul style="font-size:12px;color:#0c4a6e;padding-left:18px;line-height:1.8;">
-                            <li><strong>方法 1:</strong>从 Excel 选中数据区域 → 复制 → 粘贴到下方输入框</li>
-                            <li><strong>方法 2:</strong>直接粘贴整个 Excel 工作表</li>
-                            <li><strong>列顺序:</strong>企业名称 | 参保人数 | 是否约访 | 面访情况 | 对公客户经理</li>
-                            <li><strong>是否约访:</strong>填写"是/1/✅"表示已约访,其他表示未约访</li>
-                            <li><strong>日均存款/授信敞口:</strong>在 Excel 中对应第 7-8 列(导入后手动补充)</li>
+                            <li><strong>方法 1：</strong>从 Excel 选中数据区域 → 复制 → 粘贴到下方输入框</li>
+                            <li><strong>方法 2：</strong>直接粘贴整个 Excel 工作表</li>
+                            <li><strong>列顺序：</strong>企业名称 | 参保人数 | 是否约访 | 面访情况 | 对公客户经理</li>
+                            <li><strong>是否约访：</strong>填写"是/1/✅"表示已约访，其他表示未约访</li>
+                            <li><strong>日均存款/授信敞口：</strong>在 Excel 中对应第 7-8 列（导入后手动补充）</li>
                         </ul>
                     </div>
                     <div class="info-item">
                         <label>从 Excel 复制后粘贴到这里</label>
-                        <textarea id="importLeadData" rows="12" style="font-family:monospace;font-size:12px;" placeholder="直接从 Excel 复制,然后粘贴到这里&#10;&#10;示例:&#10;XX 科技公司&#9;50 人&#9;0&#9;初步沟通中&#9;张三&#10;YY 贸易公司&#9;30 人&#9;1&#9;已确定意向&#9;李四"></textarea>
+                        <textarea id="importLeadData" rows="12" style="font-family:monospace;font-size:12px;" placeholder="直接从 Excel 复制，然后粘贴到这里&#10;&#10;示例：&#10;XX 科技公司&#9;50 人&#9;0&#9;初步沟通中&#9;张三&#10;YY 贸易公司&#9;30 人&#9;1&#9;已确定意向&#9;李四"></textarea>
                     </div>
-                    <div style="margin-top:8px;font-size:12px;color:#666;">💡 提示:粘贴后会自动识别列数,不需要手动处理分隔符</div>
+                    <div style="margin-top:8px;font-size:12px;color:#666;">💡 提示：粘贴后会自动识别列数，不需要手动处理分隔符</div>
                     <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;">
                         <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
                         <button type="button" class="btn btn-primary" onclick="window.doImportLeads()">📥 开始导入</button>
@@ -4262,25 +4261,25 @@
         window.doImportLeads = async function() {
             const data = document.getElementById('importLeadData').value.trim();
             if (!data) { alert('请从 Excel 复制数据并粘贴'); return; }
-
+            
             const lines = data.split('\n').filter(l => l.trim());
             let success = 0, fail = 0, skipped = 0;
-
+            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 // Excel 复制的数据用制表符分隔
                 const parts = line.split('\t').map(p => p.trim());
-
+                
                 // 跳过空行或没有企业名称的行
                 if (parts.length < 1 || !parts[0] || parts[0] === '企业名称') {
                     skipped++;
                     continue;
                 }
-
+                
                 // 解析是否约访
                 const visitedRaw = (parts[2] || '0').toString().toLowerCase();
                 const isVisited = (visitedRaw === '1' || visitedRaw === '是' || visitedRaw === '✅' || visitedRaw === 'yes') ? 1 : 0;
-
+                
                 try {
                     await fetch(`${API_BASE}/leads/leads`, {
                         method: 'POST',
@@ -4295,15 +4294,15 @@
                         })
                     });
                     success++;
-                } catch (e) {
+                } catch (e) { 
                     console.error('导入失败:', parts[0], e);
-                    fail++;
+                    fail++; 
                 }
             }
-
-            let msg = `✅ 导入完成!\n成功:${success} 条\n失败:${fail} 条`;
-            if (skipped > 0) msg += `\n跳过:${skipped} 条(空行或标题行)`;
-
+            
+            let msg = `✅ 导入完成！\n成功：${success} 条\n失败：${fail} 条`;
+            if (skipped > 0) msg += `\n跳过：${skipped} 条（空行或标题行）`;
+            
             alert(msg);
             closeAddModal();
             window.viewLeadBoard(currentLeadBoardId);
@@ -4366,9 +4365,9 @@
         window.doBatchEdit = async function() {
             const field = document.getElementById('batchEditField').value;
             const value = document.getElementById('batchEditValue').value;
-
-            if (!confirm(`确定要批量修改${allLeads.length}条线索的${document.getElementById('batchEditField').options[document.getElementById('batchEditField').selectedIndex].text}吗?`)) return;
-
+            
+            if (!confirm(`确定要批量修改${allLeads.length}条线索的${document.getElementById('batchEditField').options[document.getElementById('batchEditField').selectedIndex].text}吗？`)) return;
+            
             let success = 0, fail = 0;
             for (const lead of allLeads) {
                 try {
@@ -4382,8 +4381,8 @@
                     success++;
                 } catch (e) { fail++; }
             }
-
-            alert(`✅ 批量修改完成!成功:${success} 失败:${fail}`);
+            
+            alert(`✅ 批量修改完成！成功：${success} 失败：${fail}`);
             closeAddModal();
             window.viewLeadBoard(currentLeadBoardId);
         }
@@ -4392,13 +4391,13 @@
             if (!currentLeadBoardId) return;
             await viewLeadBoard(currentLeadBoardId);
         }
-
-        // 显示线索列表(首页默认视图)
+        
+        // 显示线索列表（首页默认视图）
         window.renderLeads = function() {
             const container = document.getElementById('leadsTableContainer');
             if (!container) return;
             if (!allLeads.length) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无线索,点击"添加线索"开始</div>';
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无线索，点击"添加线索"开始</div>';
                 return;
             }
             let html = '<div class="table-wrapper"><table><thead><tr><th><input type="checkbox" id="selectAllLeads" onchange="window.toggleAllLeads(this)"></th><th>企业名称</th><th>参保人数</th><th>日均存款</th><th>授信敞口</th><th>是否约访</th><th>面访情况</th><th>对公客户经理</th><th>操作</th></tr></thead><tbody>';
@@ -4426,7 +4425,7 @@
         window.openAddLeadBoardModal = function() {
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '新建线索板块';
-            document.getElementById('addModalBody').innerHTML = `<form id="addLeadBoardForm"><div class="info-item"><label>板块名称 *</label><input type="text" id="leadBoardName" required placeholder="如:2026 年 3 月线索"></div><div class="info-item"><label>描述</label><textarea id="leadBoardDesc" rows="3" placeholder="线索来源、跟进策略等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadBoardForm"><div class="info-item"><label>板块名称 *</label><input type="text" id="leadBoardName" required placeholder="如：2026 年 3 月线索"></div><div class="info-item"><label>描述</label><textarea id="leadBoardDesc" rows="3" placeholder="线索来源、跟进策略等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">创建</button></div></form>`;
             document.getElementById('addLeadBoardForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
@@ -4437,7 +4436,7 @@
         }
 
         window.deleteLeadBoard = async function(id) {
-            if (!confirm('确定删除?该板块下的所有线索也会被删除')) return;
+            if (!confirm('确定删除？该板块下的所有线索也会被删除')) return;
             try {
                 await fetch(`${API_BASE}/leads/boards/${id}`, { method: 'DELETE' });
                 loadLeadBoards();
@@ -4446,18 +4445,18 @@
         }
 
         window.openAddLeadModal = function() {
-            if (!currentLeadBoardId) {
+            if (!currentLeadBoardId) { 
                 if (!allLeadBoards.length) {
                     alert('请先创建线索板块');
                     return;
                 }
-                // 如果没有选择板块,提示用户点击板块卡片
-                alert('请点击线索板块卡片进入,然后点击"添加线索"按钮');
-                return;
+                // 如果没有选择板块，提示用户点击板块卡片
+                alert('请点击线索板块卡片进入，然后点击"添加线索"按钮');
+                return; 
             }
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '添加线索';
-            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如:50 人"></div><div class="info-item"><label>日均存款</label><input type="text" id="leadDailyDeposit" placeholder="如:500 万"></div><div class="info-item"><label>授信敞口</label><input type="text" id="leadCreditExposure" placeholder="如:300 万"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addLeadForm"><div class="info-grid"><div class="info-item"><label>企业名称 *</label><input type="text" id="leadCompany" required></div><div class="info-item"><label>参保人数</label><input type="text" id="leadEmployee" placeholder="如：50 人"></div><div class="info-item"><label>日均存款</label><input type="text" id="leadDailyDeposit" placeholder="如：500 万"></div><div class="info-item"><label>授信敞口</label><input type="text" id="leadCreditExposure" placeholder="如：300 万"></div><div class="info-item"><label>是否约访</label><select id="leadVisited"><option value="0">未约访</option><option value="1">已约访</option></select></div><div class="info-item"><label>对公客户经理</label><input type="text" id="leadManager" placeholder="客户经理姓名"></div></div><div class="info-item"><label>面访情况</label><textarea id="leadVisitStatus" rows="3" placeholder="面访记录、客户需求等"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">添加</button></div></form>`;
             document.getElementById('addLeadForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
@@ -4483,7 +4482,7 @@
         }
 
         window.deleteLead = async function(id) {
-            if (!confirm('确定删除?')) return;
+            if (!confirm('确定删除？')) return;
             try { await fetch(`${API_BASE}/leads/leads/${id}`, { method: 'DELETE' }); loadLeads(); } catch (e) { alert('删除失败'); }
         }
 
@@ -4497,7 +4496,7 @@
                 const taskOptions = tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
                 document.getElementById('addModal').classList.add('active');
                 document.getElementById('addModalTitle').textContent = '转为营销任务';
-                document.getElementById('addModalBody').innerHTML = `<div style="padding:20px;"><p style="margin-bottom:16px;">将 <strong>${lead.company_name}</strong> 添加到哪个营销任务?</p><div class="info-item"><label>选择营销任务</label><select id="convertTaskSelect">${taskOptions}</select></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:16px 0;font-size:13px;color:#0369a1;">💡 企业信息将自动填入:<br>- 企业名称:${lead.company_name}<br>- 对公客户经理:${lead.manager_name||'(空)'}<br>- 备注:${lead.visit_status||'(空)'}</div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="button" class="btn btn-primary" onclick="doConvertLead(${id})">确认转换</button></div></div>`;
+                document.getElementById('addModalBody').innerHTML = `<div style="padding:20px;"><p style="margin-bottom:16px;">将 <strong>${lead.company_name}</strong> 添加到哪个营销任务？</p><div class="info-item"><label>选择营销任务</label><select id="convertTaskSelect">${taskOptions}</select></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:16px 0;font-size:13px;color:#0369a1;">💡 企业信息将自动填入：<br>- 企业名称：${lead.company_name}<br>- 对公客户经理：${lead.manager_name||'（空）'}<br>- 备注：${lead.visit_status||'（空）'}</div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="button" class="btn btn-primary" onclick="doConvertLead(${id})">确认转换</button></div></div>`;
             } catch (e) { alert('加载失败'); }
         }
 
@@ -4535,8 +4534,8 @@
                 renderReferralsTable();
                 updateReferralStats();
                 loadReferralCharts(month);
-            } catch (e) {
-                console.error('❌ 加载失败:', e);
+            } catch (e) { 
+                console.error('❌ 加载失败:', e); 
             }
         }
 
@@ -4621,19 +4620,19 @@
                 const color = '#667eea';
                 html += `<div style="margin:12px 0;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:600;">${d.department}</span><span style="color:#667eea;font-weight:bold;">${d.total} 单</span></div><div style="height:24px;background:#e5e7eb;border-radius:4px;overflow:hidden;"><div style="width:${width}%;height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:4px;display:flex;align-items:center;padding:0 8px;"><span style="color:#fff;font-size:10px;">转出 ${d.from_count||0} | 接收 ${d.to_count||0}</span></div></div></div>`;
             });
-            html += `<div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;"><span style="color:#666;">总转介量:</span><span style="font-weight:600;color:#667eea;">${sorted.reduce((sum,d)=>sum+(d.total||0),0)} 单</span></div></div>`;
+            html += `<div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;"><span style="color:#666;">总转介量：</span><span style="font-weight:600;color:#667eea;">${sorted.reduce((sum,d)=>sum+(d.total||0),0)} 单</span></div></div>`;
             container.innerHTML = html;
         }
 
         window.openAddReferralModal = function() {
             document.getElementById('addModal').classList.add('active');
             document.getElementById('addModalTitle').textContent = '新建转介业务';
-            document.getElementById('addModalBody').innerHTML = `<form id="addReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="refDate" required value="${new Date().toISOString().split('T')[0]}"></div><div class="info-item"><label>客户名称 *</label><input type="text" id="refCustomer" required placeholder="客户企业/个人名称"></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><select id="refFromDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>转出人员 *</label><input type="text" id="refFromPerson" required placeholder="您的姓名"></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><select id="refToDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>接收人员 *</label><input type="text" id="refToPerson" required placeholder="接收方姓名"></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="refAmount" placeholder="预计或实际成交金额" step="1000"></div><div class="info-item"><label>积分规则</label><select id="refPointsCalculate"><option value="1">✅ 核算积分</option><option value="0">❌ 不核算积分</option></select></div></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:8px 0;font-size:12px;color:#0369a1;">💡 说明:<strong>核算积分</strong>时,已落地转介核算 1 个积分;<strong>不核算积分</strong>时,已落地转介不核算积分</div><div class="info-item"><label>业务状态</label><select id="refStatus"><option value="pending">📞 跟进中</option><option value="completed">✅ 已落地</option><option value="invalid">❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="refRemarks" rows="3" placeholder="备注信息"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
+            document.getElementById('addModalBody').innerHTML = `<form id="addReferralForm"><div class="info-grid"><div class="info-item"><label>转介日期 *</label><input type="date" id="refDate" required value="${new Date().toISOString().split('T')[0]}"></div><div class="info-item"><label>客户名称 *</label><input type="text" id="refCustomer" required placeholder="客户企业/个人名称"></div></div><div class="info-grid"><div class="info-item"><label>转出条线 *</label><select id="refFromDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>转出人员 *</label><input type="text" id="refFromPerson" required placeholder="您的姓名"></div></div><div class="info-grid"><div class="info-item"><label>接收条线 *</label><select id="refToDept" required><option value="">请选择</option><option value="理财条线">理财条线</option><option value="市拓条线">市拓条线</option><option value="大堂条线">大堂条线</option><option value="运营条线">运营条线</option><option value="公司条线">公司条线</option></select></div><div class="info-item"><label>接收人员 *</label><input type="text" id="refToPerson" required placeholder="接收方姓名"></div></div><div class="info-grid"><div class="info-item"><label>业绩金额 (元)</label><input type="number" id="refAmount" placeholder="预计或实际成交金额" step="1000"></div><div class="info-item"><label>积分规则</label><select id="refPointsCalculate"><option value="1">✅ 核算积分</option><option value="0">❌ 不核算积分</option></select></div></div><div style="background:#f0f9ff;border:1px solid #0284c7;border-radius:6px;padding:12px;margin:8px 0;font-size:12px;color:#0369a1;">💡 说明：<strong>核算积分</strong>时，已落地转介核算 1 个积分；<strong>不核算积分</strong>时，已落地转介不核算积分</div><div class="info-item"><label>业务状态</label><select id="refStatus"><option value="pending">📞 跟进中</option><option value="completed">✅ 已落地</option><option value="invalid">❌ 无效</option></select></div><div class="info-item"><label>备注</label><textarea id="refRemarks" rows="3" placeholder="备注信息"></textarea></div><div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;"><button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button><button type="submit" class="btn btn-primary">保存</button></div></form>`;
             document.getElementById('addReferralForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try {
                     const res = await fetch(`${API_BASE}/referrals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('refDate').value, customer_name: document.getElementById('refCustomer').value, from_department: document.getElementById('refFromDept').value, from_person: document.getElementById('refFromPerson').value, to_department: document.getElementById('refToDept').value, to_person: document.getElementById('refToPerson').value, amount: parseFloat(document.getElementById('refAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('refPointsCalculate').value), business_status: document.getElementById('refStatus').value, remarks: document.getElementById('refRemarks').value }) });
-                    if (res.ok) { const data = await res.json(); alert(`✅ 已创建!自动计算积分:${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('创建失败'); }
+                    if (res.ok) { const data = await res.json(); alert(`✅ 已创建！自动计算积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('创建失败'); }
                 } catch (e) { alert('网络错误'); }
             };
         };
@@ -4648,13 +4647,13 @@
                 e.preventDefault();
                 try {
                     const res = await fetch(`${API_BASE}/referrals/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referral_date: document.getElementById('editRefDate').value, customer_name: document.getElementById('editRefCustomer').value, from_department: document.getElementById('editRefFromDept').value, from_person: document.getElementById('editRefFromPerson').value, to_department: document.getElementById('editRefToDept').value, to_person: document.getElementById('editRefToPerson').value, amount: parseFloat(document.getElementById('editRefAmount').value) || 0, points_rule: 'standard', points_calculate: parseInt(document.getElementById('editRefPointsCalculate').value), business_status: document.getElementById('editRefStatus').value, remarks: document.getElementById('editRefRemarks').value }) });
-                    if (res.ok) { const data = await res.json(); alert(`✅ 已更新!积分:${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('更新失败'); }
+                    if (res.ok) { const data = await res.json(); alert(`✅ 已更新！积分：${data.final_points}`); closeAddModal(); loadReferrals(); } else { alert('更新失败'); }
                 } catch (e) { alert('网络错误'); }
             };
         };
 
         window.deleteReferral = async function(id) {
-            if (!confirm('确定删除这条转介记录?')) return;
+            if (!confirm('确定删除这条转介记录？')) return;
             try { await fetch(`${API_BASE}/referrals/${id}`, { method: 'DELETE' }); alert('✅ 已删除'); loadReferrals(); } catch (e) { alert('删除失败'); }
         };
 
@@ -4677,7 +4676,7 @@
         } else {
             setTimeout(initReferralMonths, 100);
         }
-
+    
 
         // ========== 融合攻坚目标追踪 ==========
         var allFusionTargets = [];
@@ -4830,7 +4829,7 @@ var currentFusionView = 'table';
         function deleteFollowRow(el, recordId) {
             var par = el.closest('.f-row');
             if (recordId > 0) {
-                if (!confirm('删除此条跟进记录?')) return;
+                if (!confirm('删除此条跟进记录？')) return;
                 fetch('/api/fusion/followup/' + recordId, { method: 'DELETE' }).then(function() { loadFusionData(); });
             } else {
                 par.remove();
@@ -5033,19 +5032,19 @@ function loadFusionData() {
                         lastFollow = lastRec && lastRec.updated_at ? lastRec.updated_at.substr(0, 16).replace('T', ' ') : '';
                     }
 
-                    html += '<div style="width:100%;">';
-                    html += '<div class="fusion-row" style="display:grid;grid-template-columns:20px 80px minmax(0,1fr) 60px 70px 55px 85px 70px 16px;align-items:center;padding:10px 14px;background:white;border-bottom:1px solid #f3f4f6;position:relative;width:100%;box-sizing:border-box;" onmouseenter="showFusionActions(this)" onmouseleave="hideFusionActions(this)">';
+                    html += '<div class="fusion-manager-section">';
+                    html += '<div class="fusion-row" style="display:flex;align-items:center;padding:10px 14px;background:white;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background 0.12s;" onmouseenter="showFusionActions(this)" onmouseleave="hideFusionActions(this)" onclick="toggleFusionManagerRow(this)">';
 
                     // Status icon
-                    html += '<div style="font-size:16px;margin-right:10px;text-align:center;width:20px;box-sizing:border-box;grid-column:1;">' + statusIcon + '</div>';
+                    html += '<div style="font-size:16px;margin-right:10px;width:20px;text-align:center;">' + statusIcon + '</div>';
 
                     // Manager name
-                    html += '<div style="width:80px;grid-column:2;box-sizing:border-box;min-width:0;overflow:hidden;">';
+                    html += '<div style="min-width:80px;flex:1;">';
                     html += '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + mg.manager_name + '</div>';
                     html += '</div>';
 
                     // Company dots + names preview
-                    html += '<div style="grid-column:3;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;overflow:hidden;">';
+                    html += '<div style="flex:2;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;">';
                     companyList.slice(0, 5).forEach(function(co, ci) {
                         var coR = co.task_count > 0 ? Math.round(co.completed_count / co.task_count * 100) : 0;
                         var coColor = coR >= 50 ? "#22c55e" : coR > 0 ? "#f59e0b" : "#ef4444";
@@ -5062,25 +5061,26 @@ function loadFusionData() {
                     html += '</div>';
 
                     // Task/completed
-                    html += '<div onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:60px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;grid-column:4;box-sizing:border-box;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改任务/完成数">';
+                    html += '<div onclick="event.stopPropagation(); editFusionCounts(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:60px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改任务/完成数">';
                     html += '<div style="font-size:11px;color:#9ca3af;margin-bottom:1px;">任务/完成</div>';
                     html += '<div style="font-size:13px;font-weight:600;color:#374151;">' + mg.completed_count + ' / ' + mg.task_count + '</div>';
                     html += '</div>';
 
                     // Progress
-                    html += '<div onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:70px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;grid-column:5;box-sizing:border-box;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击+1完成数">';
+                    html += '<div onclick="event.stopPropagation(); incFusionCompleted(\'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="text-align:center;min-width:70px;padding:4px 8px;cursor:pointer;border-radius:6px;transition:background 0.12s;" onmouseenter="this.style.background=\'#dcfce7\'" onmouseleave="this.style.background=\'transparent\'" title="点击+1完成数">';
                     html += '<div style="font-size:14px;font-weight:bold;color:' + rateColor + ';">' + totalRate + '%</div>';
                     html += '<div style="width:60px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-top:2px;"><div style="width:' + totalRate + '%;height:100%;background:' + rateColor + ';border-radius:2px;"></div></div>';
                     html += '</div>';
 
                     // Status label
-                    html += '<div style="min-width:55px;text-align:center;grid-column:6;box-sizing:border-box;">' + statusLabel + '</div>';
+                    html += '<div style="min-width:55px;text-align:center;">' + statusLabel + '</div>';
 
                     // Last follow time
-                    html += '<div style="min-width:85px;text-align:right;font-size:11px;color:#9ca3af;grid-column:7;box-sizing:border-box;">' + (lastFollow ? lastFollow.replace(' ', '<br>') : '-') + '</div>';
+                    html += '<div style="min-width:85px;text-align:right;font-size:11px;color:#9ca3af;">' + (lastFollow ? lastFollow.replace(' ', '<br>') : '-') + '</div>';
 
-
-                    html += '<div onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="padding:2px 8px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;white-space:nowrap;grid-column:8;box-sizing:border-box;width:70px;text-align:center;" onmouseenter=\"this.style.background=\'#5a67d8\'\" onmouseleave=\"this.style.background=\'#667eea\'\" title="添加目标企业">+ 企业</div>';
+                    // Arrow
+                    html += '<div class="fusion-row-arrow" style="font-size:11px;color:#667eea;margin-left:10px;width:16px;text-align:center;">▶</div>';
+                    html += '<div onclick="event.stopPropagation(); addFusionCompanyInline(this, \'' + mg.manager_name.replace(/'/g, "\\'") + '\', \'' + (mg.line||'') + '\', \'' + type + '\')" style="margin-left:6px;padding:2px 8px;font-size:11px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-weight:500;transition:background 0.12s;" onmouseenter=\"this.style.background=\'#5a67d8\'\" onmouseleave=\"this.style.background=\'#667eea\'\" title="添加目标企业">+ 企业</div>';
 
                     // Hover action bar (hidden by default)
                     html += '<div class="fusion-actions" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);gap:6px;background:white;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;">';
@@ -5093,7 +5093,7 @@ function loadFusionData() {
                     html += '</div>';
 
                     // Detail section (hidden)
-                    html += '<div style="background:#fafafa;padding:12px 14px;border-bottom:1px solid #e5e7eb;width:100%;box-sizing:border-box;display:block;">';
+                    html += '<div class="fusion-detail" style="display:none;background:#fafafa;padding:12px 14px;border-bottom:1px solid #e5e7eb;">';
                     companyList.forEach(function(co) {
                         var coTask = co.task_count, coComp = co.completed_count;
                         var coRate = coTask > 0 ? Math.round(coComp / coTask * 100) : 0;
@@ -5108,7 +5108,7 @@ function loadFusionData() {
                         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
                         html += '<div onclick="event.stopPropagation(); editFusionCompanyName(this, \'' + co.name.replace(/'/g, "\\'") + '\', ' + co.records[0].id + ')" style="font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;padding:2px 4px;border-radius:4px;transition:background 0.12s;" onmouseenter="this.style.background=\'#fef3c3\'" onmouseleave="this.style.background=\'transparent\'" title="点击修改企业名称">' + co.name + ' <span style="font-size:10px;color:#9ca3af;">✏️</span></div>';
                         html += '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">';
-                        html += '<span style="font-size:11px;color:#7c3aed;white-space:nowrap;">对接客户经理:</span>';
+                        html += '<span style="font-size:11px;color:#7c3aed;white-space:nowrap;">对接客户经理：</span>';
                         html += '<input type="text" value="' + (contactMgr||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(contactMgr||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_manager:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f3f4f6;outline:none;font-size:11px;color:#7c3aed;padding:2px 6px;border-radius:4px;width:72px;" placeholder="输入" title="' + (contactMgr||'点击添加') + '">';
                         html += '<input type="text" value="' + (co.records[0].contact_info||'') + '" onclick="event.stopPropagation()" onblur="var v=this.value.trim();if(v!==(co.records[0].contact_info||\'\')){fetch(\'/api/fusion/followup/\'+co.records[0].id,{method:\'PATCH\',headers:{\'Content-Type\':\'application/json\'},body:JSON.stringify({contact_info:v})}).then(function(){loadFusionData();});}" style="border:none;background:#f9fafb;outline:none;font-size:11px;color:#6b7280;padding:2px 6px;border-radius:4px;flex:1;min-width:60px;" placeholder="客户简介" title="' + (co.records[0].contact_info||'点击添加简介') + '">';
                         html += '</div>';
@@ -5309,13 +5309,13 @@ function loadFusionData() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ manager_name: managerName, task_category: targetType, target_type: targetType, line: line || '\u96f6\u552e', target_company: companyName.trim(), follow_record: '', task_count: 1, completed_count: 0 })
-            }).then(function(r) {
+            }).then(function(r) { 
                 if (!r.ok) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + r.status); return; }
-                loadFusionData();
+                loadFusionData(); 
             }).catch(function(e) { alert('\u6dfb\u52a0\u5931\u8d25\uff1a' + e); });
         }
         function deleteFusionCompany(el, followId, companyName) {
-            if (!confirm('确认删除目标企业「' + companyName + '」吗?')) return;
+            if (!confirm('确认删除目标企业「' + companyName + '」吗？')) return;
             fetch('/api/fusion/followup/' + followId, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }

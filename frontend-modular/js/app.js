@@ -1,7 +1,7 @@
 // ========== CRM 系统主入口 ==========
 
 import { dataManager } from './managers/DataManager.js';
-import { fetchWithCache, companyService, taskService, weekTaskService, leadService } from './services/ApiService.js';
+import { fetchWithCache, companyService, taskService, weekTaskService, leadService, fusionService, contactLogService } from './services/ApiService.js';
 import { authService } from './services/AuthService.js';
 import { debounce, throttle, storage } from './utils/helpers.js';
 import { updateStatCard, updateCircleProgress, updateProgressBar, renderCompaniesTable, renderTodoDropdown } from './components/UIComponents.js';
@@ -310,8 +310,8 @@ async function switchTab(tab) {
             loadTasks();
             updateWeekTaskSummary();
             break;
-        case 'referrals':
-            loadReferrals();
+        case 'fusion':
+            loadFusion();
             updateWeekTaskSummary();
             break;
         case 'weekly':
