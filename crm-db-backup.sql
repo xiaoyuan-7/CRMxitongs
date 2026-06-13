@@ -164,10 +164,10 @@ INSERT INTO week_tasks VALUES(50,NULL,NULL,'2026-06-02','鼎盛多层电子开�
 INSERT INTO week_tasks VALUES(52,NULL,NULL,'2026-06-04','中山妇产拜访','medium','2026-06-01','completed','2026-06-01 02:44:35','am',NULL);
 INSERT INTO week_tasks VALUES(53,NULL,NULL,'2026-06-03','龙华社工部','medium','2026-06-01','completed','2026-06-01 02:45:02','am',NULL);
 INSERT INTO week_tasks VALUES(54,NULL,NULL,'2026-06-05','恒之易拜访','medium','2026-06-01','completed','2026-06-01 03:10:59','pm','恒之易拜访');
-INSERT INTO week_tasks VALUES(55,NULL,NULL,'2026-06-02','江西特尔电路有限公司','medium','2026-06-01','pending','2026-06-01 07:01:17','pm',NULL);
+INSERT INTO week_tasks VALUES(55,NULL,NULL,'2026-06-02','江西特尔电路有限公司','medium','2026-06-01','completed','2026-06-01 07:01:17','pm',NULL);
 INSERT INTO week_tasks VALUES(56,NULL,NULL,'2026-06-03','远晨电子','medium','2026-06-01','completed','2026-06-01 09:48:21','pm',NULL);
 INSERT INTO week_tasks VALUES(57,NULL,NULL,'2026-06-04','陌拜全息医疗','medium','2026-06-01','completed','2026-06-01 10:00:10','pm',NULL);
-INSERT INTO week_tasks VALUES(58,NULL,NULL,'2026-06-11','中山妇产医院端午活动','medium','2026-06-08','pending','2026-06-08 22:38:49','am',NULL);
+INSERT INTO week_tasks VALUES(58,NULL,NULL,'2026-06-11','中山妇产医院端午活动','medium','2026-06-08','completed','2026-06-08 22:38:49','am',NULL);
 CREATE TABLE xinfutong_details (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER UNIQUE, is_registered INTEGER DEFAULT 0, modules TEXT, config_status TEXT, config_teacher TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE);
 INSERT INTO xinfutong_details VALUES(1,3,1,'费控报销','一配置','郑秋金','2026-03-17 13:46:14','2026-03-18 04:36:20');
 INSERT INTO xinfutong_details VALUES(2,21,1,'资产管理','','郑秋金','2026-03-18 11:12:41','2026-03-18 11:12:41');
