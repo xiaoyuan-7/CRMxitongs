@@ -50,6 +50,8 @@ INSERT INTO companies VALUES(88,'深圳市德龙包装制品有限公司',NULL,N
 INSERT INTO companies VALUES(89,'五金制品',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:16:59','2026-05-25 08:16:59',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(90,'深圳市泰和源电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-29 20:41:42','2026-05-29 20:41:42',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(91,'深圳市美置物业服务有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-04 12:05:19','2026-06-04 12:05:19',7,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(92,'深圳市海里表面技术处理有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:37','2026-06-15 01:11:27',5,'ongoing',200,20,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(93,'深圳市鑫梓润智慧城市管家股份有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:57','2026-06-15 01:11:15',5,'ongoing',500,50,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 CREATE TABLE contacts (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -168,6 +170,12 @@ INSERT INTO week_tasks VALUES(55,NULL,NULL,'2026-06-02','江西特尔电路有�
 INSERT INTO week_tasks VALUES(56,NULL,NULL,'2026-06-03','远晨电子','medium','2026-06-01','completed','2026-06-01 09:48:21','pm',NULL);
 INSERT INTO week_tasks VALUES(57,NULL,NULL,'2026-06-04','陌拜全息医疗','medium','2026-06-01','completed','2026-06-01 10:00:10','pm',NULL);
 INSERT INTO week_tasks VALUES(58,NULL,NULL,'2026-06-11','中山妇产医院端午活动','medium','2026-06-08','completed','2026-06-08 22:38:49','am',NULL);
+INSERT INTO week_tasks VALUES(59,15,'先歌国际影音股份有限公司','2026-06-15','拜访','medium','2026-06-15','pending','2026-06-15 01:05:58','pm',NULL);
+INSERT INTO week_tasks VALUES(60,NULL,NULL,'2026-06-16','深圳市鑫梓润智慧城市管家服务有限公司','medium','2026-06-15','pending','2026-06-15 01:08:04','pm',NULL);
+INSERT INTO week_tasks VALUES(61,NULL,NULL,'2026-06-17','和顺堂活动','medium','2026-06-15','pending','2026-06-15 01:08:52','pm',NULL);
+INSERT INTO week_tasks VALUES(62,NULL,NULL,'2026-06-16','菁菁客户拜访','medium','2026-06-15','pending','2026-06-15 01:09:13','am',NULL);
+INSERT INTO week_tasks VALUES(63,NULL,NULL,'2026-06-16','怀德喜来登酒店签订代发协议','medium','2026-06-15','pending','2026-06-15 02:54:47','pm',NULL);
+INSERT INTO week_tasks VALUES(64,NULL,NULL,'2026-06-17','江西特尔电路有限公司','medium','2026-06-15','pending','2026-06-15 02:55:29','am',NULL);
 CREATE TABLE xinfutong_details (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER UNIQUE, is_registered INTEGER DEFAULT 0, modules TEXT, config_status TEXT, config_teacher TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE);
 INSERT INTO xinfutong_details VALUES(1,3,1,'费控报销','一配置','郑秋金','2026-03-17 13:46:14','2026-03-18 04:36:20');
 INSERT INTO xinfutong_details VALUES(2,21,1,'资产管理','','郑秋金','2026-03-18 11:12:41','2026-03-18 11:12:41');
@@ -415,11 +423,11 @@ INSERT INTO contact_log VALUES(4,42,'2026-05-31T13:12','电话','阿凡达','202
 INSERT INTO contact_log VALUES(5,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:05');
 INSERT INTO contact_log VALUES(6,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:06');
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('companies',91);
+INSERT INTO sqlite_sequence VALUES('companies',93);
 INSERT INTO sqlite_sequence VALUES('users',1);
 INSERT INTO sqlite_sequence VALUES('contacts',15);
 INSERT INTO sqlite_sequence VALUES('marketing_tasks',7);
-INSERT INTO sqlite_sequence VALUES('week_tasks',58);
+INSERT INTO sqlite_sequence VALUES('week_tasks',64);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
