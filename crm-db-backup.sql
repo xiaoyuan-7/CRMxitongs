@@ -27,14 +27,14 @@ CREATE TABLE companies (
         , task_id INTEGER, landing_cycle TEXT DEFAULT 'ongoing', active_count INTEGER DEFAULT 0, hq_count INTEGER DEFAULT 0, annual_revenue TEXT, xinfutong INTEGER DEFAULT 0, manager_name TEXT, remarks TEXT, xinfutong_status TEXT DEFAULT 'not_applicable', xinfutong_details TEXT, contact_frequency TEXT DEFAULT '低频', main_product TEXT, vat_tax TEXT, income_tax TEXT, domestic_settlement TEXT, cross_border TEXT, main_banks TEXT, personal_cards TEXT, asset_status TEXT, family_status TEXT, venture_status TEXT, executive_stock INTEGER, listing_plan TEXT, top5_customers TEXT, revenue_range TEXT, net_profit INTEGER);
 INSERT INTO companies VALUES(13,'深圳市宝安区尚德社会工作服务中心',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 10:37:26','2026-05-24 07:38:18',5,'quarter',200,20,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'低频','','','','','','基本户在建行，暂无太多业务。授信行目前在交通银行，因此代发目前在交行。待约时间再跟老板沟通/','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(14,'深圳市宝安区益民社会工作服务中心',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:00:36','2026-06-18 01:37:06',5,'completed',200,20,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'本周触达','','','','','','社工的基本户基本在农行，代发目前正逐步转移至我行，前期海同社工、旭源社工、慧家社工均已全部落地，益民社工已落地60余人，预计7月完成全部转化至200人。剩余一家尚德社工目前持续营销，预计年内再落地200人。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(15,'先歌国际影音股份有限公司',NULL,'音响制品',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:21','2026-05-21 11:53:29',5,'quarter',1000,100,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'一月前触达','','','','','','基本户在建行，主要代发行在建行。经前期薪福通的配置与上线，老板已答应将代发转至我行，企业目前正处上市关键时期，老板提议延后办卡及代发。目前我部密切关注企业系统运行情况，以及做好关键人关系维护，持续跟进代发落地。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(16,'深圳市和顺堂医药有限公司',NULL,'中医药',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:55','2026-05-24 07:40:04',5,'ongoing',100,10,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，企业成立年限较久，目前跟中行、华夏、民生合作较深，华夏还是企业的租户，且目前企业授信需求不高，较难切入代发，目前靠活动和异业合作角度切入合作。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(17,'深圳索斯特照明有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:05:34','2026-05-24 08:07:45',5,'quarter',100,10,NULL,0,'林玉婵',NULL,'applicable',NULL,'中频','','','','','','基本户在农行，目前代发主要在农行，且有手续费。目前正与老板沟通转换代发，老板为龙歌个人客户，关系较好，建议从老板方向突破','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(15,'先歌国际影音股份有限公司',NULL,'音响制品',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:21','2026-06-22 01:59:35',5,'quarter',1000,100,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'一月前触达','','','','','','基本户在建行，主要代发行在建行。经前期薪福通的配置与上线，老板已答应将代发转至我行，企业目前正处上市关键时期，老板提议延后办卡及代发。因前期系统投入较大，目前我部已向公司提明确代发诉求待回复。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(16,'深圳市和顺堂医药有限公司',NULL,'中医药',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:55','2026-06-22 02:07:29',5,'ongoing',100,10,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，企业成立年限较久，目前跟中行、华夏、民生合作较深，华夏还是企业的租户，较难切入代发，目前靠活动和异业合作角度切入合作，正约本周上门拜访。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(17,'深圳索斯特照明有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:05:34','2026-06-22 02:06:43',5,'quarter',100,10,NULL,0,'林玉婵',NULL,'applicable',NULL,'中频','','','','','','基本户在农行，目前代发主要在宁波银行，且有手续费。目前正与老板沟通转换代发，老板为龙哥个人客户，关系较好，建议从老板方向突破','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(18,'深圳日日佳显示技术有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:06:45','2026-05-21 11:43:13',5,'completed',50,10,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'一月前触达','','','','','','基本户为招商银行，因为主要授信行在交通银行，所有目前主要代发行在交通银行。人员70左右，经营销已在我行落地十余人代发，后续增至30左右。企业表示代发需在授信行间分配','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(19,'深圳市新国都股份有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:07:25','2026-05-24 08:06:15',5,'quarter',200,20,NULL,0,'武纪元',NULL,'applicable',NULL,'本周触达','','','','','','基本户在中国银行，目前无授信，代发在中行。我行目前提供薪福通系统，已初步配置和测试使用，待约访沟通合作。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(20,'深圳市得润电子股份有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:07:46','2026-05-24 07:34:14',5,'ongoing',100,10,NULL,0,'林玉婵',NULL,'not_applicable',NULL,'低频','','','','','','目前基本户在农行，授信及代发主要在农行，客户通过第三方建立了CBS系统对接了我行网银，目前在我行跨行发过一次，目前合作基本是外汇方面','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(21,'深圳正康骨科医院',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:11:02','2026-05-24 07:37:21',5,'quarter',100,10,NULL,0,'毛良聪',NULL,'applicable',NULL,'本周触达','','','','','','目前医院及集团公司均在我行开户，基本户目前在农行，异地医院在异地小银行。目前各医院均有授信，因现金流暂不够好，目前我行授信暂无法介入，因此较难转代发。目前我行主要以系统服务为主，提供资产管理系统、薪福通考勤系统、E餐通系统等。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(22,'新永胜科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:15:39','2026-05-26 01:52:30',5,'quarter',500,50,NULL,0,'张祥霖','跟进薪福通评估中','not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，主要代发行在中国银行。目前中行刚批1000万授信，人员全部办理中行卡。我们前期营销了薪福通，因企业也有一整套完善的系统在运营，经过前期配置和评估，企业觉得接入我们系统会让他们原有模式改动较大，因此暂不考虑，目前希望我们在授信方面有合作，授信预计6月中旬，届时可以营销交换一些代发。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(22,'新永胜科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:15:39','2026-06-22 02:01:43',5,'quarter',500,50,NULL,0,'张祥霖','跟进薪福通评估中','not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，主要代发行在中国银行。目前中行刚批1000万授信，人员全部办理中行卡。我们前期营销了薪福通，因企业也有一整套完善的系统在运营，经过前期配置和评估，企业觉得接入我们系统会让他们原有模式改动较大，因此暂不考虑，目前希望我们在授信方面有合作，授信预计7月，届时可以营销交换一些代发。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(23,'深圳市恒之易电子商务有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:16:09','2026-05-21 11:54:10',5,'completed',1000,50,NULL,0,'张祥霖','开卡中','applicable',NULL,'一月前触达','','','','','','企业基本账户在中行，目前无授信，已落地。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(24,'深圳市福瑞诺科技有限公司','','','','','',0,0,0,0,'初步接触','2026-03-19 11:13:04','2026-03-19 23:00:31',7,'ongoing',0,0,NULL,0,'林玉婵','正在跟进薪福通','applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(25,'深圳市吉昌盛电路技术有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-19 21:59:52','2026-05-18 00:55:39',6,'year',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
@@ -46,12 +46,21 @@ INSERT INTO companies VALUES(31,'深圳市鑫永成科技有限公司',NULL,NULL
 INSERT INTO companies VALUES(32,'深圳思远国际货运代理有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-20 09:54:53','2026-05-13 02:10:09',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达','','','','','','','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(86,'宇天汛通讯科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-05-18 00:56:33','2026-05-24 08:05:16',5,'quarter',500,0,NULL,0,'张祥霖',NULL,'not_applicable',NULL,'低频','','','','','','目前基本户在工行，韶关工厂有授信，基本代发在工行。我行目前授信较难准入，提供外汇方面服务。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(87,'存量完成企业',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-18 01:08:48','2026-05-25 09:27:36',NULL,'completed',2162,202,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(88,'深圳市德龙包装制品有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:14:07','2026-06-01 01:29:05',5,'ongoing',1000,50,NULL,0,'吴逸辉',NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(88,'深圳市德龙包装制品有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:14:07','2026-06-22 01:58:31',5,'ongoing',1000,50,NULL,0,'吴逸辉',NULL,'not_applicable',NULL,'低频','','','','','','合作银行主要四大行，未减免代发手续费，目前在我行处理云证业务，端午已送礼，近期可再接触。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(89,'五金制品',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-25 08:16:59','2026-05-25 08:16:59',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(90,'深圳市泰和源电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-29 20:41:42','2026-05-29 20:41:42',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(90,'深圳市泰和源电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-05-29 20:41:42','2026-06-22 02:12:00',5,'ongoing',50,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','主要合作银行在基本户工行，目前企业正批授信，等授信结果','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(91,'深圳市美置物业服务有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-04 12:05:19','2026-06-04 12:05:19',7,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(92,'深圳市海里表面技术处理有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:37','2026-06-15 01:11:27',5,'ongoing',200,20,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(93,'深圳市鑫梓润智慧城市管家股份有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:57','2026-06-15 01:11:15',5,'ongoing',500,50,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(92,'深圳市海里表面技术处理有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:37','2026-06-22 02:05:04',5,'ongoing',200,20,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','代发业务主要在工行，我行目前也有部分授信，已节前初步接触沟通，待二次上门拜访','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(93,'深圳市鑫梓润智慧城市管家股份有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-15 01:10:57','2026-06-22 02:01:08',5,'ongoing',500,50,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','企业合作银行较多，主要为民生和各地当地银行。目前在我行申请政采贷已放款500万，企业配合已落地129户代发有效户，62户高质量，后续预计代发能曾至300-500人。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(94,'深圳嘉盾保安服务有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:19:09','2026-06-22 01:57:06',5,'ongoing',1000,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','目前推荐我行供应商，开户中，重点确定对方能支持的代发人数','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(95,'深圳市亨瑞达制冷设备有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:22:43','2026-06-22 02:09:07',5,'ongoing',70,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','主要合作银行在中行，节前上门拜访，企业目前有意向迁厂房，我部对接项目贷。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(96,'辰浩医疗科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:23:26','2026-06-22 02:03:03',5,'ongoing',200,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','集团主要公司合作在招行，本主体因在工行抵押贷，代发目前在工行，节前上门沟通，我们尝试申报授信，置换代发。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(97,'深圳市怀德酒店管理有限公司福朋喜来登酒店分公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:24:36','2026-06-22 02:12:17',5,'ongoing',50,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','跟进代发协议签订','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(98,'深圳市艾阿尔电气有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:25:08','2026-06-22 02:10:08',5,'ongoing',70,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','企业70人目前分2家贷款银行代发，分别是中行和交行，节前拜访已营销系统暂时无需求，跟进后续授信。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(99,'深圳市龙岗区彩虹社会工作服务中心',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:29:59','2026-06-22 02:03:56',5,'ongoing',200,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','主要合作银行在交通银行，政采贷也在交行，节前邀约未能见上，节后重点邀约见面沟通','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(100,'深圳市新安中濠悦际酒店有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 06:56:08','2026-06-22 06:56:08',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(101,'深圳市远晨电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 06:56:26','2026-06-22 06:56:26',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(102,'广东中合顺智能科技有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 07:04:52','2026-06-22 07:04:52',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 CREATE TABLE contacts (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -359,6 +368,9 @@ INSERT INTO follow_ups VALUES(18,13,'2026-05-25','am','电话','老板骨折在�
 INSERT INTO follow_ups VALUES(19,21,'2026-05-28','am','电话','配置了考勤机待测试，下周跟进领账户资料',NULL,'','2026-05-29 20:40:54');
 INSERT INTO follow_ups VALUES(20,90,'2026-05-25','am','电话','开户中，有经营贷需求',NULL,'','2026-05-29 20:42:07');
 INSERT INTO follow_ups VALUES(21,19,'2026-05-25','am','电话','约访范总',NULL,'','2026-05-29 21:26:21');
+INSERT INTO follow_ups VALUES(22,15,'2026-06-17','am','电话','跟万总提要求代发支持',NULL,'','2026-06-22 01:27:12');
+INSERT INTO follow_ups VALUES(23,94,'2026-06-18','am','微信','要补充信息及确定拜访日期',NULL,'','2026-06-22 01:32:53');
+INSERT INTO follow_ups VALUES(24,88,'2026-06-16','am','电话','端午送礼及沟通云证贴现',NULL,'','2026-06-22 01:35:41');
 CREATE TABLE xinfutong (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -423,7 +435,7 @@ INSERT INTO contact_log VALUES(4,42,'2026-05-31T13:12','电话','阿凡达','202
 INSERT INTO contact_log VALUES(5,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:05');
 INSERT INTO contact_log VALUES(6,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:06');
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('companies',93);
+INSERT INTO sqlite_sequence VALUES('companies',102);
 INSERT INTO sqlite_sequence VALUES('users',1);
 INSERT INTO sqlite_sequence VALUES('contacts',15);
 INSERT INTO sqlite_sequence VALUES('marketing_tasks',7);
@@ -432,7 +444,7 @@ INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
 INSERT INTO sqlite_sequence VALUES('referrals',56);
-INSERT INTO sqlite_sequence VALUES('follow_ups',21);
+INSERT INTO sqlite_sequence VALUES('follow_ups',24);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
 CREATE INDEX idx_contacts_company ON contacts(company_id);
