@@ -2828,7 +2828,7 @@
 
         function exportCompanies() {
             if (!allCompanies.length) { alert('无数据'); return; }
-            const headers = ['企业名称', '行业', '年营业额', '有效户数', '高质量数', '关键人', '开户状态', '落地周期', '进度状态', '备注'];
+            const headers = ['企业名称', '行业', '年营业额', '有效户数', '高质量数', '关键人', '开户状态', '落地周期', '进度状态', '主要合作银行', '备注'];
             const rows = allCompanies.map(c => [
                 c.name||'',
                 c.industry||'',
@@ -2839,6 +2839,7 @@
                 c.is_account_opened?'已开户':'未开户',
                 c.landing_cycle==='month'?'本月落地':c.landing_cycle==='quarter'?'3 个月落地':c.landing_cycle==='year'?'本年落地':'持续跟进',
                 c.progress_status||'',
+                c.main_banks||'',
                 c.remarks||''
             ]);
             // 使用标准 CSV 格式,WPS 兼容性最好
