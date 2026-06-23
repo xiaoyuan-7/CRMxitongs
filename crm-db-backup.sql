@@ -185,6 +185,8 @@ INSERT INTO week_tasks VALUES(61,NULL,NULL,'2026-06-17','和顺堂活动','mediu
 INSERT INTO week_tasks VALUES(62,NULL,NULL,'2026-06-16','菁菁客户拜访','medium','2026-06-15','pending','2026-06-15 01:09:13','am',NULL);
 INSERT INTO week_tasks VALUES(63,NULL,NULL,'2026-06-16','怀德喜来登酒店签订代发协议','medium','2026-06-15','pending','2026-06-15 02:54:47','pm',NULL);
 INSERT INTO week_tasks VALUES(64,NULL,NULL,'2026-06-17','江西特尔电路有限公司','medium','2026-06-15','pending','2026-06-15 02:55:29','am',NULL);
+INSERT INTO week_tasks VALUES(65,NULL,NULL,'2026-06-23','罡中实业开卡','medium','2026-06-22','pending','2026-06-23 00:33:09','am',NULL);
+INSERT INTO week_tasks VALUES(66,NULL,NULL,'2026-06-24','中山妇产医院开卡','medium','2026-06-22','pending','2026-06-23 00:33:28','pm',NULL);
 CREATE TABLE xinfutong_details (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER UNIQUE, is_registered INTEGER DEFAULT 0, modules TEXT, config_status TEXT, config_teacher TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE);
 INSERT INTO xinfutong_details VALUES(1,3,1,'费控报销','一配置','郑秋金','2026-03-17 13:46:14','2026-03-18 04:36:20');
 INSERT INTO xinfutong_details VALUES(2,21,1,'资产管理','','郑秋金','2026-03-18 11:12:41','2026-03-18 11:12:41');
@@ -439,7 +441,7 @@ INSERT INTO sqlite_sequence VALUES('companies',102);
 INSERT INTO sqlite_sequence VALUES('users',1);
 INSERT INTO sqlite_sequence VALUES('contacts',15);
 INSERT INTO sqlite_sequence VALUES('marketing_tasks',7);
-INSERT INTO sqlite_sequence VALUES('week_tasks',64);
+INSERT INTO sqlite_sequence VALUES('week_tasks',66);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
