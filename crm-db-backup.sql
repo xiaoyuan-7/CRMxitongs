@@ -337,6 +337,9 @@ INSERT INTO referrals VALUES(53,'2026-04-23','公司条线','冯志翔','理财�
 INSERT INTO referrals VALUES(54,'2026-04-28','市拓条线','谢文强','公司条线','张祥霖','永光实业（韶关）有限公司','completed',0.0,'standard',1,'','2026-06-07 12:43:32','2026-06-07 12:43:32',1);
 INSERT INTO referrals VALUES(55,'2026-05-13','市拓条线','谢文强','公司条线','鄢奥成','中建医疗','completed',0.0,'standard',1,'','2026-06-07 12:44:27','2026-06-07 12:44:27',1);
 INSERT INTO referrals VALUES(56,'2026-04-01','市拓条线','谢文强','市拓条线','冯志翔','海同工会账户','completed',0.0,'standard',1,'','2026-06-07 12:45:08','2026-06-07 12:45:08',1);
+INSERT INTO referrals VALUES(57,'2026-06-12','理财条线','吴逸辉','公司条线','魏小栋','袁总','pending',0.0,'standard',0,'后续升级金葵花落地保险','2026-06-24 10:09:54','2026-06-24 10:09:54',1);
+INSERT INTO referrals VALUES(58,'2026-06-15','市拓条线','谢文强','公司条线','李紫茹','深圳市高巨能科技有限公司','completed',0.0,'standard',1,'','2026-06-24 10:10:40','2026-06-24 10:10:40',1);
+INSERT INTO referrals VALUES(59,'2026-06-16','市拓条线','谢文强','公司条线','马芷晴','深圳市怀德酒店管理有限公司福朋喜来登酒店分公司','completed',0.0,'standard',0,'','2026-06-24 10:12:03','2026-06-24 10:12:03',0);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -445,7 +448,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',66);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',56);
+INSERT INTO sqlite_sequence VALUES('referrals',59);
 INSERT INTO sqlite_sequence VALUES('follow_ups',24);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
