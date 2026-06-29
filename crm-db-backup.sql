@@ -376,6 +376,10 @@ INSERT INTO follow_ups VALUES(21,19,'2026-05-25','am','电话','约访范总',NU
 INSERT INTO follow_ups VALUES(22,15,'2026-06-17','am','电话','跟万总提要求代发支持',NULL,'','2026-06-22 01:27:12');
 INSERT INTO follow_ups VALUES(23,94,'2026-06-18','am','微信','要补充信息及确定拜访日期',NULL,'','2026-06-22 01:32:53');
 INSERT INTO follow_ups VALUES(24,88,'2026-06-16','am','电话','端午送礼及沟通云证贴现',NULL,'','2026-06-22 01:35:41');
+INSERT INTO follow_ups VALUES(25,98,'2026-06-16','am','电话','目前暂时无需求，老板有想法，员工怕麻烦，目前70人，得增长一些人数',NULL,'','2026-06-29 09:01:59');
+INSERT INTO follow_ups VALUES(26,95,'2026-06-12','pm','电话','公司有搬迁需求，可能可以做授信，其他没聊',NULL,'','2026-06-29 09:03:25');
+INSERT INTO follow_ups VALUES(27,16,'2026-06-23','am','电话','沟通了但是代发短期较难，先开展活动',NULL,'','2026-06-29 09:04:45');
+INSERT INTO follow_ups VALUES(28,99,'2026-06-29','am','电话','月底约访',NULL,'','2026-06-29 09:07:36');
 CREATE TABLE xinfutong (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -449,7 +453,7 @@ INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
 INSERT INTO sqlite_sequence VALUES('referrals',59);
-INSERT INTO sqlite_sequence VALUES('follow_ups',24);
+INSERT INTO sqlite_sequence VALUES('follow_ups',28);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
 CREATE INDEX idx_contacts_company ON contacts(company_id);
