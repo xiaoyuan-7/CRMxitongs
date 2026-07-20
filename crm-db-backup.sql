@@ -338,7 +338,7 @@ INSERT INTO referrals VALUES(53,'2026-04-23','公司条线','冯志翔','理财�
 INSERT INTO referrals VALUES(54,'2026-04-28','市拓条线','谢文强','公司条线','张祥霖','永光实业（韶关）有限公司','completed',0.0,'standard',1,'','2026-06-07 12:43:32','2026-06-07 12:43:32',1);
 INSERT INTO referrals VALUES(55,'2026-05-13','市拓条线','谢文强','公司条线','鄢奥成','中建医疗','completed',0.0,'standard',1,'','2026-06-07 12:44:27','2026-06-07 12:44:27',1);
 INSERT INTO referrals VALUES(56,'2026-04-01','市拓条线','谢文强','市拓条线','冯志翔','海同工会账户','completed',0.0,'standard',1,'','2026-06-07 12:45:08','2026-06-07 12:45:08',1);
-INSERT INTO referrals VALUES(57,'2026-06-12','理财条线','吴逸辉','公司条线','魏小栋','袁总','pending',0.0,'standard',0,'后续升级金葵花落地保险','2026-06-24 10:09:54','2026-06-24 10:09:54',1);
+INSERT INTO referrals VALUES(57,'2026-06-12','公司条线','吴逸辉','理财条线','魏小栋','袁总、石总、吴博','pending',0.0,'standard',0,'后续升级金葵花落地保险','2026-06-24 10:09:54','2026-07-20 11:19:23',1);
 INSERT INTO referrals VALUES(58,'2026-06-15','市拓条线','谢文强','公司条线','李紫茹','深圳市高巨能科技有限公司','completed',0.0,'standard',1,'','2026-06-24 10:10:40','2026-06-24 10:10:40',1);
 INSERT INTO referrals VALUES(59,'2026-06-16','市拓条线','谢文强','公司条线','马芷晴','深圳市怀德酒店管理有限公司福朋喜来登酒店分公司','completed',0.0,'standard',0,'','2026-06-24 10:12:03','2026-06-24 10:12:03',0);
 INSERT INTO referrals VALUES(60,'2026-07-13','公司条线','张祥霖','理财条线','魏小栋','盛世通物流公司深圳分公司张总','completed',0.0,'standard',0,'张总金葵花达标，财务升级金葵花并新办一户信用卡','2026-07-14 00:54:15','2026-07-14 00:54:15',0);
@@ -347,6 +347,9 @@ INSERT INTO referrals VALUES(62,'2026-06-30','市拓条线','谢文强','公司�
 INSERT INTO referrals VALUES(63,'2026-06-25','理财条线','程方正','公司条线','唐菁菁','深圳广宏盈信网络科技有限公司','pending',0.0,'standard',0,'','2026-07-14 00:58:04','2026-07-14 00:58:04',1);
 INSERT INTO referrals VALUES(64,'2026-06-25','公司条线','李紫茹','理财条线','程方正','普仕达袁总','pending',0.0,'standard',0,'金葵花、高端信用卡','2026-07-14 00:59:29','2026-07-14 00:59:29',0);
 INSERT INTO referrals VALUES(65,'2026-06-15','市拓条线','谢文强','公司条线','李紫茹','深圳市高巨能科技有限公司','completed',0.0,'standard',1,'','2026-07-14 01:00:47','2026-07-14 01:00:47',1);
+INSERT INTO referrals VALUES(66,'2026-07-16','运营条线','曾柳娇','公司条线','马芷晴','深圳市阿福瑞卡科技有限公司','completed',0.0,'standard',1,'','2026-07-20 11:02:20','2026-07-20 11:02:20',1);
+INSERT INTO referrals VALUES(67,'2026-07-16','理财条线','魏小栋','公司条线','吴逸辉','深圳市香江通信科技有限公司','completed',0.0,'standard',1,'','2026-07-20 11:04:29','2026-07-20 11:05:03',1);
+INSERT INTO referrals VALUES(68,'2026-07-17','市拓条线','谢文强','公司条线','陈喆','深圳市英达康技术有限公司','completed',0.0,'standard',1,'','2026-07-20 11:06:54','2026-07-20 11:06:54',1);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -459,7 +462,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',66);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',65);
+INSERT INTO sqlite_sequence VALUES('referrals',68);
 INSERT INTO sqlite_sequence VALUES('follow_ups',28);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
