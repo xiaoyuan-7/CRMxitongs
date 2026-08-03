@@ -27,7 +27,7 @@ CREATE TABLE companies (
         , task_id INTEGER, landing_cycle TEXT DEFAULT 'ongoing', active_count INTEGER DEFAULT 0, hq_count INTEGER DEFAULT 0, annual_revenue TEXT, xinfutong INTEGER DEFAULT 0, manager_name TEXT, remarks TEXT, xinfutong_status TEXT DEFAULT 'not_applicable', xinfutong_details TEXT, contact_frequency TEXT DEFAULT '低频', main_product TEXT, vat_tax TEXT, income_tax TEXT, domestic_settlement TEXT, cross_border TEXT, main_banks TEXT, personal_cards TEXT, asset_status TEXT, family_status TEXT, venture_status TEXT, executive_stock INTEGER, listing_plan TEXT, top5_customers TEXT, revenue_range TEXT, net_profit INTEGER);
 INSERT INTO companies VALUES(13,'深圳市宝安区尚德社会工作服务中心',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 10:37:26','2026-05-24 07:38:18',5,'quarter',200,20,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'低频','','','','','','基本户在建行，暂无太多业务。授信行目前在交通银行，因此代发目前在交行。待约时间再跟老板沟通/','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(14,'深圳市宝安区益民社会工作服务中心',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:00:36','2026-06-18 01:37:06',5,'completed',200,20,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'本周触达','','','','','','社工的基本户基本在农行，代发目前正逐步转移至我行，前期海同社工、旭源社工、慧家社工均已全部落地，益民社工已落地60余人，预计7月完成全部转化至200人。剩余一家尚德社工目前持续营销，预计年内再落地200人。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(15,'先歌国际影音股份有限公司',NULL,'音响制品',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:21','2026-07-31 07:09:24',5,'quarter',1000,100,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'高频','','','','','','基本户在建行，主要代发行在建行。经前期薪福通的配置与上线，老板已答应将代发转至我行，企业目前正处上市关键时期，老板提议延后办卡及代发。因前期系统投入较大，目前我部已向公司提明确代发诉求待回复。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(15,'先歌国际影音股份有限公司',NULL,'音响制品',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:21','2026-08-03 01:14:14',5,'quarter',1000,100,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'一月前触达','','','','','','基本户在建行，主要代发行在建行。经前期薪福通的配置与上线，老板已答应将代发转至我行，企业目前正处上市关键时期，老板提议延后办卡及代发。因前期系统投入较大，目前我部已向公司提明确代发诉求待回复。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(16,'深圳市和顺堂医药有限公司',NULL,'中医药',NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:04:55','2026-06-22 02:07:29',5,'ongoing',100,10,NULL,0,'冯志翔',NULL,'not_applicable',NULL,'本周触达','','','','','','基本户在中国银行，企业成立年限较久，目前跟中行、华夏、民生合作较深，华夏还是企业的租户，较难切入代发，目前靠活动和异业合作角度切入合作，正约本周上门拜访。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(17,'深圳索斯特照明有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:05:34','2026-06-22 02:06:43',5,'quarter',100,10,NULL,0,'林玉婵',NULL,'applicable',NULL,'中频','','','','','','基本户在农行，目前代发主要在宁波银行，且有手续费。目前正与老板沟通转换代发，老板为龙哥个人客户，关系较好，建议从老板方向突破','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(18,'深圳日日佳显示技术有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:06:45','2026-05-21 11:43:13',5,'completed',50,10,NULL,0,'廖灵通',NULL,'not_applicable',NULL,'一月前触达','','','','','','基本户为招商银行，因为主要授信行在交通银行，所有目前主要代发行在交通银行。人员70左右，经营销已在我行落地十余人代发，后续增至30左右。企业表示代发需在授信行间分配','','','','',0,'','','',NULL);
@@ -60,8 +60,13 @@ INSERT INTO companies VALUES(98,'深圳市艾阿尔电气有限公司',NULL,NULL
 INSERT INTO companies VALUES(99,'深圳市龙岗区彩虹社会工作服务中心',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 01:29:59','2026-06-22 02:03:56',5,'ongoing',200,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频','','','','','','主要合作银行在交通银行，政采贷也在交行，节前邀约未能见上，节后重点邀约见面沟通','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(100,'深圳市新安中濠悦际酒店有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 06:56:08','2026-06-22 06:56:08',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(101,'深圳市远晨电子有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 06:56:26','2026-06-22 06:56:26',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO companies VALUES(102,'广东中合顺智能科技有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 07:04:52','2026-06-22 07:04:52',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(102,'广东中合顺智能科技有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-22 07:04:52','2026-08-03 01:45:06',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(103,'深圳市众立信实业有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-06-30 06:36:12','2026-06-30 06:36:12',5,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(104,'深圳市铁塔电网工程技术有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-08-03 01:28:09','2026-08-03 01:28:09',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(105,'深圳市英达康技术有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-08-03 01:28:50','2026-08-03 01:28:54',6,'completed',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(106,'广东省仁华顺医疗器械有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-08-03 01:30:00','2026-08-03 01:30:00',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(107,'深圳市梅河机械设备有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-08-03 01:30:23','2026-08-03 01:30:23',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO companies VALUES(108,'深圳市威垦自动化系统有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-08-03 01:30:47','2026-08-03 01:30:47',6,'ongoing',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 CREATE TABLE contacts (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -188,6 +193,7 @@ INSERT INTO week_tasks VALUES(63,NULL,NULL,'2026-06-16','怀德喜来登酒店�
 INSERT INTO week_tasks VALUES(64,NULL,NULL,'2026-06-17','江西特尔电路有限公司','medium','2026-06-15','completed','2026-06-15 02:55:29','am',NULL);
 INSERT INTO week_tasks VALUES(65,NULL,NULL,'2026-06-23','罡中实业开卡','medium','2026-06-22','completed','2026-06-23 00:33:09','am',NULL);
 INSERT INTO week_tasks VALUES(66,NULL,NULL,'2026-06-24','中山妇产医院开卡','medium','2026-06-22','completed','2026-06-23 00:33:28','pm',NULL);
+INSERT INTO week_tasks VALUES(67,22,'新永胜科技（深圳）有限公司','2026-08-04','拜访','medium','2026-08-03','pending','2026-08-03 01:16:24','pm',NULL);
 CREATE TABLE xinfutong_details (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER UNIQUE, is_registered INTEGER DEFAULT 0, modules TEXT, config_status TEXT, config_teacher TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE);
 INSERT INTO xinfutong_details VALUES(1,3,1,'费控报销','一配置','郑秋金','2026-03-17 13:46:14','2026-03-18 04:36:20');
 INSERT INTO xinfutong_details VALUES(2,21,1,'资产管理','','郑秋金','2026-03-18 11:12:41','2026-03-18 11:12:41');
@@ -455,11 +461,11 @@ INSERT INTO contact_log VALUES(4,42,'2026-05-31T13:12','电话','阿凡达','202
 INSERT INTO contact_log VALUES(5,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:05');
 INSERT INTO contact_log VALUES(6,42,'2026-05-31T13:13','电话','大覅',NULL,'','2026-05-31 13:13:06');
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('companies',103);
+INSERT INTO sqlite_sequence VALUES('companies',108);
 INSERT INTO sqlite_sequence VALUES('users',1);
 INSERT INTO sqlite_sequence VALUES('contacts',15);
 INSERT INTO sqlite_sequence VALUES('marketing_tasks',7);
-INSERT INTO sqlite_sequence VALUES('week_tasks',66);
+INSERT INTO sqlite_sequence VALUES('week_tasks',67);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
