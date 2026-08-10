@@ -365,6 +365,11 @@ INSERT INTO referrals VALUES(66,'2026-07-16','运营条线','曾柳娇','公司�
 INSERT INTO referrals VALUES(67,'2026-07-16','理财条线','魏小栋','公司条线','吴逸辉','深圳市香江通信科技有限公司','completed',0.0,'standard',1,'','2026-07-20 11:04:29','2026-07-20 11:05:03',1);
 INSERT INTO referrals VALUES(68,'2026-07-17','市拓条线','谢文强','公司条线','陈喆','深圳市英达康技术有限公司','completed',0.0,'standard',1,'','2026-07-20 11:06:54','2026-07-20 11:06:54',1);
 INSERT INTO referrals VALUES(69,'2026-07-23','理财条线','魏小栋','公司条线','张祥霖','深圳市泰和源电子有限公司','completed',0.0,'standard',1,'获批综合授信1000万','2026-07-28 00:37:12','2026-07-28 00:37:39',1);
+INSERT INTO referrals VALUES(70,'2026-08-03','市拓条线','谢文强','公司条线','吴逸辉','广东中合顺智能科技有限公司','pending',0.0,'standard',0,'政采贷预测额480万元','2026-08-10 09:37:36','2026-08-10 09:37:36',1);
+INSERT INTO referrals VALUES(71,'2026-08-04','公司条线','李紫茹','市拓条线','谢文强','深奥电子','pending',0.0,'standard',0,'代发40人','2026-08-10 09:38:41','2026-08-10 09:38:41',1);
+INSERT INTO referrals VALUES(72,'2026-08-04','公司条线','李紫茹','理财条线','魏小栋','联和电路何胜光','completed',0.0,'standard',1,'','2026-08-10 09:39:40','2026-08-10 09:39:40',1);
+INSERT INTO referrals VALUES(73,'2026-08-05','公司条线','唐菁菁','理财条线','程方正','世纪联芯科技财务王总','pending',0.0,'standard',0,'转归属金葵花，资产达标','2026-08-10 09:40:53','2026-08-10 09:40:53',1);
+INSERT INTO referrals VALUES(74,'2026-08-06','市拓条线','谢文强','公司条线','李紫茹','中瑞五金制品','pending',0.0,'standard',0,'','2026-08-10 09:41:40','2026-08-10 09:41:40',1);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -477,7 +482,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',75);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',69);
+INSERT INTO sqlite_sequence VALUES('referrals',74);
 INSERT INTO sqlite_sequence VALUES('follow_ups',28);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
