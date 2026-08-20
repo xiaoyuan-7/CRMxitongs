@@ -34,7 +34,7 @@ INSERT INTO companies VALUES(18,'深圳日日佳显示技术有限公司',NULL,N
 INSERT INTO companies VALUES(19,'深圳市新国都股份有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:07:25','2026-05-24 08:06:15',5,'quarter',200,20,NULL,0,'武纪元',NULL,'applicable',NULL,'本周触达','','','','','','基本户在中国银行，目前无授信，代发在中行。我行目前提供薪福通系统，已初步配置和测试使用，待约访沟通合作。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(20,'深圳市得润电子股份有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:07:46','2026-05-24 07:34:14',5,'ongoing',100,10,NULL,0,'林玉婵',NULL,'not_applicable',NULL,'低频','','','','','','目前基本户在农行，授信及代发主要在农行，客户通过第三方建立了CBS系统对接了我行网银，目前在我行跨行发过一次，目前合作基本是外汇方面','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(21,'深圳正康骨科医院',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'初步接触','2026-03-18 11:11:02','2026-05-24 07:37:21',5,'quarter',100,10,NULL,0,'毛良聪',NULL,'applicable',NULL,'本周触达','','','','','','目前医院及集团公司均在我行开户，基本户目前在农行，异地医院在异地小银行。目前各医院均有授信，因现金流暂不够好，目前我行授信暂无法介入，因此较难转代发。目前我行主要以系统服务为主，提供资产管理系统、薪福通考勤系统、E餐通系统等。','','','','',0,'','','',NULL);
-INSERT INTO companies VALUES(22,'新永胜科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:15:39','2026-08-12 00:25:24',5,'quarter',500,50,NULL,0,'张祥霖','跟进薪福通评估中','not_applicable',NULL,'两周触达','','','','','','基本户在中国银行，主要代发行在中国银行。目前中行刚批1000万授信，人员全部办理中行卡。我们前期营销了薪福通，因企业也有一整套完善的系统在运营，经过前期配置和评估，企业觉得接入我们系统会让他们原有模式改动较大，因此暂不考虑，目前希望我们在授信方面有合作，授信预计7月，届时可以营销交换一些代发。','','','','',0,'','','',NULL);
+INSERT INTO companies VALUES(22,'新永胜科技（深圳）有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:15:39','2026-08-20 02:28:35',5,'quarter',500,50,NULL,0,'张祥霖','跟进薪福通评估中','not_applicable',NULL,'本月触达','','','','','','基本户在中国银行，主要代发行在中国银行。目前中行刚批1000万授信，人员全部办理中行卡。我们前期营销了薪福通，因企业也有一整套完善的系统在运营，经过前期配置和评估，企业觉得接入我们系统会让他们原有模式改动较大，因此暂不考虑，目前希望我们在授信方面有合作，授信预计7月，届时可以营销交换一些代发。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(23,'深圳市恒之易电子商务有限公司',NULL,NULL,NULL,NULL,NULL,1,0,0,0,'已约访','2026-03-18 11:16:09','2026-05-21 11:54:10',5,'completed',1000,50,NULL,0,'张祥霖','开卡中','applicable',NULL,'一月前触达','','','','','','企业基本账户在中行，目前无授信，已落地。','','','','',0,'','','',NULL);
 INSERT INTO companies VALUES(24,'深圳市福瑞诺科技有限公司','','','','','',0,0,0,0,'初步接触','2026-03-19 11:13:04','2026-03-19 23:00:31',7,'ongoing',0,0,NULL,0,'林玉婵','正在跟进薪福通','applicable',NULL,'低频',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO companies VALUES(25,'深圳市吉昌盛电路技术有限公司',NULL,NULL,NULL,NULL,NULL,0,0,0,0,'初步接触','2026-03-19 21:59:52','2026-05-18 00:55:39',6,'year',0,0,NULL,0,NULL,NULL,'not_applicable',NULL,'本周触达',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
@@ -385,6 +385,9 @@ INSERT INTO referrals VALUES(71,'2026-08-04','公司条线','李紫茹','市拓�
 INSERT INTO referrals VALUES(72,'2026-08-04','公司条线','李紫茹','理财条线','魏小栋','联和电路何胜光','completed',0.0,'standard',1,'','2026-08-10 09:39:40','2026-08-10 09:39:40',1);
 INSERT INTO referrals VALUES(73,'2026-08-05','公司条线','唐菁菁','理财条线','程方正','世纪联芯科技财务王总','pending',0.0,'standard',0,'转归属金葵花，资产达标','2026-08-10 09:40:53','2026-08-10 09:40:53',1);
 INSERT INTO referrals VALUES(74,'2026-08-06','市拓条线','谢文强','公司条线','李紫茹','中瑞五金制品','pending',0.0,'standard',0,'','2026-08-10 09:41:40','2026-08-10 09:41:40',1);
+INSERT INTO referrals VALUES(75,'2026-08-14','公司条线','马芷晴','市拓条线','谢文强','火种（深圳）教育科技有限公司','pending',0.0,'standard',0,'代发企业，目前30人','2026-08-20 02:30:18','2026-08-20 02:30:18',1);
+INSERT INTO referrals VALUES(76,'2026-08-14','市拓条线','谢文强','公司条线','马芷晴','方天智慧','pending',0.0,'standard',0,'授信线索','2026-08-20 02:33:53','2026-08-20 02:33:53',1);
+INSERT INTO referrals VALUES(77,'2026-08-18','市拓条线','谢文强','公司条线','林玉婵','万嘉谊科技','pending',0.0,'standard',0,'有授信需求','2026-08-20 02:34:57','2026-08-20 02:34:57',1);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -498,7 +501,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',84);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',74);
+INSERT INTO sqlite_sequence VALUES('referrals',77);
 INSERT INTO sqlite_sequence VALUES('follow_ups',29);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
