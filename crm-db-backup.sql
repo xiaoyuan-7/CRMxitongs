@@ -396,6 +396,7 @@ INSERT INTO referrals VALUES(81,'2026-08-26','公司条线','张祥霖','理财�
 INSERT INTO referrals VALUES(82,'2026-08-26','理财条线','武孝龙','公司条线','李紫茹','正创科技','pending',0.0,'standard',0,'企业对公司理财感兴趣','2026-08-26 16:10:01','2026-08-26 16:10:01',1);
 INSERT INTO referrals VALUES(83,'2026-08-26','公司条线','李紫茹','理财条线','魏小栋','兰斯智能','pending',0.0,'standard',0,'升级金葵花，余总升级高端信用卡','2026-08-26 16:10:48','2026-08-26 16:10:48',1);
 INSERT INTO referrals VALUES(84,'2026-08-26','公司条线','李紫茹','市拓条线','刘慧婷','兰斯智能','pending',0.0,'standard',0,'代发','2026-08-26 16:11:11','2026-08-26 16:11:11',1);
+INSERT INTO referrals VALUES(85,'2026-09-09','公司条线','张祥霖','理财条线','魏小栋','袁总、曹总','pending',0.0,'standard',0,'达标金葵花','2026-09-10 08:54:57','2026-09-10 08:54:57',1);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -509,7 +510,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',85);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',84);
+INSERT INTO sqlite_sequence VALUES('referrals',85);
 INSERT INTO sqlite_sequence VALUES('follow_ups',29);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
