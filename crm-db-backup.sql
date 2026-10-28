@@ -403,7 +403,7 @@ INSERT INTO referrals VALUES(79,'2026-08-24','公司条线','陈星','理财条�
 INSERT INTO referrals VALUES(80,'2026-08-24','理财条线','武孝龙','公司条线','吴逸辉','深圳铂声科技有限公司','completed',0.0,'standard',1,'获批招企贷280万，同意调户','2026-08-26 16:08:02','2026-08-26 16:08:02',1);
 INSERT INTO referrals VALUES(81,'2026-08-26','公司条线','张祥霖','理财条线','魏小栋','维力谷吕小平','completed',0.0,'standard',1,'高端信用卡','2026-08-26 16:09:10','2026-08-26 16:09:10',1);
 INSERT INTO referrals VALUES(82,'2026-08-26','理财条线','武孝龙','公司条线','李紫茹','正创科技','completed',0.0,'standard',1,'企业对公司理财感兴趣，高质量开户已激活','2026-08-26 16:10:01','2026-09-22 01:03:19',1);
-INSERT INTO referrals VALUES(83,'2026-08-26','公司条线','李紫茹','理财条线','魏小栋','兰斯智能','pending',0.0,'standard',0,'升级金葵花，余总升级高端信用卡','2026-08-26 16:10:48','2026-08-26 16:10:48',1);
+INSERT INTO referrals VALUES(83,'2026-08-26','公司条线','李紫茹','理财条线','魏小栋','兰斯智能','completed',0.0,'standard',1,'升级金葵花，吴总配置30万商养保险','2026-08-26 16:10:48','2026-10-28 07:41:22',1);
 INSERT INTO referrals VALUES(84,'2026-08-26','公司条线','李紫茹','市拓条线','刘慧婷','兰斯智能','pending',0.0,'standard',0,'代发','2026-08-26 16:11:11','2026-08-26 16:11:11',1);
 INSERT INTO referrals VALUES(85,'2026-09-09','公司条线','张祥霖','理财条线','魏小栋','袁总、曹总','pending',0.0,'standard',0,'达标金葵花','2026-09-10 08:54:57','2026-09-10 08:54:57',1);
 INSERT INTO referrals VALUES(86,'2026-09-14','公司条线','吴逸辉','理财条线','魏小栋','何显龙','pending',0.0,'standard',0,'客户之前已配置过保险，面访后觉得可以加配，已发送产品信息，继续跟进','2026-09-22 01:01:34','2026-09-22 01:01:34',1);
@@ -411,6 +411,18 @@ INSERT INTO referrals VALUES(87,'2026-09-14','公司条线','吴逸辉','理财�
 INSERT INTO referrals VALUES(88,'2026-09-17','公司条线','唐菁菁','理财条线','魏小栋','国慧绿源聂总、财务总康总','pending',0.0,'standard',0,'已转开户行升级金葵花卡，客户同意产品配置','2026-09-22 01:05:00','2026-09-22 01:05:00',1);
 INSERT INTO referrals VALUES(89,'2026-09-18','公司条线','林玉婵','理财条线','武孝龙','田姐','completed',0.0,'standard',1,'落地100万商养，中收1.5万','2026-09-22 01:06:28','2026-09-22 01:06:28',1);
 INSERT INTO referrals VALUES(90,'2026-09-18','公司条线','冯志翔','理财条线','杨思娴','范总','completed',0.0,'standard',1,'20X3增额终身寿，中收2.5万','2026-09-22 01:07:51','2026-09-22 01:07:51',1);
+INSERT INTO referrals VALUES(91,'2026-09-22','公司条线','李紫茹','市拓条线','刘慧婷','亿方电子','pending',0.0,'standard',0,'人数80人，待跟进','2026-10-28 07:38:23','2026-10-28 07:38:23',1);
+INSERT INTO referrals VALUES(92,'2026-09-23','公司条线','李紫茹','理财条线','杨思娴','张姐','completed',0.0,'standard',1,'落地40万商养保险，中收0.6万','2026-10-28 07:40:03','2026-10-28 07:40:03',1);
+INSERT INTO referrals VALUES(93,'2026-09-30','公司条线','鄢奥成','理财条线','魏小栋','苏总','completed',0.0,'standard',1,'落地32万商养保险，均衡配置25万基金','2026-10-28 07:43:10','2026-10-28 07:43:10',1);
+INSERT INTO referrals VALUES(94,'2026-10-10','理财条线','武孝龙','公司条线','唐菁菁','康特柏电子科技（深圳）有限公司','completed',0.0,'standard',1,'开户','2026-10-28 07:44:31','2026-10-28 07:44:31',1);
+INSERT INTO referrals VALUES(95,'2026-10-13','市拓条线','谢文强','公司条线','李紫茹','解析科技','completed',0.0,'standard',1,'开户','2026-10-28 07:45:22','2026-10-28 07:45:22',1);
+INSERT INTO referrals VALUES(96,'2026-10-14','公司条线','唐菁菁','理财条线','武孝龙','速腾物流吕总','completed',0.0,'standard',1,'转归属','2026-10-28 07:46:55','2026-10-28 07:46:55',1);
+INSERT INTO referrals VALUES(97,'2026-10-15','公司条线','唐菁菁','理财条线','程方正','刘总太太','completed',0.0,'standard',1,'转入资金配置20万*3人保保险，提升至金葵花M2','2026-10-28 07:48:36','2026-10-28 07:48:36',1);
+INSERT INTO referrals VALUES(98,'2026-10-15','公司条线','李紫茹','市拓条线','刘慧婷','宣圣电子','pending',0.0,'standard',0,'目前收开户资料，代发跟进','2026-10-28 07:49:11','2026-10-28 07:49:11',1);
+INSERT INTO referrals VALUES(99,'2026-10-16','理财条线','武孝龙','公司条线','林玉婵','深圳和悦通生物科技有限公司','completed',0.0,'standard',1,'开户','2026-10-28 07:50:34','2026-10-28 07:50:34',1);
+INSERT INTO referrals VALUES(100,'2026-10-19','公司条线','张祥霖','理财条线','魏小栋','曹总','completed',0.0,'standard',1,'资金达标M2','2026-10-28 07:51:27','2026-10-28 07:51:27',1);
+INSERT INTO referrals VALUES(101,'2026-10-20','公司条线','李紫茹','理财条线','程方正','企业财务张先生','completed',0.0,'standard',1,'异地转开户行，提升一户M1，落地10*3增额，20万一年理财','2026-10-28 07:52:37','2026-10-28 07:52:37',1);
+INSERT INTO referrals VALUES(102,'2026-10-22','理财条线','王燕燕','公司条线','吴逸辉','时钰电子','pending',0.0,'standard',0,'影石创新上游供应商，整理服务方案中','2026-10-28 07:54:47','2026-10-28 07:54:47',1);
 CREATE TABLE follow_ups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_id INTEGER NOT NULL,
@@ -527,7 +539,7 @@ INSERT INTO sqlite_sequence VALUES('week_tasks',85);
 INSERT INTO sqlite_sequence VALUES('xinfutong_details',6);
 INSERT INTO sqlite_sequence VALUES('lead_boards',6);
 INSERT INTO sqlite_sequence VALUES('leads',52);
-INSERT INTO sqlite_sequence VALUES('referrals',90);
+INSERT INTO sqlite_sequence VALUES('referrals',102);
 INSERT INTO sqlite_sequence VALUES('follow_ups',32);
 INSERT INTO sqlite_sequence VALUES('fusion_targets',105);
 INSERT INTO sqlite_sequence VALUES('contact_log',6);
