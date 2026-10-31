@@ -5,6 +5,8 @@ const crypto = require('crypto');
 
 const targetPort = parseInt(process.argv[2] || '3001', 10);
 const listenPort = parseInt(process.argv[3] || '3100', 10);
+// 额外静态站点路由: /research/*  ->  staticPort
+const staticPort = parseInt(process.argv[6] || '8000', 10);
 const user = process.argv[4] || 'admin';
 const pass = process.argv[5] || '';
 const expected = 'Basic ' + Buffer.from(user + ':' + pass).toString('base64');
@@ -44,12 +46,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 静态研究站点走 /research/ 前缀；静态根 = 项目根，故页面里的 ../已分类 等相对路径仍可解析
+  let upPort = targetPort;
+  let upPath = req.url;
+  if (req.url === '/research' || req.url.startsWith('/research/')) {
+    upPort = staticPort;
+    upPath = req.url.replace(/^\/research/, '');
+    if (upPath === '' || upPath === '/') upPath = '/web/index.html';
+  }
+
   const proxyReq = http.request({
     host: '127.0.0.1',
-    port: targetPort,
-    path: req.url,
+    port: upPort,
+    path: upPath,
     method: req.method,
-    headers: Object.assign({}, req.headers, { host: '127.0.0.1:' + targetPort })
+    headers: Object.assign({}, req.headers, { host: '127.0.0.1:' + upPort })
   }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res);
