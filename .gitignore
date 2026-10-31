@@ -1,6 +1,9 @@
 # 超大数据集（可从上游重新生成，不进版本库）
 名单/
-workbench/
+# workbench/data/ 是 168MB 的生成数据，不进版本库；
+# 但 workbench/ 下的源码（app.js / styles.css / index.html / data-loader.js）必须进，
+# 否则移动端修复无法备份还原。
+workbench/data/
 node_modules/
 *.log
 .DS_Store

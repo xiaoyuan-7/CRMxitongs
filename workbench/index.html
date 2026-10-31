@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>对公拓客工作台</title>
+  <link rel="stylesheet" href="styles.css?v=20261101-1">
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <nav class="topnav">
+    <div class="brand">
+      <span class="brand-icon">🏦</span>
+      <span class="brand-text">对公拓客工作台</span>
+      <span class="brand-sub">深圳 · 银行客户经理赛道专家</span>
+    </div>
+    <div class="nav-links">
+      <a href="#/" class="nav-item" data-route="/">🏠 工作台</a>
+      <a href="#/companies" class="nav-item" data-route="/companies">🏢 公司库</a>
+      <a href="#/tech-v2" class="nav-item" data-route="/tech-v2">🤝 公私联动</a>
+      <a href="#/overlap" class="nav-item" data-route="/overlap">⭐ 三圈重叠</a>
+      <a href="#/links" class="nav-item" data-route="/links">🕸️ 链主网络</a>
+      <a href="#/research" class="nav-item" data-route="/research">📚 行业研究</a>
+      <a href="#/v9-review" class="nav-item" data-route="/v9-review">🔍 v9 复检</a>
+    </div>
+    <div class="nav-right">
+      <span class="visit-count" id="visitCount"></span>
+      <span class="data-date" id="dataDate"></span>
+    </div>
+  </nav>
+
+  <!-- 路由容器 -->
+  <main id="app" class="main"></main>
+
+  <!-- 详情弹窗 -->
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-content" id="detailContent"></div>
+  </div>
+
+  <!-- 加载提示 -->
+  <div id="loader" class="loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">加载中...</div>
+  </div>
+
+  <!-- 数据加载：由 data-loader.js 用 fetch + JSON.parse 拉取（比 <script> 求值快得多）
+       加载完成后才会注入 app.js -->
+  <script src="data-loader.js?v=20261101-1"></script>
+</body>
+</html>
