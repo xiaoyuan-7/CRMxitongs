@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard · 客户经理工作台</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; margin: 0; }
+    .app-shell { max-width: 1480px; margin: 0 auto; padding: 16px 24px; }
+
+    /* 顶部 */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px;
+    }
+    .topbar h1 { font-size: 22px; margin: 0; font-weight: 600; color: #f1f5f9; }
+    .topbar .meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .topbar .actions { display: flex; gap: 6px; }
+
+    /* 数据快照 */
+    .stats { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-card .v { font-size: 22px; font-weight: 700; color: #38bdf8; line-height: 1; }
+    .stat-card .l { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+    .stat-card.accent .v { color: #f59e0b; }
+    .stat-card.success .v { color: #10b981; }
+
+    /* 6 个工具入口 */
+    .tools-section { margin-bottom: 24px; }
+    .section-title {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-title h2 {
+      font-size: 14px; margin: 0; color: #cbd5e1; font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .section-title .tip { font-size: 11px; color: #64748b; }
+
+    .tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .tool-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 16px 20px; cursor: pointer; transition: all 0.15s; text-decoration: none;
+      color: inherit; display: flex; align-items: center; gap: 16px;
+    }
+    .tool-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+    .tool-card .icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    .tool-card .info { flex: 1; }
+    .tool-card .name { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+    .tool-card .desc { font-size: 11px; color: #94a3b8; line-height: 1.5; }
+    .tool-card .v { font-size: 11px; color: #fbbf24; font-weight: 600; margin-top: 4px; }
+
+    .icon-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .icon-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .icon-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .icon-orange { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .icon-pink { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+    .icon-cyan { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
+
+    /* 主内容区 */
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .panel {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .panel-header {
+      padding: 12px 16px; border-bottom: 1px solid #334155; background: #0f172a;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-header h3 { margin: 0; font-size: 13px; color: #f1f5f9; font-weight: 600; }
+    .panel-header .badge {
+      background: #38bdf8; color: #0f172a; padding: 1px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 600;
+    }
+    .panel-body { padding: 12px 16px; max-height: 380px; overflow-y: auto; }
+
+    /* TOP 客户列表 */
+    .client-list { display: flex; flex-direction: column; gap: 6px; }
+    .client-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      padding: 10px 12px; cursor: pointer; transition: all 0.15s;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .client-card:hover { border-color: #38bdf8; background: #1e293b; }
+    .client-card .left { flex: 1; min-width: 0; }
+    .client-card .name {
+      font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 3px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .client-card .meta { display: flex; gap: 8px; font-size: 10px; color: #94a3b8; flex-wrap: wrap; }
+    .client-card .v { color: #fbbf24; font-weight: 600; }
+    .client-card .right { font-size: 16px; font-weight: 700; color: #38bdf8; flex-shrink: 0; margin-left: 8px; }
+
+    .cat-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #334155; color: #cbd5e1; }
+
+    /* 跟进进度 */
+    .fu-progress {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+      padding: 8px 12px; background: #0f172a; border-radius: 6px;
+    }
+    .fu-progress .name {
+      font-size: 12px; font-weight: 600; color: #f1f5f9; flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fu-progress .steps { display: flex; gap: 4px; }
+    .fu-progress .step {
+      width: 20px; height: 20px; border-radius: 50%; background: #334155;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; color: #cbd5e1;
+    }
+    .fu-progress .step.done { background: #10b981; color: #0f172a; }
+
+    .empty-mini { color: #64748b; font-size: 12px; padding: 20px; text-align: center; }
+
+    /* 待办区 */
+    .todo-list { display: flex; flex-direction: column; gap: 6px; }
+    .todo-item {
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+      font-size: 12px;
+    }
+    .todo-item input[type=checkbox] { flex-shrink: 0; }
+    .todo-item.done .text { text-decoration: line-through; opacity: 0.5; }
+    .todo-item .text { flex: 1; color: #cbd5e1; }
+    .todo-item .del { color: #ef4444; cursor: pointer; font-size: 11px; }
+    .todo-add {
+      display: flex; gap: 6px; margin-top: 10px;
+    }
+    .todo-add input {
+      flex: 1; padding: 6px 10px; background: #0f172a; border: 1px solid #334155;
+      color: #e2e8f0; border-radius: 4px; font-size: 12px;
+    }
+    .todo-add button {
+      padding: 6px 14px; background: #38bdf8; color: #0f172a; border: none;
+      border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+
+    /* 进度可视化 */
+    .progress-bar {
+      background: #0f172a; border-radius: 4px; height: 8px; overflow: hidden;
+      width: 100%; margin: 4px 0;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #38bdf8, #10b981);
+      transition: width 0.3s;
+    }
+
+    .link-btn {
+      color: #38bdf8; cursor: pointer; font-size: 11px;
+      text-decoration: underline;
+    }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>🚀 Dashboard · 客户经理工作台</h1>
+        <div class="meta" id="topMeta">2026-07-26 加载中...</div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="window.open('reports.html','_blank')">📊 报告</button>
+        <button class="btn" onclick="window.open('follow-up.html','_blank')">📋 跟进</button>
+      </div>
+    </header>
+
+    <!-- 数据快照 -->
+    <div class="stats" id="statsBar">
+      <div class="stat-card"><div class="v">—</div><div class="l">企业总数</div></div>
+      <div class="stat-card success"><div class="v">—</div><div class="l">有专利</div></div>
+      <div class="stat-card"><div class="v">—</div><div class="l">跨赛道</div></div>
+      <div class="stat-card accent"><div class="v">—</div><div class="l">G2B 中标</div></div>
+      <div class="stat-card"><div class="v">—</div><div class="l">关系高分</div></div>
+      <div class="stat-card success"><div class="v">—</div><div class="l">产品推荐</div></div>
+      <div class="stat-card accent"><div class="v">—</div><div class="l">总营收</div></div>
+    </div>
+
+    <!-- 6 个工具入口 -->
+    <div class="tools-section">
+      <div class="section-title">
+        <h2>🛠️ 6 大拓客工具(银行对公实战)</h2>
+        <div class="tip">点卡片直接进入工具</div>
+      </div>
+      <div class="tool-grid">
+        <a href="http://localhost:8765/customers.html" class="tool-card" target="_blank">
+          <div class="icon icon-blue">📋</div>
+          <div class="info">
+            <div class="name">客户清单</div>
+            <div class="desc">5971 家 × 12 维筛选(赛道 / 跨赛道 / 专利 / 营收 / 区域 / 关系 / 中标 / 产品)</div>
+            <div class="v">5971 家客户</div>
+          </div>
+        </a>
+        <a href="http://localhost:8765/anchors.html" class="tool-card" target="_blank">
+          <div class="icon icon-green">🔗</div>
+          <div class="info">
+            <div class="name">链主拓客</div>
+            <div class="desc">38,655 个链主 × 上下游名单(政府/医院/央企/大学等)</div>
+            <div class="v">6 万条关系</div>
+          </div>
+        </a>
+        <a href="http://localhost:8765/g2b.html" class="tool-card" target="_blank">
+          <div class="icon icon-orange">🏛️</div>
+          <div class="info">
+            <div class="name">G2B 政府采购</div>
+            <div class="desc">500 家中标专业户 × 金额 × 招标方类型筛选</div>
+            <div class="v">500 家 TOP</div>
+          </div>
+        </a>
+        <a href="http://localhost:8765/industry-chain.html" class="tool-card" target="_blank">
+          <div class="icon icon-purple">🔗</div>
+          <div class="info">
+            <div class="name">产业链地图</div>
+            <div class="desc">10 大产业链 × 上中下游(储能/机器人/医械/半导体/跨境 等)</div>
+            <div class="v">3,832 家覆盖</div>
+          </div>
+        </a>
+        <a href="http://localhost:8765/follow-up.html" class="tool-card" target="_blank">
+          <div class="icon icon-pink">📋</div>
+          <div class="info">
+            <div class="name">跟进记录</div>
+            <div class="desc">个人跟进 + 进度可视化 + CSV 导入导出</div>
+            <div class="v">localStorage</div>
+          </div>
+        </a>
+        <a href="http://localhost:8765/index.html" class="tool-card" target="_blank">
+          <div class="icon icon-cyan">📚</div>
+          <div class="info">
+            <div class="name">赛道研究文档</div>
+            <div class="desc">15 个赛道研究文档(行业地图/30 天学习路径/客户名单等)</div>
+            <div class="v">143 文档</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 主内容区:左侧 TOP 客户 + 右侧 跟进 + 待办 -->
+    <div class="main-grid">
+      <!-- 左:高潜客户 TOP 10 (综合专利 + 中标 + 关系) -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🌟 高潜客户 TOP 10</h3>
+          <span class="badge">专利 + 中标 + 关系</span>
+        </div>
+        <div class="panel-body">
+          <div class="client-list" id="topClientList"></div>
+        </div>
+      </div>
+
+      <!-- 右:跟进 + 待办 -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>📋 我的跟进进度</h3>
+          <a class="link-btn" onclick="window.open('http://localhost:8765/follow-up.html','_blank')">详情 →</a>
+        </div>
+        <div class="panel-body">
+          <div id="fuProgress"></div>
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155;">
+            <h3 style="font-size: 13px; color: #f1f5f9; margin: 0 0 8px; font-weight: 600;">✅ 本周待办</h3>
+            <div class="todo-list" id="todoList"></div>
+            <div class="todo-add">
+              <input type="text" id="todoInput" placeholder="添加待办...">
+              <button onclick="addTodo()">添加</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二行:中标 TOP + 关系活跃 TOP -->
+    <div class="main-grid" style="margin-top: 16px;">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🏛️ 中标专业户 TOP 5</h3>
+          <a class="link-btn" onclick="window.open('http://localhost:8765/g2b.html','_blank')">查看更多 →</a>
+        </div>
+        <div class="panel-body">
+          <div class="client-list" id="bidTopList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>🔗 关系活跃 TOP 5</h3>
+          <a class="link-btn" onclick="window.open('http://localhost:8765/customers.html','_blank')">去筛选 →</a>
+        </div>
+        <div class="panel-body">
+          <div class="client-list" id="relTopList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据 -->
+  <script src="customers.js"></script>
+  <script src="g2b.js"></script>
+  <script src="quality.js"></script>
+  <script src="bank_products.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    const TRACK_COLORS = {
+      '医疗器械': '#10b981', '新能源/储能': '#f59e0b', '机器人/AI': '#8b5cf6',
+      '跨境电商': '#3b82f6', '供应链-电子': '#0ea5e9', '供应链-精密': '#06b6d4',
+      '半导体': '#a855f7', '汽车': '#eab308', '化工/新材料': '#ec4899',
+      '软件/SaaS': '#14b8a6', '通信': '#6366f1', '生物医药': '#84cc16',
+      '检测/认证': '#f97316', '消费升级': '#d946ef', '其他': '#94a3b8'
+    };
+
+    // ============ 数据索引 ============
+    const QUALITY = {};
+    if (typeof RELATION_QUALITY !== 'undefined') {
+      RELATION_QUALITY.forEach(q => QUALITY[q.name] = q);
+    }
+    const G2B = {};
+    if (typeof G2B_DATA !== 'undefined') {
+      G2B_DATA.forEach(g => G2B[g.name] = g);
+    }
+
+    // ============ 统计 ============
+    const total = CUSTOMERS_DATA.length;
+    const patCount = CUSTOMERS_DATA.filter(c => c.patent_n > 0).length;
+    const crossCount = CUSTOMERS_DATA.filter(c => c.cross && c.cross.length > 0).length;
+    const g2bCount = Object.keys(G2B).length;
+    const highQ = CUSTOMERS_DATA.filter(c => QUALITY[c.name] && QUALITY[c.name].total_quality >= 3000).length;
+    const recCount = typeof CUSTOMER_RECOMMENDATIONS !== 'undefined' ? Object.keys(CUSTOMER_RECOMMENDATIONS).length : 0;
+    const revTotal = CUSTOMERS_DATA.reduce((s, c) => s + (c.rev_w || 0), 0);
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card"><div class="v">${total.toLocaleString()}</div><div class="l">企业总数</div></div>
+      <div class="stat-card success"><div class="v">${patCount}</div><div class="l">有专利</div></div>
+      <div class="stat-card"><div class="v">${crossCount}</div><div class="l">跨赛道</div></div>
+      <div class="stat-card accent"><div class="v">${g2bCount}</div><div class="l">G2B 中标</div></div>
+      <div class="stat-card"><div class="v">${highQ}</div><div class="l">关系高分</div></div>
+      <div class="stat-card success"><div class="v">${recCount}</div><div class="l">产品推荐</div></div>
+      <div class="stat-card accent"><div class="v">${(revTotal/10000).toFixed(0)}亿</div><div class="l">总营收</div></div>
+    `;
+
+    document.getElementById('topMeta').textContent =
+      `${new Date().toLocaleDateString('zh-CN')} · ${total.toLocaleString()} 家企业 · ${Object.keys(G2B).length} G2B · ${recCount} 推荐 · ${CUSTOMERS_DATA.reduce((s,c)=>s+(c.patent_n||0),0).toLocaleString()} 专利`;
+
+    // ============ 高潜客户 TOP 10 ============
+    function compositeScore(c) {
+      const q = QUALITY[c.name];
+      const g = G2B[c.name];
+      let s = (c.patent_score || 0) * 0.5;
+      if (g) s += g.bid_count * 2 + g.total_amt_w / 1000;
+      if (q) s += q.total_quality / 100;
+      if (c.rev_w > 0) s += Math.min(c.rev_w / 100, 100);
+      return s;
+    }
+
+    const top10 = [...CUSTOMERS_DATA].sort((a, b) => compositeScore(b) - compositeScore(a)).slice(0, 10);
+    const topClientList = document.getElementById('topClientList');
+    topClientList.innerHTML = top10.map((c, i) => {
+      const rev = c.rev_w >= 10000 ? (c.rev_w/10000).toFixed(1) + '亿' : (c.rev_w ? c.rev_w.toFixed(0) + '万' : '—');
+      const g = G2B[c.name];
+      const q = QUALITY[c.name];
+      const color = TRACK_COLORS[c.cat] || '#94a3b8';
+      const score = compositeScore(c).toFixed(0);
+      return `
+        <div class="client-card" onclick="window.open('http://localhost:8765/customers.html#${encodeURIComponent(c.name)}', '_blank')">
+          <div class="left">
+            <div class="name">${i+1}. ${c.name}</div>
+            <div class="meta">
+              <span class="cat-badge" style="background:${color};color:white;">${c.cat}</span>
+              <span>营收 <span class="v">${rev}</span></span>
+              ${g ? `<span>中标 <span class="v">${g.bid_count}</span> 次</span>` : ''}
+              ${q ? `<span>关系分 <span class="v">${q.total_quality.toFixed(0)}</span></span>` : ''}
+            </div>
+          </div>
+          <div class="right" title="综合评分">${score}</div>
+        </div>
+      `;
+    }).join('');
+
+    // ============ 中标 TOP 5 ============
+    const bidTop = [...(typeof G2B_DATA !== 'undefined' ? G2B_DATA : [])]
+      .sort((a, b) => b.bid_count - a.bid_count).slice(0, 5);
+    document.getElementById('bidTopList').innerHTML = bidTop.map((g, i) => {
+      const amt = g.total_amt_w >= 10000 ? (g.total_amt_w/10000).toFixed(1) + '亿' : g.total_amt_w.toFixed(0) + '万';
+      return `
+        <div class="client-card" onclick="window.open('http://localhost:8765/customers.html#${encodeURIComponent(g.name)}','_blank')">
+          <div class="left">
+            <div class="name" style="cursor:pointer;">${i+1}. ${g.name}</div>
+            <div class="meta">
+              <span>中标 <span class="v">${g.bid_count}</span> 次</span>
+              <span>金额 <span class="v">${amt}</span></span>
+              <span>招标方 <span class="v">${g.buyer_count}</span> 家</span>
+              <span>最近 <span class="v">${g.last_bid_year}</span></span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // ============ 关系活跃 TOP 5 ============
+    const relTop = Object.values(QUALITY).sort((a, b) => b.total_quality - a.total_quality).slice(0, 5);
+    document.getElementById('relTopList').innerHTML = relTop.map((q, i) => {
+      const c = CUSTOMERS_DATA.find(c => c.name === q.name);
+      const cat = c ? TRACK_COLORS[c.cat] || '#94a3b8' : '#64748b';
+      return `
+        <div class="client-card" onclick="window.open('http://localhost:8765/customers.html#${encodeURIComponent(q.name)}', '_blank')">
+          <div class="left">
+            <div class="name">${i+1}. ${q.name}</div>
+            <div class="meta">
+              ${c ? `<span class="cat-badge" style="background:${cat};color:white;">${c.cat}</span>` : ''}
+              <span>关系 <span class="v">${q.relation_count}</span> 条</span>
+              <span>高质量 <span class="v">${q.high_quality_count}</span></span>
+              <span>分 <span class="v">${q.total_quality.toFixed(0)}</span></span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // ============ 跟进进度(从 localStorage 读) ============
+    const FU_STORAGE = 'follow_up_data_v1';
+    function loadFollowUp() {
+      try {
+        const d = localStorage.getItem(FU_STORAGE);
+        return d ? JSON.parse(d) : [];
+      } catch { return []; }
+    }
+
+    function renderFuProgress() {
+      const fu = loadFollowUp();
+      const el = document.getElementById('fuProgress');
+      if (fu.length === 0) {
+        el.innerHTML = `<div class="empty-mini">暂无跟进客户 · <a class="link-btn" onclick="window.open('follow-up.html','_blank')">去添加 →</a></div>`;
+        return;
+      }
+      // 统计进度
+      const total = fu.length;
+      const kaihu = fu.filter(r => r.kaihu === '是').length;
+      const shouxin = fu.filter(r => r.shouxin === '是').length;
+      const daifa = fu.filter(r => r.daifa === '是').length;
+      const totalAmt = fu.reduce((s, r) => s + (parseFloat(r.jine) || 0), 0);
+
+      // 进度条(开户/授信/代发)
+      el.innerHTML = `
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+          <div style="flex: 1; background: #0f172a; padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 18px; color: #10b981; font-weight: 700;">${kaihu}/${total}</div>
+            <div style="font-size: 10px; color: #94a3b8;">已开户</div>
+          </div>
+          <div style="flex: 1; background: #0f172a; padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 18px; color: #f59e0b; font-weight: 700;">${shouxin}/${total}</div>
+            <div style="font-size: 10px; color: #94a3b8;">已授信</div>
+          </div>
+          <div style="flex: 1; background: #0f172a; padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 18px; color: #38bdf8; font-weight: 700;">${daifa}/${total}</div>
+            <div style="font-size: 10px; color: #94a3b8;">已代发</div>
+          </div>
+          <div style="flex: 1; background: #0f172a; padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 18px; color: #fbbf24; font-weight: 700;">${totalAmt > 10000 ? (totalAmt/10000).toFixed(1) + '亿' : totalAmt.toFixed(0)}</div>
+            <div style="font-size: 10px; color: #94a3b8;">总授信(万)</div>
+          </div>
+        </div>
+        <div class="fu-progress">
+          <div class="name">${fu[0].name || '—'}</div>
+          <div class="steps">
+            <div class="step ${fu[0].kaihu === '是' ? 'done' : ''}">开</div>
+            <div class="step ${fu[0].shouxin === '是' ? 'done' : ''}">授</div>
+            <div class="step ${fu[0].daifa === '是' ? 'done' : ''}">代</div>
+          </div>
+        </div>
+      `;
+    }
+    renderFuProgress();
+
+    // ============ 待办区 ============
+    const TODO_KEY = 'bank_dashboard_todos_v1';
+    function loadTodos() {
+      try {
+        const d = localStorage.getItem(TODO_KEY);
+        return d ? JSON.parse(d) : [];
+      } catch { return []; }
+    }
+    function saveTodos(todos) {
+      localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+    }
+    function renderTodos() {
+      const todos = loadTodos();
+      const el = document.getElementById('todoList');
+      if (todos.length === 0) {
+        el.innerHTML = '<div class="empty-mini">本周还没有待办 · 添加第一条</div>';
+        return;
+      }
+      el.innerHTML = todos.map((t, i) => `
+        <div class="todo-item ${t.done ? 'done' : ''}" data-idx="${i}">
+          <input type="checkbox" ${t.done ? 'checked' : ''}>
+          <span class="text">${escape(t.text)}</span>
+          <span class="del" onclick="delTodo(${i})">删</span>
+        </div>
+      `).join('');
+      el.querySelectorAll('input').forEach(inp => {
+        inp.onchange = e => {
+          const i = parseInt(e.target.parentElement.dataset.idx);
+          todos[i].done = e.target.checked;
+          saveTodos(todos);
+          renderTodos();
+        };
+      });
+    }
+    function escape(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    window.addTodo = function() {
+      const input = document.getElementById('todoInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const todos = loadTodos();
+      todos.push({ text, done: false });
+      saveTodos(todos);
+      input.value = '';
+      renderTodos();
+    };
+    window.delTodo = function(i) {
+      const todos = loadTodos();
+      todos.splice(i, 1);
+      saveTodos(todos);
+      renderTodos();
+    };
+    document.getElementById('todoInput').onkeypress = e => {
+      if (e.key === 'Enter') window.addTodo();
+    };
+    renderTodos();
+
+    // 同步 follow-up 数据(其他标签页修改后回来会重新加载)
+    window.addEventListener('focus', () => {
+      renderFuProgress();
+    });
+  })();
+  </script>
+</body>
+</html>

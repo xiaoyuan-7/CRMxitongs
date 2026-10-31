@@ -1,0 +1,251 @@
+/* ============================================================
+   移动端适配 (max-width: 768px)
+   覆盖 dashboard / customers / g2b / anchors / follow-up /
+   industry-chain / reports 各页的桌面端固定栅格
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* ---------- 通用：消除横向溢出 ---------- */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .app-shell {
+    padding: 12px 12px 40px !important;
+    max-width: 100% !important;
+  }
+
+  /* ---------- 顶栏：允许换行，避免按钮被挤出屏幕 ---------- */
+  .topbar-app {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 0 14px !important;
+    margin-bottom: 16px !important;
+  }
+  .topbar-app h1 {
+    font-size: 18px !important;
+    flex: 1 1 auto;
+  }
+  .topbar-app .back {
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+
+  /* ---------- 指标卡网格：多列 → 两列 ---------- */
+  .stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .stat-card {
+    padding: 10px 6px !important;
+  }
+  .stat-card .v {
+    font-size: 17px !important;
+    word-break: break-all;
+  }
+  .stat-card .l {
+    font-size: 10px !important;
+    line-height: 1.3;
+  }
+
+  /* ---------- 工具卡 / 报告卡网格：→ 单列 ---------- */
+  .tool-grid,
+  .report-grid,
+  .main-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .tool-card,
+  .report-card {
+    flex-wrap: wrap;
+  }
+  .tool-card .icon { width: 38px !important; height: 38px !important; font-size: 20px !important; }
+  .tool-card .info { min-width: 0; }
+  .tool-card .name { font-size: 14px !important; }
+
+  /* ---------- 筛选区：整行堆叠，按钮可点 ---------- */
+  .filters,
+  .filter-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .filter-row input[type="text"],
+  .filter-input,
+  .filter-search input {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  .chip {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    flex: 0 0 auto;
+  }
+
+  /* 筛选选项改为单行横向滚动，避免在手机上堆叠成几千像素把表格挤出屏幕 */
+  .opts {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: none !important;
+    gap: 6px !important;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .opts::-webkit-scrollbar { display: none; }
+  .opts .chip { white-space: nowrap; }
+  .filter-row > .opts { width: 100% !important; }
+
+  /* 每个筛选组独占一行、标题在上 */
+  .filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    margin-bottom: 8px;
+  }
+  .filter-row > label {
+    font-size: 11px;
+    color: #94a3b8;
+    flex: 0 0 auto;
+  }
+  /* 同一行里的两个筛选组（跨赛道 / 跨领域专利）拆成上下两行 */
+  .filter-row > .opts + label { margin-top: 4px; }
+  .filter-row .filter-toggle {
+    margin-left: 0 !important;
+    flex: 0 0 auto;
+  }
+  /* 按钮组单独一行 */
+  .filter-row:last-child { flex-wrap: wrap !important; }
+  .filter-row .filter-toggle {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  /* ---------- 表格：横向滚动 + 首列吸附 ---------- */
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+  table.customers,
+  table.g2b,
+  table.fu,
+  table.rel-table {
+    min-width: 640px !important;
+  }
+  table.customers thead th,
+  table.g2b thead th,
+  table.fu thead th {
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+  table.customers tbody td,
+  table.g2b tbody td,
+  table.fu tbody td {
+    padding: 8px 8px !important;
+    font-size: 12px !important;
+  }
+  /* 首列固定，其余横向滑动 */
+  table.customers tbody td:first-child,
+  table.g2b tbody td:first-child,
+  table.fu tbody td:first-child,
+  table.customers thead th:first-child,
+  table.g2b thead th:first-child,
+  table.fu thead th:first-child {
+    position: sticky;
+    left: 0;
+    background: #1e293b;
+    z-index: 3;
+  }
+  table.customers thead th:first-child,
+  table.g2b thead th:first-child,
+  table.fu thead th:first-child {
+    background: #0f172a;
+    z-index: 4;
+  }
+  .cell-name { max-width: 120px; }
+
+  /* ---------- 分页 ---------- */
+  .pager {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    font-size: 12px;
+  }
+  .pager .page { width: 54px !important; }
+
+  /* ---------- 抽屉：全屏化 ---------- */
+  .drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .drawer-body {
+    font-size: 13px;
+  }
+
+  /* ---------- 左/右双栏：→ 上下堆叠 ---------- */
+  .main-grid {
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .left-panel {
+    width: 100% !important;
+    max-height: 55vh;
+    flex: 0 0 auto;
+  }
+  .right-panel {
+    width: 100% !important;
+    flex: 1 1 auto;
+  }
+  .anchor-list {
+    max-height: 45vh;
+  }
+
+  /* ---------- 产业链 SVG：容器横向滚动 ---------- */
+  .svg-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px !important;
+  }
+  svg.chain-svg {
+    min-width: 1100px;
+  }
+  .chain-tabs {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+  .chain-tab {
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+  }
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    flex: 0 0 auto;
+  }
+
+  /* ---------- 图表：容器自适应 ---------- */
+  canvas { max-width: 100% !important; }
+  .chart-box,
+  .chart-wrap {
+    overflow-x: auto;
+  }
+}
+
+/* 超窄屏 (iPhone SE 等) */
+@media (max-width: 360px) {
+  .app-shell { padding: 10px 8px 32px !important; }
+  .stats { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-card .v { font-size: 15px !important; }
+  .topbar-app h1 { font-size: 16px !important; }
+}

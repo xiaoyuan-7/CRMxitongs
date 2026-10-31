@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>对公行业研究 · 浏览器</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="logo">
+          <span class="logo-icon">🏦</span>
+          <span class="logo-text">对公行业研究</span>
+        </h1>
+        <p class="logo-subtitle">银行客户经理赛道专家</p>
+      </div>
+
+      <!-- 搜索 -->
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="搜索文档..."
+          autocomplete="off"
+        >
+        <span class="search-hint">Ctrl+K</span>
+      </div>
+
+      <!-- 导航 -->
+      <nav class="nav" id="nav">
+        <!-- JS 动态生成 -->
+      </nav>
+
+      <!-- 侧边栏底部 -->
+      <div class="sidebar-footer">
+        <button id="printBtn" class="footer-btn" title="打印当前文档">
+          🖨️ 打印
+        </button>
+        <button id="homeBtn" class="footer-btn" title="回到首页">
+          🏠 首页
+        </button>
+      </div>
+    </aside>
+
+    <!-- 移动端遮罩 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle" aria-label="菜单">
+          ☰
+        </button>
+        <div class="breadcrumb" id="breadcrumb">
+          <span class="breadcrumb-item">首页</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="prevDocBtn" title="上一篇">←</button>
+          <button class="icon-btn" id="nextDocBtn" title="下一篇">→</button>
+        </div>
+      </header>
+
+      <article class="content" id="content">
+        <!-- JS 动态生成 -->
+      </article>
+    </main>
+  </div>
+
+  <!-- 第三方: marked.js (Markdown 渲染) -->
+  <script src="vendor/marked.min.js"></script>
+  <!-- 数据 -->
+  <script src="data.js"></script>
+  <!-- 应用逻辑 -->
+  <script src="app.js"></script>
+</body>
+</html>

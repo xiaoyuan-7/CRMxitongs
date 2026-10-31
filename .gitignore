@@ -1,0 +1,6 @@
+# 超大数据集（可从上游重新生成，不进版本库）
+名单/
+workbench/
+node_modules/
+*.log
+.DS_Store

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>链主拓客 · 供应链关系网络</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; margin: 0; }
+    .app-shell { max-width: 1440px; margin: 0 auto; padding: 16px 24px; }
+    .topbar-app {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px;
+    }
+    .topbar-app h1 { font-size: 22px; margin: 0; font-weight: 600; color: #f1f5f9; }
+    .topbar-app .back { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 6px 12px; border: 1px solid #334155; border-radius: 6px; }
+    .topbar-app .back:hover { background: #1e293b; }
+
+    /* 统计 */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-card .v { font-size: 24px; font-weight: 700; color: #38bdf8; line-height: 1; }
+    .stat-card .l { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+    /* 主体布局:左侧链主列表 + 右侧链上小微 */
+    .main-grid {
+      display: grid; grid-template-columns: 380px 1fr; gap: 16px; height: calc(100vh - 200px);
+      min-height: 600px;
+    }
+    .left-panel { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+    .left-header { padding: 12px 14px; border-bottom: 1px solid #334155; background: #0f172a; }
+    .left-header .filter-input {
+      width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #334155;
+      color: #e2e8f0; border-radius: 4px; font-size: 12px; margin-bottom: 8px;
+    }
+    .left-header .filter-input:focus { outline: 2px solid #38bdf8; }
+    .left-header .type-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .left-header .type-chip {
+      background: #0f172a; border: 1px solid #334155; color: #cbd5e1;
+      padding: 2px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; user-select: none;
+    }
+    .left-header .type-chip.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 600; }
+
+    .anchor-list { overflow-y: auto; flex: 1; }
+    .anchor-item {
+      padding: 10px 14px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background 0.15s;
+    }
+    .anchor-item:hover { background: #0f172a; }
+    .anchor-item.active { background: #0f172a; border-left: 3px solid #38bdf8; }
+    .anchor-item .a-name { font-size: 13px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+    .anchor-item .a-meta { display: flex; gap: 8px; font-size: 11px; color: #94a3b8; }
+    .anchor-item .a-type { background: #334155; color: #cbd5e1; padding: 1px 6px; border-radius: 8px; font-size: 10px; }
+    .anchor-item .a-count { color: #fbbf24; font-weight: 600; }
+
+    /* 右侧详情 */
+    .right-panel { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+    .right-header { padding: 14px 18px; border-bottom: 1px solid #334155; background: #0f172a; }
+    .right-header h2 { margin: 0 0 4px; font-size: 18px; color: #f1f5f9; }
+    .right-header .h-meta { display: flex; gap: 12px; font-size: 12px; color: #94a3b8; }
+    .right-header .h-meta .v { color: #fbbf24; font-weight: 600; }
+    .right-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+
+    /* 拓客列表 */
+    .biz-rec { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px; }
+    .biz-rec .br-title { font-size: 13px; font-weight: 600; color: #38bdf8; margin-bottom: 6px; }
+    .biz-rec .br-text { font-size: 12px; color: #cbd5e1; line-height: 1.6; }
+
+    /* 上下游表格 */
+    .rel-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .rel-table th { background: #0f172a; color: #94a3b8; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #334155; }
+    .rel-table td { padding: 8px 10px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    .rel-table tr:hover td { background: #0f172a; }
+    .role-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+    .role-supplier { background: #0c4a6e; color: #7dd3fc; }
+    .role-customer { background: #581c87; color: #d8b4fe; }
+    .cat-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; color: #fff; }
+    .num-strong { color: #fbbf24; font-weight: 600; }
+
+    .placeholder { padding: 60px 20px; text-align: center; color: #64748b; font-size: 14px; }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar-app">
+      <h1>🔗 链主拓客 · 供应链关系网络</h1>
+      <div>
+        <a class="back" href="dashboard.html">🚀 Dashboard</a>
+        <a class="back" href="customers.html">客户清单</a>
+        <a class="back" href="index.html">赛道浏览器</a>
+      </div>
+    </header>
+
+    <div class="stats" id="statsBar"></div>
+
+    <div class="main-grid">
+      <!-- 左:链主列表 -->
+      <div class="left-panel">
+        <div class="left-header">
+          <input type="text" id="searchInput" class="filter-input" placeholder="🔍 搜索链主名(政府/医院/大企业/已知企业)...">
+          <div class="type-chips" id="typeChips"></div>
+          <button id="exportCsvBtn" style="margin-top:6px;padding:5px 10px;background:#10b981;color:#0f172a;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">💾 导出 CSV</button>
+        </div>
+        <div class="anchor-list" id="anchorList"></div>
+      </div>
+
+      <!-- 右:详情 -->
+      <div class="right-panel">
+        <div id="rightHeader" class="right-header placeholder">
+          ← 选择左侧链主,查看上下游拓客名单
+        </div>
+        <div id="rightBody" class="right-body">
+          <div class="placeholder">
+            <h3>使用说明</h3>
+            <p>1. <strong>选链主</strong>(左侧):政府机关、医院、大学、大企业、已有客户</p>
+            <p>2. <strong>看上下游</strong>(右侧):列出的企业都是给该链主供货/服务的小微</p>
+            <p>3. <strong>拜访策略</strong>:</p>
+            <p style="text-align:left;max-width:480px;margin:12px auto;color:#cbd5e1;">
+              • 链主背书 → 应收账款融资<br>
+              • 大额合作 + 占比高 → 优先拜访<br>
+              • 时间近(2024+) → 仍在合作<br>
+              • 在 v5 分类里 → 已知企业画像
+            </p>
+            <p style="margin-top:20px;font-size:12px;color:#94a3b8;">
+              📊 共 38,655 个链主 + 60,056 条关系数据(2026-07-26 v5)
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="anchors_data/index.js"></script>
+  <script src="anchors_data/top200.js"></script>
+  <script src="anchors_data/loader.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    // 默认 TOP 200 + 索引,总计 ~540KB
+    let ALL_ANCHORS = ANCHORS_TOP200;
+    let totalAnchors = ANCHORS_INDEX.total;
+    let knownInMain = 0;
+    let totalAmt = 0;
+    let totalEnterprises = 0;
+    let typeDist = ANCHORS_INDEX.types;
+    let currentTypeAnchors = null;  // 当前类型下的全量数据
+
+    // 计算初始统计
+    ALL_ANCHORS.forEach(a => {
+      totalAmt += a.total_amt_w;
+      totalEnterprises += a.enterprise_count;
+      if (a.in_main) knownInMain++;
+    });
+
+    // 顶部统计
+    const renderStats = () => {
+      const totalAmtDisp = (totalAmt / 10000).toFixed(0);
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card"><div class="v">${totalAnchors.toLocaleString()}</div><div class="l">链主(总)</div></div>
+        <div class="stat-card"><div class="v">${currentTypeAnchors ? currentTypeAnchors.length.toLocaleString() : ALL_ANCHORS.length.toLocaleString()}</div><div class="l">当前显示</div></div>
+        <div class="stat-card"><div class="v">${(totalEnterprises/10000).toFixed(1)}万</div><div class="l">总关系数</div></div>
+        <div class="stat-card"><div class="v">${totalAmtDisp}亿</div><div class="l">总金额</div></div>
+        <div class="stat-card"><div class="v">${knownInMain}</div><div class="l">已知链主</div></div>
+      `;
+    };
+    renderStats();
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card"><div class="v">${totalAnchors.toLocaleString()}</div><div class="l">链主(关系方)</div></div>
+      <div class="stat-card"><div class="v">${(totalEnterprises/10000).toFixed(1)}万</div><div class="l">总关系数</div></div>
+      <div class="stat-card"><div class="v">${(totalAmt/10000).toFixed(0)}亿</div><div class="l">总金额(万元汇总)</div></div>
+      <div class="stat-card"><div class="v">${knownInMain}</div><div class="l">已知链主</div></div>
+    `;
+
+    // 链主类型 chips
+    const types = ['全部', '政府机关', '高校/科研', '医院/医疗', '央国企(能源/通信)', '城建/城投', '其他大企业'];
+    const typeChipsEl = document.getElementById('typeChips');
+    const state = { selectedType: '全部', query: '', selectedAnchor: null };
+    types.forEach(t => {
+      const c = document.createElement('div');
+      c.className = 'type-chip' + (state.selectedType === t ? ' active' : '');
+      c.textContent = t;
+      c.onclick = async () => {
+        state.selectedType = t;
+        // 切换类型时动态加载
+        if (t === '全部') {
+          currentTypeAnchors = null;
+        } else {
+          // 加载提示
+          c.textContent = t + ' (加载中...)';
+          currentTypeAnchors = await loadAnchorsByType(t);
+          c.textContent = t;
+        }
+        document.querySelectorAll('.type-chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        renderStats();
+        renderList();
+      };
+      typeChipsEl.appendChild(c);
+    });
+
+    // 渲染链主列表
+    function renderList() {
+      const q = state.query.trim().toLowerCase();
+      const dataSource = currentTypeAnchors || ALL_ANCHORS;
+      let filtered = dataSource.filter(a => {
+        if (state.selectedType !== '全部' && a.type !== state.selectedType) return false;
+        if (q && !a.name.toLowerCase().includes(q) && !(a.main_cat||'').toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      // 默认按链上小微数降序
+      filtered.sort((a, b) => b.enterprise_count - a.enterprise_count);
+      // 限制最多 500 个
+      filtered = filtered.slice(0, 500);
+
+      const el = document.getElementById('anchorList');
+      el.innerHTML = '';
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="placeholder" style="padding:40px 20px;font-size:12px;">未找到匹配的链主</div>';
+        return;
+      }
+      filtered.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'anchor-item' + (state.selectedAnchor && state.selectedAnchor.name === a.name ? ' active' : '');
+        item.innerHTML = `
+          <div class="a-name">${a.name}</div>
+          <div class="a-meta">
+            <span class="a-type">${a.type}</span>
+            ${a.in_main ? `<span style="color:#38bdf8">★ 已知(${a.main_cat})</span>` : ''}
+            <span class="a-count">${a.enterprise_count} 家</span>
+            <span>${(a.total_amt_w/10000).toFixed(1)}亿</span>
+          </div>
+        `;
+        item.onclick = () => {
+          state.selectedAnchor = a;
+          document.querySelectorAll('.anchor-item').forEach(x => x.classList.remove('active'));
+          item.classList.add('active');
+          renderDetail(a);
+        };
+        el.appendChild(item);
+      });
+    }
+
+    // 渲染详情(链主 + 上下游)
+    function renderDetail(a) {
+      const h = document.getElementById('rightHeader');
+      h.className = 'right-header';
+      h.innerHTML = `
+        <h2>${a.name}</h2>
+        <div class="h-meta">
+          <span class="a-type">${a.type}</span>
+          ${a.in_main ? `<span style="color:#38bdf8">★ 已知企业(${a.main_cat})</span>` : ''}
+          <span><span class="v">${a.enterprise_count}</span> 家上下游</span>
+          <span><span class="v">${a.as_supplier_count}</span> 次作为供应商</span>
+          <span><span class="v">${a.as_customer_count}</span> 次作为客户</span>
+          <span><span class="v">${(a.total_amt_w/10000).toFixed(2)}</span> 亿金额</span>
+        </div>
+      `;
+
+      const b = document.getElementById('rightBody');
+      // 拓客策略
+      let rec = '';
+      if (a.in_main) {
+        rec = `
+          <div class="biz-rec">
+            <div class="br-title">🎯 拓客策略:已知企业</div>
+            <div class="br-text">
+              这是 <strong>${a.main_cat}</strong> 赛道的已知企业,本身就是银行客户。
+              <br><br>
+              <strong>价值:</strong> 它跟 <strong>${a.enterprise_count}</strong> 家小微有真实交易记录 → 这是天然的"链主背书 + 供应链金融"拓客场景。
+              <br><br>
+              <strong>建议:</strong> 以它作为链主,给它的供应商/客户推介"链主确权应收账款融资"。
+            </div>
+          </div>
+        `;
+      } else if (a.type === '政府机关' || a.type === '央国企(能源/通信)' || a.type === '城建/城投') {
+        rec = `
+          <div class="biz-rec">
+            <div class="br-title">🏛️ 拓客策略:G2B 政府采购</div>
+            <div class="br-text">
+              这是 <strong>${a.type}</strong>,是政府采购方。
+              <br><br>
+              <strong>${a.enterprise_count}</strong> 家小微中标过它的项目 → 这些是<strong>订单贷 + 应收账款融资</strong>的天然客户。
+              <br><br>
+              <strong>建议:</strong> 按金额排序选 TOP 10,优先拜访有大额中标记录的小微(银行可基于中标合同提供融资)。
+            </div>
+          </div>
+        `;
+      } else if (a.type === '高校/科研' || a.type === '医院/医疗') {
+        rec = `
+          <div class="biz-rec">
+            <div class="br-title">🏥 拓客策略:高校/医院采购</div>
+            <div class="br-text">
+              <strong>${a.type}</strong>采购方,${a.enterprise_count} 家小微供应过产品。
+              <br><br>
+              <strong>建议:</strong> 这些小微的实际中标能力已被验证,可优先提供政府采购贷。
+            </div>
+          </div>
+        `;
+      } else {
+        rec = `
+          <div class="biz-rec">
+            <div class="br-title">💼 拓客策略:大企业链主</div>
+            <div class="br-text">
+              <strong>${a.enterprise_count}</strong> 家小微是它的客户/供应商。
+              <br><br>
+              <strong>建议:</strong> 以它作为链主 → 链主确权应收账款融资。
+            </div>
+          </div>
+        `;
+      }
+
+      // 上下游表格
+      let tableHtml = `
+        <table class="rel-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>企业</th>
+              <th>角色</th>
+              <th>金额(万)</th>
+              <th>占比</th>
+              <th>报告期</th>
+              <th>来源</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      const items = a.top_enterprises || [];
+      items.forEach((it, i) => {
+        const roleBadge = it.role === 'supplier'
+          ? '<span class="role-badge role-supplier">链主买它</span>'
+          : '<span class="role-badge role-customer">链主卖它</span>';
+        const amt = it.amt_w ? `<span class="num-strong">${it.amt_w.toLocaleString()}</span>` : '—';
+        const pct = it.pct ? `${it.pct.toFixed(1)}%` : '—';
+        tableHtml += `
+          <tr>
+            <td>${i + 1}</td>
+            <td title="${it.name}" style="cursor:pointer; color:#38bdf8;" onclick="window.open('customers.html#${encodeURIComponent(it.name)}','_blank')">${it.name.slice(0, 30)}${it.name.length > 30 ? '…' : ''}</td>
+            <td>${roleBadge}</td>
+            <td style="text-align:right;">${amt}</td>
+            <td style="text-align:right;">${pct}</td>
+            <td>${it.period || '—'}</td>
+            <td style="font-size:11px;">${it.source || '—'}</td>
+          </tr>
+        `;
+      });
+      tableHtml += `</tbody></table>`;
+
+      if (items.length === 0) {
+        tableHtml = '<div class="placeholder" style="padding:30px;">该链主暂无强关系记录</div>';
+      }
+
+      b.innerHTML = rec + tableHtml;
+    }
+
+    // 搜索
+    document.getElementById('searchInput').addEventListener('input', e => {
+      state.query = e.target.value;
+      renderList();
+    });
+
+    // ============= CSV 导出 =============
+    function exportCSV() {
+      const headers = ['链主名称','类型','是否已知企业','主营赛道','链上小微数','作为供应商次数','作为客户次数','总金额(亿)'];
+      const rows = filtered.map(a => [
+        a.name, a.type, a.in_main ? '是' : '否', a.main_cat || '',
+        a.enterprise_count, a.as_supplier_count, a.as_customer_count,
+        (a.total_amt_w / 10000).toFixed(2),
+      ]);
+      const csv = [headers.join(',')].concat(
+        rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(','))
+      ).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '链主拓客_' + filtered.length + '家_' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById('exportCsvBtn').onclick = exportCSV;
+
+    // 启动
+    renderList();
+  })();
+  </script>
+</body>
+</html>

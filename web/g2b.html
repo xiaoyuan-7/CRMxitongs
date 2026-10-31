@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G2B 政府采购专项 · 拓客金矿</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; margin: 0; }
+    .app-shell { max-width: 1440px; margin: 0 auto; padding: 16px 24px; }
+    .topbar-app {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px;
+    }
+    .topbar-app h1 { font-size: 22px; margin: 0; font-weight: 600; color: #f1f5f9; }
+    .topbar-app .back { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 6px 12px; border: 1px solid #334155; border-radius: 6px; margin-left: 6px; }
+    .topbar-app .back:hover { background: #1e293b; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-card .v { font-size: 24px; font-weight: 700; color: #38bdf8; line-height: 1; }
+    .stat-card .l { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+    /* 筛选 */
+    .filters { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .filter-row label { font-size: 12px; color: #94a3b8; min-width: 70px; }
+    .filter-row .opts { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+    .chip { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 4px 10px; border-radius: 14px; font-size: 12px; cursor: pointer; user-select: none; }
+    .chip:hover { border-color: #38bdf8; }
+    .chip.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 600; }
+
+    /* 表格 */
+    .table-wrap { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    table.g2b { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.g2b thead th { background: #0f172a; color: #94a3b8; padding: 9px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #334155; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; }
+    table.g2b thead th:hover { background: #1e293b; color: #f1f5f9; }
+    table.g2b tbody td { padding: 8px 10px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    table.g2b tbody tr:hover { background: #0f172a; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .num-strong { color: #f59e0b; font-weight: 600; }
+    .num-zero { color: #475569; }
+    .cell-name { font-weight: 600; color: #f1f5f9; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cat-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; color: white; }
+
+    .pager { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #0f172a; border-top: 1px solid #334155; }
+    .pager .info { color: #94a3b8; font-size: 12px; }
+    .pager button { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 0 2px; }
+    .pager button:hover:not(:disabled) { background: #334155; }
+    .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .buyer-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; margin-right: 2px; }
+    .buyer-政府机关 { background: #1e3a8a; color: #bfdbfe; }
+    .buyer-高校/科研 { background: #14532d; color: #86efac; }
+    .buyer-医院/医疗 { background: #7f1d1d; color: #fca5a5; }
+    .buyer-央国企 { background: #581c87; color: #d8b4fe; }
+    .buyer-城建 { background: #854d0e; color: #fcd34d; }
+    .buyer-其他大企业 { background: #334155; color: #cbd5e1; }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar-app">
+      <h1>🏛️ G2B 政府采购专项 · 拓客金矿</h1>
+      <div>
+        <a class="back" href="dashboard.html">🚀 Dashboard</a>
+        <a class="back" href="customers.html">📋 客户清单</a>
+        <a class="back" href="anchors.html">🔗 链主</a>
+      </div>
+    </header>
+
+    <div class="stats" id="statsBar"></div>
+
+    <!-- 拓客逻辑 -->
+    <div class="filters">
+      <div class="filter-row">
+        <label>🚀 拓客逻辑</label>
+        <div class="opts">
+          <span class="chip active" style="cursor:default;">G2B 政府采购贷 → 中标合同是应收账款,银行可做专项授信</span>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <label>招标方类型</label>
+        <div class="opts" id="typeChips">
+          <div class="chip active" data-type="all">全部</div>
+          <div class="chip" data-type="政府机关">政府机关</div>
+          <div class="chip" data-type="高校/科研">高校/科研</div>
+          <div class="chip" data-type="医院/医疗">医院/医疗</div>
+          <div class="chip" data-type="央国企">央国企</div>
+          <div class="chip" data-type="城建/城投">城建/城投</div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <label>中标次数</label>
+        <div class="opts" id="countChips">
+          <div class="chip active" data-count="all">全部</div>
+          <div class="chip" data-count="1-10">1-10 次</div>
+          <div class="chip" data-count="10-50">10-50 次</div>
+          <div class="chip" data-count="50+">50+ 次</div>
+          <div class="chip" data-count="100+">100+ 次(顶级)</div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <label>总金额</label>
+        <div class="opts" id="amtChips">
+          <div class="chip active" data-amt="all">全部</div>
+          <div class="chip" data-amt="lt1000">&lt; 1000 万</div>
+          <div class="chip" data-amt="1000-10000">1000-10000 万</div>
+          <div class="chip" data-amt="10000-100000">1-10 亿</div>
+          <div class="chip" data-amt="gt100000">&gt; 10 亿</div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <label>最近中标</label>
+        <div class="opts" id="yearChips">
+          <div class="chip active" data-year="all">全部</div>
+          <div class="chip" data-year="2026">2026</div>
+          <div class="chip" data-year="2025">2025+</div>
+          <div class="chip" data-year="2024">2024+</div>
+        </div>
+        <label>主营赛道</label>
+        <div class="opts" id="catChips">
+          <div class="chip active" data-cat="all">全部</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-wrap">
+      <table class="g2b">
+        <thead>
+          <tr>
+            <th data-sort="score">#</th>
+            <th data-sort="name">中标企业</th>
+            <th data-sort="in_main">主营赛道</th>
+            <th data-sort="bid_count" class="num">中标次数</th>
+            <th data-sort="total_amt_w" class="num">总金额(万)</th>
+            <th data-sort="biggest_bid_w" class="num">最大单笔</th>
+            <th data-sort="buyer_count" class="num">招标方数</th>
+            <th data-sort="last_bid_year">最近中标</th>
+            <th>主要招标方类型</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="pager">
+        <div class="info" id="pagerInfo">—</div>
+        <div>
+          <button id="prevPageBtn">← 上一页</button>
+          <span style="margin: 0 8px;">第 <input class="page" id="pageInput" type="number" min="1" value="1"> / <span id="totalPages">—</span> 页</span>
+          <button id="nextPageBtn">下一页 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="g2b.js"></script>
+  <script src="customers.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    const PAGE_SIZE = 50;
+    const TRACK_COLORS = {
+      '医疗器械': '#10b981', '新能源/储能': '#f59e0b', '机器人/AI': '#8b5cf6',
+      '跨境电商': '#3b82f6', '供应链-电子': '#0ea5e9', '供应链-精密': '#06b6d4',
+      '半导体': '#a855f7', '汽车': '#eab308', '化工/新材料': '#ec4899',
+      '软件/SaaS': '#14b8a6', '通信': '#6366f1', '生物医药': '#84cc16',
+      '检测/认证': '#f97316', '消费升级': '#d946ef', '其他': '#94a3b8'
+    };
+
+    // 用 customers.js 找赛道颜色
+    const NAME_TO_CAT = {};
+    if (typeof CUSTOMERS_DATA !== 'undefined') {
+      CUSTOMERS_DATA.forEach(c => { NAME_TO_CAT[c.name] = c.cat; });
+    }
+
+    const state = {
+      type: 'all',
+      count: 'all',
+      amt: 'all',
+      year: 'all',
+      cat: 'all',
+      sortKey: 'score',
+      sortDir: 'desc',
+      page: 1,
+    };
+
+    // 顶部统计
+    const total = G2B_DATA.length;
+    const totalAmt = G2B_DATA.reduce((s, g) => s + g.total_amt_w, 0);
+    const totalBids = G2B_DATA.reduce((s, g) => s + g.bid_count, 0);
+    const topBuyer = G2B_DATA[0];
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card"><div class="v">${total.toLocaleString()}</div><div class="l">中标企业</div></div>
+      <div class="stat-card"><div class="v">${totalBids.toLocaleString()}</div><div class="l">总中标次数</div></div>
+      <div class="stat-card"><div class="v">${(totalAmt/10000).toFixed(0)}亿</div><div class="l">总中标金额</div></div>
+      <div class="stat-card"><div class="v">${G2B_DATA.filter(g => g.bid_count >= 50).length}</div><div class="l">中标 50+ 强企</div></div>
+      <div class="stat-card"><div class="v">${G2B_DATA.filter(g => g.bid_count >= 100).length}</div><div class="l">中标 100+ 顶级</div></div>
+    `;
+
+    // 动态加载赛道 chips
+    const allCats = new Set();
+    G2B_DATA.forEach(g => { if (g.in_main && g.main_cat) allCats.add(g.main_cat); });
+    const catChips = document.getElementById('catChips');
+    allCats.forEach(c => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.dataset.cat = c;
+      chip.textContent = c;
+      chip.onclick = () => {
+        document.querySelectorAll('#catChips .chip').forEach(x => x.classList.remove('active'));
+        chip.classList.add('active');
+        state.cat = c;
+        applyFilters();
+      };
+      catChips.appendChild(chip);
+    });
+
+    // 绑定 chips
+    function bindChipGroup(parentId, key) {
+      document.querySelectorAll(`#${parentId} .chip`).forEach(c => {
+        c.onclick = () => {
+          document.querySelectorAll(`#${parentId} .chip`).forEach(x => x.classList.remove('active'));
+          c.classList.add('active');
+          const ds = Object.keys(c.dataset).find(k => k.startsWith('data-')) || 'data-key';
+          // 用 dataset 自有字段
+          for (const [k, v] of Object.entries(c.dataset)) {
+            if (k !== 'data-key') state[key] = v;
+          }
+          applyFilters();
+        };
+      });
+    }
+    bindChipGroup('typeChips', 'type');
+    bindChipGroup('countChips', 'count');
+    bindChipGroup('amtChips', 'amt');
+    bindChipGroup('yearChips', 'year');
+
+    let filtered = [];
+
+    function amtBucket(w) {
+      if (state.amt === 'all') return true;
+      if (state.amt === 'lt1000') return w < 1000;
+      if (state.amt === '1000-10000') return w >= 1000 && w < 10000;
+      if (state.amt === '10000-100000') return w >= 10000 && w < 100000;
+      if (state.amt === 'gt100000') return w >= 100000;
+    }
+    function countBucket(n) {
+      if (state.count === 'all') return true;
+      if (state.count === '1-10') return n >= 1 && n <= 10;
+      if (state.count === '10-50') return n >= 10 && n <= 50;
+      if (state.count === '50+') return n >= 50 && n < 100;
+      if (state.count === '100+') return n >= 100;
+    }
+    function yearBucket(y) {
+      if (state.year === 'all') return true;
+      if (state.year === '2026') return y === 2026;
+      if (state.year === '2025') return y >= 2025;
+      if (state.year === '2024') return y >= 2024;
+    }
+
+    function applyFilters() {
+      filtered = G2B_DATA.filter(g => {
+        // 招标方类型
+        if (state.type !== 'all') {
+          const td = g.buyer_type_dist || {};
+          if (!(td[state.type] || 0)) return false;
+        }
+        if (!countBucket(g.bid_count)) return false;
+        if (!amtBucket(g.total_amt_w)) return false;
+        if (!yearBucket(g.last_bid_year)) return false;
+        if (state.cat !== 'all' && g.main_cat !== state.cat) return false;
+        return true;
+      });
+
+      const key = state.sortKey;
+      const dir = state.sortDir === 'asc' ? 1 : -1;
+      filtered.sort((a, b) => {
+        let va = a[key], vb = b[key];
+        if (typeof va === 'string' && typeof vb === 'string') {
+          return va.localeCompare(vb) * dir;
+        }
+        return ((va || 0) - (vb || 0)) * dir;
+      });
+      state.page = 1;
+      renderTable();
+    }
+
+    function fmtAmt(w) {
+      if (!w) return '<span class="num-zero">—</span>';
+      if (w >= 10000) return `<span class="num-strong">${(w/10000).toFixed(1)}亿</span>`;
+      return w.toLocaleString();
+    }
+    function fmtCat(g) {
+      if (!g.in_main) return '<span style="color:#64748b;font-size:10px;">—</span>';
+      const c = g.main_cat;
+      const color = TRACK_COLORS[c] || '#94a3b8';
+      return `<span class="cat-badge" style="background:${color}">${c}</span>`;
+    }
+    function fmtTypeDist(td) {
+      const top = Object.entries(td || {})
+        .sort((a,b)=>b[1]-a[1]).slice(0,3);
+      return top.map(([k,v]) => {
+        const cls = k.includes('政府') ? 'buyer-政府机关'
+                  : k.includes('高校') ? 'buyer-高校/科研'
+                  : k.includes('医院') ? 'buyer-医院/医疗'
+                  : k.includes('央国企') ? 'buyer-央国企'
+                  : k.includes('城建') ? 'buyer-城建'
+                  : 'buyer-其他大企业';
+        const short = k.replace('机关','').replace('/科研','').replace('/医疗','').replace('央国企','央').replace('城建/城投','城建');
+        return `<span class="buyer-tag ${cls}">${short}: ${v}</span>`;
+      }).join(' ');
+    }
+
+    function renderTable() {
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      const page = Math.min(state.page, totalPages);
+      const start = (page - 1) * PAGE_SIZE;
+      const slice = filtered.slice(start, start + PAGE_SIZE);
+
+      document.getElementById('totalPages').textContent = totalPages;
+      document.getElementById('pageInput').value = page;
+      document.getElementById('pageInput').max = totalPages;
+
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      slice.forEach((g, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${start + i + 1}</td>
+          <td class="cell-name" title="${g.name}" style="cursor:pointer;" onclick="window.open('customers.html#${encodeURIComponent(g.name)}','_blank')">${g.name}</td>
+          <td>${fmtCat(g)}</td>
+          <td class="num ${g.bid_count >= 50 ? 'num-strong' : ''}">${g.bid_count}</td>
+          <td class="num">${fmtAmt(g.total_amt_w)}</td>
+          <td class="num">${fmtAmt(g.biggest_bid_w)}</td>
+          <td class="num">${g.buyer_count}</td>
+          <td>${g.last_bid_year || '<span class="num-zero">—</span>'}</td>
+          <td>${fmtTypeDist(g.buyer_type_dist)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('pagerInfo').textContent =
+        `第 ${start+1}-${Math.min(start+PAGE_SIZE, filtered.length)} 条 / 共 ${filtered.length} 家中标企业 (从 ${G2B_DATA.length} 全量筛选)`;
+    }
+
+    // 排序
+    document.querySelectorAll('thead th').forEach(th => {
+      th.onclick = () => {
+        const key = th.dataset.sort;
+        if (state.sortKey === key) state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+        else { state.sortKey = key; state.sortDir = 'desc'; }
+        applyFilters();
+      };
+    });
+
+    document.getElementById('prevPageBtn').onclick = () => {
+      if (state.page > 1) { state.page--; renderTable(); }
+    };
+    document.getElementById('nextPageBtn').onclick = () => {
+      const max = Math.ceil(filtered.length / PAGE_SIZE);
+      if (state.page < max) { state.page++; renderTable(); }
+    };
+    document.getElementById('pageInput').onchange = e => {
+      const p = parseInt(e.target.value);
+      const max = Math.ceil(filtered.length / PAGE_SIZE);
+      if (p >= 1 && p <= max) { state.page = p; renderTable(); }
+    };
+
+    applyFilters();
+  })();
+  </script>
+</body>
+</html>

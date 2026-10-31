@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>跟进记录 · 客户经理工作台</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; margin: 0; }
+    .app-shell { max-width: 1440px; margin: 0 auto; padding: 16px 24px; }
+    .topbar-app {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px;
+    }
+    .topbar-app h1 { font-size: 22px; margin: 0; font-weight: 600; color: #f1f5f9; }
+    .topbar-app .back { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 6px 12px; border: 1px solid #334155; border-radius: 6px; margin-left: 6px; }
+    .topbar-app .back:hover { background: #1e293b; }
+
+    /* 统计 */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-card .v { font-size: 24px; font-weight: 700; color: #38bdf8; line-height: 1; }
+    .stat-card .l { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+    /* 工具栏 */
+    .toolbar {
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 8px; align-items: center;
+    }
+    .toolbar input[type=text] {
+      flex: 1; max-width: 360px; padding: 7px 12px;
+      background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+      border-radius: 6px; font-size: 13px;
+    }
+    .toolbar input[type=text]:focus { outline: 2px solid #38bdf8; }
+    .btn {
+      padding: 6px 14px; background: #38bdf8; color: #0f172a; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+    }
+    .btn:hover { background: #0ea5e9; }
+    .btn-secondary {
+      background: #334155; color: #cbd5e1;
+    }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger {
+      background: #ef4444; color: white;
+    }
+
+    /* 表格 */
+    .table-wrap { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    table.fu { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.fu thead th {
+      background: #0f172a; color: #94a3b8; padding: 10px 12px; text-align: left;
+      font-weight: 600; border-bottom: 1px solid #334155; position: sticky; top: 0;
+    }
+    table.fu tbody td {
+      padding: 8px 12px; border-bottom: 1px solid #1e293b; color: #cbd5e1;
+    }
+    table.fu tbody tr:hover { background: #0f172a; }
+    .cell-name { font-weight: 600; color: #f1f5f9; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* 状态徽章 */
+    .status-yes { background: #065f46; color: #6ee7b7; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .status-no { background: #475569; color: #cbd5e1; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    .dot-yes { background: #10b981; }
+    .dot-no { background: #475569; }
+
+    /* 编辑输入框 */
+    table.fu input, table.fu select {
+      padding: 4px 8px; background: #0f172a; border: 1px solid #334155;
+      color: #e2e8f0; border-radius: 4px; font-size: 12px; width: 100%;
+      box-sizing: border-box;
+    }
+    table.fu input:focus, table.fu select:focus { outline: 1px solid #38bdf8; }
+
+    /* 进度可视化 */
+    .progress-bar {
+      background: #0f172a; border-radius: 4px; height: 6px; overflow: hidden;
+      width: 80px;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #38bdf8, #10b981);
+    }
+
+    /* 警示统计卡 */
+    .stat-card.warn { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+    .stat-card.warn .v { color: #fbbf24; }
+    .stat-card.danger { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .stat-card.danger .v { color: #f87171; }
+
+    /* 优先级徽章 */
+    .pri-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; min-width: 28px; text-align: center;
+    }
+    .pri-P0 { background: #ef4444; color: white; }
+    .pri-P1 { background: #f59e0b; color: white; }
+    .pri-P2 { background: #64748b; color: #e2e8f0; }
+
+    /* 日期状态 */
+    .date-cell { display: flex; flex-direction: column; gap: 2px; }
+    .date-overdue { color: #f87171; font-weight: 600; }
+    .date-overdue::before { content: '🔴 '; }
+    .date-today { color: #fbbf24; font-weight: 600; }
+    .date-today::before { content: '🟡 '; }
+    .date-future { color: #94a3b8; }
+    .date-empty { color: #64748b; font-size: 11px; }
+
+    /* 企业名 cell */
+    .name-cell { display: flex; align-items: center; gap: 6px; }
+    .name-cell input { flex: 1; min-width: 0; }
+    .name-link {
+      flex-shrink: 0; width: 24px; height: 24px; display: flex;
+      align-items: center; justify-content: center;
+      background: #334155; color: #94a3b8; border-radius: 4px;
+      text-decoration: none; font-size: 13px; transition: all 0.15s;
+    }
+    .name-link:hover { background: #38bdf8; color: #0f172a; }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: #64748b;
+    }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar-app">
+      <h1>📋 跟进记录 · 客户经理工作台</h1>
+      <div>
+        <a class="back" href="dashboard.html">🚀 Dashboard</a>
+        <a class="back" href="customers.html">📋 客户清单</a>
+        <a class="back" href="anchors.html">🔗 链主</a>
+      </div>
+    </header>
+
+    <div class="stats" id="statsBar"></div>
+
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="🔍 搜索企业名 / 团队 / 详情...">
+      <select id="statusFilter" class="btn btn-secondary" style="cursor:pointer;">
+        <option value="all">全部状态</option>
+        <option value="已开户">已开户</option>
+        <option value="已授信">已授信</option>
+        <option value="未开户未授信">未开户未授信</option>
+      </select>
+      <button class="btn btn-secondary" id="loadCsvBtn">📥 加载初始数据 (CSV)</button>
+      <button class="btn btn-secondary" id="exportBtn">💾 导出 CSV</button>
+      <button class="btn" id="addRowBtn">➕ 新增跟进</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="fu">
+        <thead>
+          <tr>
+            <th style="width: 22%;">企业名称</th>
+            <th style="width: 70px;">优先级</th>
+            <th style="width: 80px;">开户</th>
+            <th style="width: 80px;">授信</th>
+            <th style="width: 100px;">金额(万)</th>
+            <th style="width: 80px;">代发</th>
+            <th style="width: 100px;">对公团队</th>
+            <th style="width: 120px;">下次跟进</th>
+            <th>更多详情</th>
+            <th style="width: 90px;">进度</th>
+            <th style="width: 60px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 12px; padding: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; font-size: 12px; color: #94a3b8;">
+      💡 <strong style="color:#cbd5e1;">使用说明</strong>:数据存储在浏览器 localStorage · 编辑后自动保存 · 完成后点"导出 CSV"下载
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    const STORAGE_KEY = 'follow_up_data_v1';
+    let allRows = [];
+
+    // 字段定义
+    function emptyRow() {
+      return { name: '', priority: '', kaihu: '否', shouxin: '否', jine: '', daifa: '否', tuandui: '', nextDate: '', detail: '' };
+    }
+
+    // 加载
+    function loadFromStorage() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : null;
+      } catch { return null; }
+    }
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allRows));
+    }
+
+    // 简易 CSV 解析(支持引号包裹字段,允许字段含逗号)
+    function parseCSVLine(line) {
+      const cells = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQ) {
+          if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+          else if (c === '"') { inQ = false; }
+          else cur += c;
+        } else {
+          if (c === ',') { cells.push(cur); cur = ''; }
+          else if (c === '"' && cur === '') { inQ = true; }
+          else cur += c;
+        }
+      }
+      cells.push(cur);
+      return cells;
+    }
+
+    // 从 CSV 解析
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return [];
+      const header = parseCSVLine(lines[0]);
+      // 按 header 名定位列(向后兼容老格式 7 列 / 新格式 9 列)
+      const idx = name => header.indexOf(name);
+      const hasNew = idx('优先级') >= 0 && idx('下次跟进') >= 0;
+      const iName = hasNew ? idx('企业名称') : 0;
+      const iKaihu = hasNew ? idx('是否开户') : 1;
+      const iShouxin = hasNew ? idx('是否授信') : 2;
+      const iJine = hasNew ? idx('授信金额(万)') : 3;
+      const iDaifa = hasNew ? idx('是否代发') : 4;
+      const iTuandui = hasNew ? idx('对公团队') : 5;
+      const iPriority = hasNew ? idx('优先级') : -1;
+      const iNextDate = hasNew ? idx('下次跟进') : -1;
+      const iDetail = hasNew ? idx('更多详情') : 6;
+      return lines.slice(1).map(line => {
+        const cells = parseCSVLine(line);
+        return {
+          name: (cells[iName] || '').trim(),
+          priority: iPriority >= 0 ? (cells[iPriority] || '').trim() : '',
+          kaihu: cells[iKaihu] || '否',
+          shouxin: cells[iShouxin] || '否',
+          jine: cells[iJine] || '',
+          daifa: cells[iDaifa] || '否',
+          tuandui: cells[iTuandui] || '',
+          nextDate: iNextDate >= 0 ? (cells[iNextDate] || '').trim() : '',
+          detail: cells[iDetail] || '',
+        };
+      }).filter(r => r.name);
+    }
+
+    // 导出 CSV
+    function exportCSV() {
+      const header = '企业名称,优先级,是否开户,是否授信,授信金额(万),是否代发,对公团队,下次跟进,更多详情';
+      const lines = [header];
+      allRows.forEach(r => {
+        lines.push([r.name, r.priority || '', r.kaihu, r.shouxin, r.jine, r.daifa, r.tuandui, r.nextDate || '', r.detail]
+          .map(c => '"' + String(c).replace(/"/g, '""') + '"').join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '_follow_up_' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // 渲染统计
+    function renderStats() {
+      const total = allRows.length;
+      const kaihu = allRows.filter(r => r.kaihu === '是').length;
+      const shouxin = allRows.filter(r => r.shouxin === '是').length;
+      const totalAmt = allRows.reduce((s, r) => {
+        const v = parseFloat(r.jine) || 0;
+        return s + v;
+      }, 0);
+      const daifa = allRows.filter(r => r.daifa === '是').length;
+      const today = todayStr();
+      const overdue = allRows.filter(r => r.nextDate && r.nextDate < today).length;
+      const todays = allRows.filter(r => r.nextDate === today).length;
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card danger"><div class="v">${overdue}</div><div class="l">🔴 已逾期</div></div>
+        <div class="stat-card warn"><div class="v">${todays}</div><div class="l">🟡 今日待跟进</div></div>
+        <div class="stat-card"><div class="v">${total}</div><div class="l">跟进客户</div></div>
+        <div class="stat-card"><div class="v">${kaihu}</div><div class="l">已开户</div></div>
+        <div class="stat-card"><div class="v">${shouxin}</div><div class="l">已授信</div></div>
+        <div class="stat-card"><div class="v">${totalAmt.toLocaleString()}万</div><div class="l">总授信额</div></div>
+        <div class="stat-card"><div class="v">${daifa}</div><div class="l">已代发</div></div>
+      `;
+    }
+
+    // 今天日期 YYYY-MM-DD
+    function todayStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    // 日期状态分类
+    function dateStatus(d) {
+      if (!d) return 'empty';
+      const t = todayStr();
+      if (d < t) return 'overdue';
+      if (d === t) return 'today';
+      return 'future';
+    }
+
+    // 计算逾期天数
+    function overdueDays(d) {
+      if (!d) return 0;
+      const t = new Date(todayStr());
+      const dt = new Date(d);
+      return Math.floor((t - dt) / 86400000);
+    }
+
+    // 优先级权重(用于排序)
+    function priWeight(p) {
+      if (p === 'P0') return 0;
+      if (p === 'P1') return 1;
+      if (p === 'P2') return 2;
+      return 3;
+    }
+
+    // 排序:P0→P1→P2→空, 同级内按 nextDate 升序(早的在前)
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        const dw = priWeight(a.priority) - priWeight(b.priority);
+        if (dw !== 0) return dw;
+        const ad = a.nextDate || '9999-99-99';
+        const bd = b.nextDate || '9999-99-99';
+        return ad.localeCompare(bd);
+      });
+    }
+
+    // 渲染表格
+    function renderTable() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const statusF = document.getElementById('statusFilter').value;
+      let filtered = allRows.filter(r => {
+        if (q && !(r.name + r.tuandui + r.detail).toLowerCase().includes(q)) return false;
+        if (statusF === '已开户' && r.kaihu !== '是') return false;
+        if (statusF === '已授信' && r.shouxin !== '是') return false;
+        if (statusF === '未开户未授信' && (r.kaihu === '是' || r.shouxin === '是')) return false;
+        return true;
+      });
+      filtered = sortRows(filtered);
+
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="empty-state">暂无跟进客户 · 点"加载初始数据 CSV"或"新增跟进"开始</td></tr>`;
+        return;
+      }
+      filtered.forEach((r, i) => {
+        // 进度:开户 + 授信 + 代发 = 3 项
+        const items = [
+          { done: r.kaihu === '是' },
+          { done: r.shouxin === '是' },
+          { done: r.daifa === '是' },
+        ];
+        const doneCount = items.filter(it => it.done).length;
+        const pct = (doneCount / 3 * 100).toFixed(0);
+        const dstat = dateStatus(r.nextDate);
+        const overdue = dstat === 'overdue' ? overdueDays(r.nextDate) : 0;
+        const dateLabel = r.nextDate ? (
+          dstat === 'overdue' ? `<span class="date-overdue">${r.nextDate}<br><small>逾期 ${overdue} 天</small></span>` :
+          dstat === 'today'   ? `<span class="date-today">${r.nextDate}<br><small>今日联系</small></span>` :
+                                 `<span class="date-future">${r.nextDate}</span>`
+        ) : `<span class="date-empty">— 未设 —</span>`;
+        const pri = r.priority;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="name-cell">
+              <input type="text" value="${escape(r.name)}" data-idx="${i}" data-field="name" placeholder="企业名">
+              <a class="name-link" href="customers.html#${encodeURIComponent(r.name)}" target="_blank" title="查看完整画像">🔗</a>
+            </div>
+          </td>
+          <td>
+            <select data-idx="${i}" data-field="priority" title="优先级">
+              <option value="" ${!pri?'selected':''}>—</option>
+              <option value="P0" ${pri==='P0'?'selected':''}>P0</option>
+              <option value="P1" ${pri==='P1'?'selected':''}>P1</option>
+              <option value="P2" ${pri==='P2'?'selected':''}>P2</option>
+            </select>
+          </td>
+          <td><select data-idx="${i}" data-field="kaihu">
+            <option value="是" ${r.kaihu==='是'?'selected':''}>是</option>
+            <option value="否" ${r.kaihu==='否'?'selected':''}>否</option>
+          </select></td>
+          <td><select data-idx="${i}" data-field="shouxin">
+            <option value="是" ${r.shouxin==='是'?'selected':''}>是</option>
+            <option value="否" ${r.shouxin==='否'?'selected':''}>否</option>
+          </select></td>
+          <td><input type="text" value="${escape(r.jine)}" data-idx="${i}" data-field="jine" placeholder="0"></td>
+          <td><select data-idx="${i}" data-field="daifa">
+            <option value="是" ${r.daifa==='是'?'selected':''}>是</option>
+            <option value="否" ${r.daifa==='否'?'selected':''}>否</option>
+          </select></td>
+          <td><input type="text" value="${escape(r.tuandui)}" data-idx="${i}" data-field="tuandui" placeholder="—"></td>
+          <td>
+            <div class="date-cell">
+              <input type="date" value="${escape(r.nextDate)}" data-idx="${i}" data-field="nextDate" style="padding:3px 6px;font-size:11px;">
+              <div style="font-size:11px;line-height:1.3;">${dateLabel}</div>
+            </div>
+          </td>
+          <td><input type="text" value="${escape(r.detail)}" data-idx="${i}" data-field="detail" placeholder="备注..."></td>
+          <td>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;">${doneCount}/3 (${pct}%)</div>
+          </td>
+          <td><button class="btn btn-danger" data-del="${i}" style="padding: 3px 8px; font-size: 11px;">删</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escape(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 事件:编辑
+    document.getElementById('tbody').addEventListener('input', e => {
+      const t = e.target;
+      const idx = parseInt(t.dataset.idx);
+      const field = t.dataset.field;
+      if (isNaN(idx) || !field) return;
+      if (!allRows[idx]) return;
+      allRows[idx][field] = t.value;
+      saveToStorage();
+      renderStats();
+      // 重渲染进度条
+      renderTable();
+    });
+    document.getElementById('tbody').addEventListener('change', e => {
+      // select 改变也会触发 change 事件
+      const t = e.target;
+      if (t.tagName !== 'SELECT') return;
+      const idx = parseInt(t.dataset.idx);
+      const field = t.dataset.field;
+      if (isNaN(idx) || !field) return;
+      if (!allRows[idx]) return;
+      allRows[idx][field] = t.value;
+      saveToStorage();
+      renderStats();
+      renderTable();
+    });
+    document.getElementById('tbody').addEventListener('click', e => {
+      const t = e.target;
+      if (t.dataset.del !== undefined) {
+        const idx = parseInt(t.dataset.del);
+        if (!confirm('删除此跟进记录?')) return;
+        allRows.splice(idx, 1);
+        saveToStorage();
+        renderStats();
+        renderTable();
+      }
+    });
+
+    // 搜索/筛选
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('statusFilter').addEventListener('change', renderTable);
+
+    // 加载初始 CSV
+    document.getElementById('loadCsvBtn').addEventListener('click', async () => {
+      try {
+        const resp = await fetch('../名单/_follow_up.csv');
+        if (!resp.ok) throw new Error('找不到 _follow_up.csv');
+        const text = await resp.text();
+        const rows = parseCSV(text);
+        if (rows.length === 0) {
+          alert('CSV 为空或格式错误'); return;
+        }
+        if (allRows.length > 0) {
+          if (!confirm(`已有 ${allRows.length} 条记录,确认覆盖为 CSV 的 ${rows.length} 条?`)) return;
+        }
+        allRows = rows;
+        saveToStorage();
+        renderStats();
+        renderTable();
+      } catch (e) {
+        alert('加载失败: ' + e.message);
+      }
+    });
+
+    // 导出
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+    // 新增
+    document.getElementById('addRowBtn').addEventListener('click', () => {
+      allRows.push(emptyRow());
+      saveToStorage();
+      renderStats();
+      renderTable();
+    });
+
+    // 支持从 customers.html 跳转过来时自动添加新跟进
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hash) {
+        const name = decodeURIComponent(window.location.hash.slice(1));
+        if (name) {
+          const exists = allRows.some(r => r.name === name);
+          if (!exists) {
+            // 自动添加到列表
+            allRows.push({ name, priority: 'P1', kaihu: '否', shouxin: '否', jine: '', daifa: '否', tuandui: '', nextDate: todayStr(), detail: '' });
+            saveToStorage();
+            renderStats();
+            renderTable();
+            // 滚动到该行
+            setTimeout(() => {
+              const inputs = document.querySelectorAll('table.fu input[type=text]');
+              for (const inp of inputs) {
+                if (inp.value === name) { inp.scrollIntoView({behavior:'smooth', block:'center'}); break; }
+              }
+            }, 100);
+          }
+        }
+      }
+    });
+
+    // 启动
+    const stored = loadFromStorage();
+    if (stored && stored.length > 0) {
+      allRows = stored;
+    } else {
+      // 默认示例
+      const t = todayStr();
+      const d1 = new Date(); d1.setDate(d1.getDate() + 3);
+      const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+      const ds1 = `${d1.getFullYear()}-${String(d1.getMonth()+1).padStart(2,'0')}-${String(d1.getDate()).padStart(2,'0')}`;
+      const ds2 = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
+      allRows = [
+        { name: '深圳迈瑞医疗', priority: 'P0', kaihu: '是', shouxin: '是', jine: '50000', daifa: '是', tuandui: '南山支行', nextDate: t, detail: '核心客户,医疗器械龙头' },
+        { name: '深圳市大疆创新', priority: 'P1', kaihu: '是', shouxin: '否', jine: '', daifa: '否', tuandui: '—', nextDate: ds1, detail: '调研中,周三上门拜访' },
+        { name: '深圳市智立方自动化设备股份有限公司', priority: 'P2', kaihu: '是', shouxin: '是', jine: '500', daifa: '否', tuandui: '南山科技园支行', nextDate: ds2, detail: '设备融资 500 万已批,等待用款' },
+      ];
+      saveToStorage();
+    }
+    renderStats();
+    renderTable();
+  })();
+  </script>
+</body>
+</html>

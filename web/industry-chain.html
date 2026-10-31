@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>产业链地图 · 5 大产业链 + 关系网络</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- D3.js v7 力导向图 -->
+  <script src="vendor/d3.min.js"></script>
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; margin: 0; margin: 0; }
+    .app-shell { max-width: 1640px; margin: 0 auto; padding: 16px 24px; }
+    .topbar-app {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 24px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;
+    }
+    .topbar-app h1 { font-size: 22px; margin: 0; font-weight: 600; color: #f1f5f9; }
+    .topbar-app .back { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 6px 12px; border: 1px solid #334155; border-radius: 6px; margin-left: 6px; }
+    .topbar-app .back:hover { background: #1e293b; }
+
+    .chain-tabs {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .chain-tab {
+      padding: 10px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      cursor: pointer; transition: all 0.15s; font-size: 13px; font-weight: 600;
+    }
+    .chain-tab:hover { border-color: #38bdf8; }
+    .chain-tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+    /* 视图切换 */
+    .view-tabs {
+      display: flex; gap: 4px; margin-bottom: 12px; padding: 4px;
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px; width: fit-content;
+    }
+    .view-tab {
+      padding: 6px 14px; background: transparent; border: none; color: #94a3b8;
+      cursor: pointer; font-size: 12px; font-weight: 600; border-radius: 6px;
+    }
+    .view-tab.active { background: #38bdf8; color: #0f172a; }
+    .view-tab:hover:not(.active) { background: #1e293b; color: #cbd5e1; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 420px; gap: 16px; min-height: 700px; }
+
+    .svg-wrap { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; overflow-x: auto; }
+    svg.chain-svg { min-width: 1100px; }
+
+    /* D3 力导向图 */
+    .graph-wrap { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0; position: relative; min-height: 700px; overflow: hidden; }
+    svg.graph-svg { width: 100%; height: 700px; display: block; }
+    .graph-controls {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 6px;
+      padding: 8px 12px; font-size: 11px; color: #94a3b8;
+    }
+    .graph-legend {
+      position: absolute; bottom: 16px; left: 16px;
+      background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 6px;
+      padding: 8px 12px; font-size: 11px; color: #cbd5e1;
+    }
+    .graph-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .node circle { cursor: grab; }
+    .node text { font-size: 10px; fill: #cbd5e1; pointer-events: none; }
+    .node:hover circle { stroke: #38bdf8; stroke-width: 3px; }
+    .link { stroke: #475569; stroke-opacity: 0.4; }
+    .link.supp { stroke: #06b6d4; stroke-opacity: 0.3; }
+    .link.cust { stroke: #a855f7; stroke-opacity: 0.3; }
+
+    .detail-panel { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+    .detail-header { padding: 14px 18px; border-bottom: 1px solid #334155; background: #0f172a; }
+    .detail-header h3 { margin: 0 0 6px; font-size: 16px; color: #f1f5f9; }
+    .detail-header .meta { font-size: 12px; color: #94a3b8; }
+    .detail-body { padding: 14px 18px; overflow-y: auto; flex: 1; max-height: calc(100vh - 250px); }
+
+    .tip-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      padding: 12px 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.6;
+    }
+    .tip-card .tip-title { font-size: 13px; font-weight: 600; color: #38bdf8; margin-bottom: 6px; }
+
+    .company-list { display: flex; flex-direction: column; gap: 6px; }
+    .company-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      padding: 10px 12px; cursor: pointer; transition: all 0.15s;
+    }
+    .company-card:hover { border-color: #38bdf8; background: #1e293b; }
+    .company-card .c-name { font-size: 13px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+    .company-card .c-meta { display: flex; gap: 12px; font-size: 11px; color: #94a3b8; flex-wrap: wrap; }
+    .company-card .c-meta .v { color: #fbbf24; font-weight: 600; }
+    .company-card .c-cat { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #334155; color: #cbd5e1; }
+
+    /* 视图切换隐藏 */
+    .hidden { display: none !important; }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar-app">
+      <h1>🔗 产业链地图 · 5 大产业链 + 关系网络</h1>
+      <div>
+        <a class="back" href="dashboard.html">🚀 Dashboard</a>
+        <a class="back" href="customers.html">📋 客户清单</a>
+        <a class="back" href="anchors.html">🔗 链主</a>
+        <a class="back" href="g2b.html">🏛️ G2B</a>
+        <a class="back" href="follow-up.html">📋 跟进</a>
+      </div>
+    </header>
+
+    <div class="chain-tabs" id="chainTabs"></div>
+
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="layers">📊 分层视图</button>
+      <button class="view-tab" data-view="graph">🕸️ 关系网络(D3 力导向)</button>
+    </div>
+
+    <div class="main-grid">
+      <!-- 分层视图 -->
+      <div id="layersView" class="svg-wrap">
+        <svg class="chain-svg" id="chainSvg" height="600"></svg>
+      </div>
+
+      <!-- 关系网络图 -->
+      <div id="graphView" class="graph-wrap hidden">
+        <svg class="graph-svg" id="graphSvg"></svg>
+        <div class="graph-controls">
+          🖱️ 拖动节点 · 🔍 滚轮缩放 · 📌 双击重置
+        </div>
+        <div class="graph-legend">
+          <div><span class="dot" style="background:#10b981;"></span>链上小微(已知企业)</div>
+          <div><span class="dot" style="background:#64748b;"></span>链上小微(未知)</div>
+          <div><span class="dot" style="background:#f59e0b;"></span>链主(政府/医院/大企业)</div>
+        </div>
+      </div>
+
+      <div class="detail-panel">
+        <div class="detail-header">
+          <h3 id="detailTitle">点击节点查看代表企业</h3>
+          <div class="meta" id="detailMeta">← 左图点击任意节点</div>
+        </div>
+        <div class="detail-body" id="detailBody">
+          <div class="tip-card">
+            <div class="tip-title">💡 产业链地图使用说明</div>
+            1. <strong>选产业链</strong>(顶部 tabs) — 10 个核心产业链<br>
+            2. <strong>看分层</strong>(左图从左到右):上游材料 → 中游制造 → 下游应用<br>
+            3. <strong>点节点</strong>(方块):查看该节点的代表企业(TOP 10)<br>
+            4. <strong>切换视图</strong> → "关系网络":D3 力导向图,看真实交易关系
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="chain.js"></script>
+  <script src="chain_graphs.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    const CHAINS = INDUSTRY_CHAINS;
+    const CHAIN_IDS = Object.keys(CHAINS);
+    const GRAPHS = CHAIN_GRAPHS;
+
+    // 顶部 tabs
+    const tabsEl = document.getElementById('chainTabs');
+    CHAIN_IDS.forEach((id, i) => {
+      const c = CHAINS[id];
+      const tab = document.createElement('div');
+      tab.className = 'chain-tab' + (i === 0 ? ' active' : '');
+      tab.innerHTML = `<span>${c.name}</span>`;
+      tab.dataset.chain = id;
+      tab.onclick = () => {
+        document.querySelectorAll('.chain-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderActive(id);
+      };
+      tabsEl.appendChild(tab);
+    });
+
+    // 视图切换
+    document.querySelectorAll('.view-tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const v = tab.dataset.view;
+        document.getElementById('layersView').classList.toggle('hidden', v !== 'layers');
+        document.getElementById('graphView').classList.toggle('hidden', v !== 'graph');
+        if (v === 'graph') {
+          // 重复选同一个产业链不重绘 D3(避免成本)
+          if (d3simulation && lastGraphChain === currentChain) return;
+          renderGraph(currentChain);
+        }
+      };
+    });
+
+    let currentChain = CHAIN_IDS[0];
+    let lastGraphChain = null;
+
+    function renderActive(chainId) {
+      currentChain = chainId;
+      renderChain(chainId);
+      renderGraph(chainId);
+    }
+
+    // ============= 分层视图(SVG) =============
+    const TRACK_COLORS = {
+      '医疗器械': '#10b981', '新能源/储能': '#f59e0b', '机器人/AI': '#8b5cf6',
+      '跨境电商': '#3b82f6', '供应链-电子': '#0ea5e9', '供应链-精密': '#06b6d4',
+      '半导体': '#a855f7', '汽车': '#eab308', '化工/新材料': '#ec4899',
+      '软件/SaaS': '#14b8a6', '通信': '#6366f1', '生物医药': '#84cc16',
+      '检测/认证': '#f97316', '消费升级': '#d946ef', '其他': '#94a3b8'
+    };
+
+    function renderChain(chainId) {
+      const chain = CHAINS[chainId];
+      const levels = chain.levels;
+      const svg = document.getElementById('chainSvg');
+      const levelCount = levels.length;
+      const levelWidth = 320, gap = 40;
+      const totalW = levelCount * levelWidth + (levelCount - 1) * gap + 40;
+      const maxNodes = Math.max(...levels.map(l => l.nodes.length));
+      const nodeH = 60, nodeGap = 10, headerH = 40;
+      const totalH = maxNodes * (nodeH + nodeGap) + headerH * 2 + 60;
+      svg.setAttribute('width', totalW);
+      svg.setAttribute('height', totalH);
+      svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+      // 标题
+      const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      titleEl.setAttribute('x', 20); titleEl.setAttribute('y', 22);
+      titleEl.setAttribute('fill', chain.color); titleEl.setAttribute('font-size', '16');
+      titleEl.setAttribute('font-weight', '700');
+      titleEl.textContent = chain.name;
+      svg.appendChild(titleEl);
+
+      const descEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      descEl.setAttribute('x', 20); descEl.setAttribute('y', 40);
+      descEl.setAttribute('fill', '#94a3b8'); descEl.setAttribute('font-size', '11');
+      descEl.textContent = chain.description;
+      svg.appendChild(descEl);
+
+      levels.forEach((level, lvlIdx) => {
+        const levelX = 20 + lvlIdx * (levelWidth + gap);
+        const nodes = level.nodes;
+        const totalNH = nodes.length * (nodeH + nodeGap);
+        const startY = headerH + 20 + (maxNodes * (nodeH + nodeGap) - totalNH) / 2;
+
+        const lblBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        lblBg.setAttribute('x', levelX); lblBg.setAttribute('y', headerH);
+        lblBg.setAttribute('width', levelWidth); lblBg.setAttribute('height', 24);
+        lblBg.setAttribute('fill', '#0f172a'); lblBg.setAttribute('rx', 4);
+        svg.appendChild(lblBg);
+
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lbl.setAttribute('x', levelX + 10); lbl.setAttribute('y', headerH + 16);
+        lbl.setAttribute('fill', '#cbd5e1'); lbl.setAttribute('font-size', '12');
+        lbl.setAttribute('font-weight', '600');
+        lbl.textContent = level.name;
+        svg.appendChild(lbl);
+
+        if (lvlIdx > 0) {
+          const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          ln.setAttribute('x1', levelX - gap/2); ln.setAttribute('y1', headerH + 30);
+          ln.setAttribute('x2', levelX - gap/2); ln.setAttribute('y2', totalH - 20);
+          ln.setAttribute('stroke', '#334155'); ln.setAttribute('stroke-dasharray', '4,4');
+          svg.appendChild(ln);
+        }
+
+        nodes.forEach((node, nIdx) => {
+          const nY = startY + nIdx * (nodeH + nodeGap);
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', levelX); rect.setAttribute('y', nY);
+          rect.setAttribute('width', levelWidth); rect.setAttribute('height', nodeH);
+          rect.setAttribute('fill', '#0f172a');
+          rect.setAttribute('stroke', node.company_count > 0 ? chain.color : '#475569');
+          rect.setAttribute('stroke-width', node.company_count > 0 ? '1.5' : '1');
+          rect.setAttribute('rx', 6); rect.style.cursor = 'pointer';
+          rect.dataset.nodeId = node.id;
+          svg.appendChild(rect);
+
+          rect.addEventListener('mouseenter', () => {
+            rect.setAttribute('fill', '#1e293b'); rect.setAttribute('stroke-width', '2.5');
+          });
+          rect.addEventListener('mouseleave', () => {
+            rect.setAttribute('fill', '#0f172a');
+            rect.setAttribute('stroke-width', node.company_count > 0 ? '1.5' : '1');
+          });
+          rect.addEventListener('click', () => showNodeDetail(chainId, node));
+
+          const nameEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          nameEl.setAttribute('x', levelX + 12); nameEl.setAttribute('y', nY + 20);
+          nameEl.setAttribute('fill', '#f1f5f9'); nameEl.setAttribute('font-size', '13');
+          nameEl.setAttribute('font-weight', '600');
+          nameEl.textContent = node.name;
+          svg.appendChild(nameEl);
+
+          const descEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          descEl.setAttribute('x', levelX + 12); descEl.setAttribute('y', nY + 36);
+          descEl.setAttribute('fill', '#94a3b8'); descEl.setAttribute('font-size', '11');
+          descEl.textContent = node.desc;
+          svg.appendChild(descEl);
+
+          const badgeBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          badgeBg.setAttribute('x', levelX + levelWidth - 70); badgeBg.setAttribute('y', nY + 8);
+          badgeBg.setAttribute('width', 60); badgeBg.setAttribute('height', 22);
+          badgeBg.setAttribute('fill', node.company_count > 0 ? chain.color : '#475569');
+          badgeBg.setAttribute('rx', 11);
+          svg.appendChild(badgeBg);
+
+          const badgeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          badgeText.setAttribute('x', levelX + levelWidth - 40); badgeText.setAttribute('y', nY + 23);
+          badgeText.setAttribute('fill', '#0f172a'); badgeText.setAttribute('font-size', '11');
+          badgeText.setAttribute('font-weight', '700'); badgeText.setAttribute('text-anchor', 'middle');
+          badgeText.textContent = node.company_count + ' 家';
+          svg.appendChild(badgeText);
+        });
+      });
+
+      // 默认详情
+      document.getElementById('detailTitle').textContent = chain.name;
+      document.getElementById('detailMeta').textContent = chain.description + ' — ' +
+        levels.length + ' 层 / ' + levels.reduce((s,l) => s + l.nodes.length, 0) + ' 节点';
+      document.getElementById('detailBody').innerHTML = `
+        <div class="tip-card">
+          <div class="tip-title">📊 ${chain.name} 概览</div>
+          ${levels.map(l => {
+            const tot = l.nodes.reduce((s, n) => s + n.company_count, 0);
+            return `• <strong>${l.name}</strong>: ${tot} 家企业(${l.nodes.length} 个节点)`;
+          }).join('<br>')}
+        </div>
+      `;
+    }
+
+    function showNodeDetail(chainId, node) {
+      const chain = CHAINS[chainId];
+      document.getElementById('detailTitle').textContent = `${chain.name} · ${node.name}`;
+      document.getElementById('detailMeta').textContent = node.desc + ` · ${node.company_count} 家企业`;
+      const body = document.getElementById('detailBody');
+
+      if (node.company_count === 0) {
+        body.innerHTML = `<div class="tip-card"><div class="tip-title">⚠️ 暂无数据</div>本节点在我们的 5971 家企业池中没有匹配企业。</div>`;
+        return;
+      }
+
+      const list = node.top_companies.map(c => {
+        const rev = c.rev_w >= 10000 ? (c.rev_w/10000).toFixed(1) + '亿' : c.rev_w.toFixed(0) + '万';
+        const color = TRACK_COLORS[c.cat] || '#94a3b8';
+        return `
+          <div class="company-card" onclick="window.open('customers.html#${encodeURIComponent(c.name)}', '_blank')">
+            <div class="c-name" style="cursor:pointer;">${c.name}</div>
+            <div class="c-meta">
+              <span class="c-cat" style="background:${color};color:white;">${c.cat}</span>
+              <span>营收 <span class="v">${rev}</span></span>
+              <span>专利 <span class="v">${c.patent_n}</span></span>
+              <span>人员 <span class="v">${c.people || '—'}</span></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      body.innerHTML = `
+        <div class="tip-card">
+          <div class="tip-title">📋 ${node.name} · TOP 10 企业</div>
+          按最新年报营收排序
+        </div>
+        ${list}
+        <div class="tip-card">
+          <div class="tip-title">💡 银行对公实战</div>
+          <strong>P0 拜访</strong>:按营收降序,前 5 家是核心拓客名单<br>
+          <strong>银行产品</strong>:${getBankProduct(node.name)}
+        </div>
+      `;
+    }
+
+    function getBankProduct(nodeName) {
+      const m = {
+        'PCS变流器': 'IP质押 + 投贷联动', 'BMS电池管理': 'IP质押 + 应收账款融资',
+        '逆变器': '订单贷 + 出口信用证', '充电桩/换电': '订单贷 + 项目贷',
+        '光伏/风电': '项目贷 + 应收账款融资', '工业机器人': 'IP质押 + 投贷联动',
+        '无人机': '订单贷 + 出口信用证', 'IVD体外诊断': 'IP质押 + 投贷联动',
+        '医学影像': 'IP质押 + 设备融资', '智能硬件': '订单贷 + 出口信用证',
+        '储能/便携电源': '订单贷 + 应收账款融资', '智能制造': '订单贷 + 设备融资',
+      };
+      return m[nodeName] || '订单贷 + 应收账款融资';
+    }
+
+    // ============= 关系网络图(D3.js) =============
+    let d3svg = null;
+    let d3simulation = null;
+
+    function renderGraph(chainId) {
+      const graph = GRAPHS[chainId];
+      if (!graph) return;
+      const svg = d3.select('#graphSvg');
+      svg.selectAll('*').remove();
+
+      const width = document.getElementById('graphView').clientWidth;
+      const height = 700;
+
+      // zoom
+      const g = svg.append('g');
+      svg.call(d3.zoom().scaleExtent([0.2, 5]).on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      }));
+
+      // 边
+      const link = g.append('g').selectAll('line')
+        .data(graph.edges)
+        .join('line')
+        .attr('class', d => 'link ' + (d.kind === 'supplier' ? 'supp' : 'cust'))
+        .attr('stroke-width', d => Math.max(0.5, Math.min(3, d.quality / 30)));
+
+      // 节点
+      const node = g.append('g').selectAll('g')
+        .data(graph.nodes)
+        .join('g')
+        .attr('class', 'node');
+
+      node.append('circle')
+        .attr('r', d => 4 + Math.min(20, Math.sqrt(d.degree) * 3))
+        .attr('fill', d => d.color);
+
+      node.append('text')
+        .attr('dx', 12)
+        .attr('dy', 4)
+        .text(d => d.name.length > 16 ? d.name.slice(0, 16) + '…' : d.name);
+
+      // drag
+      const drag = d3.drag()
+        .on('start', (event, d) => {
+          if (!event.active) d3simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        })
+        .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+        .on('end', (event, d) => {
+          if (!event.active) d3simulation.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        });
+      node.call(drag);
+
+      // 双击重置位置
+      node.on('dblclick', (event, d) => { d.fx = null; d.fy = null; });
+
+      // simulation
+      d3simulation = d3.forceSimulation(graph.nodes)
+        .force('link', d3.forceLink(graph.edges).id(d => d.id).distance(60).strength(0.5))
+        .force('charge', d3.forceManyBody().strength(-80))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collide', d3.forceCollide().radius(20));
+
+      d3simulation.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+      lastGraphChain = chainId;
+    }
+
+    // 默认渲染
+    renderActive(CHAIN_IDS[0]);
+  })();
+  </script>
+</body>
+</html>
