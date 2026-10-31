@@ -29,7 +29,20 @@ git commit -m "CRM code backup $(date '+%Y-%m-%d %H:%M')" --allow-empty
 # 5. 推送 crm-system 到其备份分支
 git push -u origin workspace-crm-backup
 
+# 6. 行业研究站（静态站，338MB，含 web/ 页面与数据）
+RESEARCH_DIR="/home/admin/industry-research"
+if [ -d "$RESEARCH_DIR/.git" ]; then
+  cd $RESEARCH_DIR
+  git add -A
+  git commit -m "Research site backup $(date '+%Y-%m-%d %H:%M')" --allow-empty
+  git push origin HEAD:refs/heads/industry-research-backup
+  echo "研究站: industry-research-backup"
+else
+  echo "研究站: 跳过（非 git 仓库）"
+fi
+
 echo "=== 备份完成 ==="
 echo "工作区: workspace-backup"
 echo "CRM系统: workspace-crm-backup"
+echo "研究站: industry-research-backup"
 echo "数据库: crm-db-backup.sql"
