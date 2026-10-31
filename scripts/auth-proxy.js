@@ -50,9 +50,16 @@ const server = http.createServer((req, res) => {
   let upPort = targetPort;
   let upPath = req.url;
   if (req.url === '/research' || req.url.startsWith('/research/')) {
+    // 页面内部全是相对引用(app.js / data.js / dashboard.html)。
+    // 若以 /research/ 为基准提供 index.html，这些会解析成 /research/app.js → 404，JS 全挂、只剩静态标题。
+    // 因此重定向到真实目录 /research/web/index.html，让 URL 与文件目录一致。
+    if (req.url === '/research' || req.url === '/research/') {
+      res.writeHead(301, { 'Location': '/research/web/index.html' });
+      res.end();
+      return;
+    }
     upPort = staticPort;
     upPath = req.url.replace(/^\/research/, '');
-    if (upPath === '' || upPath === '/') upPath = '/web/index.html';
   }
 
   const proxyReq = http.request({
