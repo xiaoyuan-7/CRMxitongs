@@ -16,6 +16,23 @@
 (function () {
   'use strict';
 
+  // 数据文件内容哈希（内容变化 → URL 变化 → 浏览器不可能拿到陈旧缓存）
+  // 由 scripts/_stamp_versions.py 自动生成，勿手改。
+  var DATA_VERSIONS = {
+    "_fields": "555777ba",
+    "aggregates": "b108dbc5",
+    "sub_tracks": "606f1c61",
+    "chain_links": "61a76d19",
+    "overlap_28": "d4ace5a1",
+    "companies": "91c5fcab",
+    "company_details": "963ba02d",
+    "top50_classified": "de19f7a3",
+    "top500_unclassified": "b1fad2c1",
+    "v9_review": "e9111463",
+    "tech_v2": "f4896563",
+    "relations": "2c22e92c",
+  };
+
   // [全局变量名, 文件名, 加载时机]
   //
   // 性能改造（2026-11-01）：原设计 11 个数据集全部首屏一次性加载，
@@ -41,18 +58,11 @@
   ];
 
   var LAZY = [
-    // companies 是最大的一块（22,765 家，瘦身后 gzip ~2.1MB）。
-    // 首页其实不需要它（链主数量已预计算进 aggregates），
-    // 所以改成进入公司库/相关页面时才加载。
-    ['COMPANIES', 'companies'],
     ['TOP50_CLASSIFIED', 'top50_classified'],
     ['TOP500_UNCLASSIFIED', 'top500_unclassified'],
     ['V9_REVIEW', 'v9_review'],
     ['TECH_V2', 'tech_v2'],
-    ['RELATIONS', 'relations'],
-    // 公司详情附加字段（addr/biz/desc）—— 2026-11-01 第二轮瘦身
-    // 这三个字段只用于详情弹窗与导出，却占了 companies.json 体积的 ~40%
-    ['COMPANY_DETAILS', 'company_details']
+    ['RELATIONS', 'relations']
   ];
 
   var DATASETS = FIRST_PAINT.concat(LAZY);
@@ -103,7 +113,14 @@
     var url = new URL('data/' + fileName + '.json', location.href);
     url.username = '';
     url.password = '';
-    return fetch(url.toString(), { cache: 'force-cache' })
+    // 带内容哈希版本号：数据文件更新后 URL 变化，浏览器不可能再拿到陈旧缓存。
+    // （2026-11-01：之前用 cache:'force-cache' + 固定 URL，
+    //  手机上一直跑旧版数据，首屏拉到 67MB 打不开。）
+    var ver = DATA_VERSIONS[fileName];
+    if (ver) url.searchParams.set('v', ver);
+    // cache 用 'default'：命中本地缓存就秒开，没命中就走协商请求（304）。
+    // 不要用 'force-cache' —— 它会跳过协商，导致数据更新后仍返回旧内容。
+    return fetch(url.toString(), { cache: 'default' })
       .then(function (res) {
         if (!res.ok) throw new Error(fileName + '.json HTTP ' + res.status);
         // 先读文本拿到字节数用于进度显示，再 JSON.parse
@@ -143,10 +160,96 @@
     return lazyPromises[globalName];
   };
 
+  // ---- 公司库分页查询（2026-11-01）----
+  //
+  // companies.json 22,765 家瘦身后 gzip 仍有 2.19MB，公网 ~80KB/s → 进页面等 30 秒。
+  // 改为服务端筛选+分页：每页只回 50 条（gzip ~6KB）。
+  window.fetchCompaniesPage = function (qs) {
+    var url = new URL('workbench/api/companies?' + qs, location.href);
+    url.username = '';
+    url.password = '';
+    return fetch(url.toString(), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .catch(function () { return null; });
+  };
+
+  // ---- 单条公司查询（含列表字段）----
+  //
+  // 拜访清单/一页通只需要少量具体公司，不再为了它们下载全量 companies.json。
+  // 服务端按 code 返回一条（列表字段 + 详情字段）。
+  var byCodeCache = {};
+  window.fetchCompanyByCode = function (code) {
+    if (!code) return Promise.resolve(null);
+    if (byCodeCache[code]) return Promise.resolve(byCodeCache[code]);
+    var url = new URL('workbench/api/companies?code=' + encodeURIComponent(code), location.href);
+    url.username = '';
+    url.password = '';
+    return fetch(url.toString(), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        var c = data && data.item ? data.item : null;
+        if (c) byCodeCache[code] = c;
+        return c;
+      })
+      .catch(function () { return null; });
+  };
+
+  // ---- 服务端搜索（2026-11-01）----
+  //
+  // 地址字段在 company_details.json（3.9MB）里，前端拉全量才能搜，
+  // 公网 tunnel 带宽窄 → 要 50 秒。改为服务端搜，只回传匹配的 code 列表。
+  var searchCache = {};
+  var searchTimer = null;
+  window.searchCompaniesByServer = function (q) {
+    q = String(q || '').trim();
+    if (!q) { searchCache = {}; return Promise.resolve(null); }
+    if (searchCache[q]) return Promise.resolve(searchCache[q]);
+    return new Promise(function (resolve) {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        var url = new URL('workbench/api/search?q=' + encodeURIComponent(q), location.href);
+        url.username = '';
+        url.password = '';
+        fetch(url.toString(), { cache: 'no-store' })
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+            if (!data || !data.codes) { resolve(null); return; }
+            var set = new Set(data.codes);
+            searchCache[q] = set;
+            resolve(set);
+          })
+          .catch(function () { resolve(null); });
+      }, 180);
+    });
+  };
+
+  // ---- 单条公司详情查询（2026-11-01）----
+  // company_details.json 有 3.9MB，公网 tunnel 带宽窄，点开一家企业要等 50 秒。
+  // 静态服务器提供 /workbench/api/company/<code> 单条查询（约 0.3KB），
+  // 详情弹窗改走这个接口；全量 JSON 只在搜索/导出时才会用到。
+  var detailCache = {};
+  window.fetchCompanyDetail = function (code) {
+    if (!code) return Promise.resolve(null);
+    if (detailCache[code]) return Promise.resolve(detailCache[code]);
+    var url = new URL('workbench/api/company/' + encodeURIComponent(code), location.href);
+    url.username = '';
+    url.password = '';
+    return fetch(url.toString(), { cache: 'default' })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (d) {
+        if (d && !d.error) detailCache[code] = d;
+        return d || null;
+      })
+      .catch(function () { return null; });
+  };
+
   function loadApp() {
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      s.src = 'app.js?v=2026083101';
+      s.src = 'app.js?v=20261101-2';
       s.onload = resolve;
       s.onerror = function () { reject(new Error('app.js 加载失败')); };
       document.body.appendChild(s);

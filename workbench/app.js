@@ -58,35 +58,16 @@
   const getSubTracks = () => window.SUB_TRACKS || [];
   const getV9Review = () => window.V9_REVIEW || [];
   const getTechV2 = () => window.TECH_V2 || [];
-  // 详情附件（biz/desc 等重字段）—— 性能改造（2026-11-01）：
-  // companies.json 瘦身后，长文本字段拆到 company_details.json，
-  // 首屏不再加载，打开详情/搜索/导出时才按需拉取。
-  const getCompanyDetails = () => window.COMPANY_DETAILS || {};
-  let companyDetailsPromise = null;
-
-  function loadCompanyDetails() {
-    if (window.COMPANY_DETAILS) return Promise.resolve(window.COMPANY_DETAILS);
-    if (companyDetailsPromise) return companyDetailsPromise;
-    if (!window.loadDataset) return Promise.resolve({});
-    companyDetailsPromise = window.loadDataset('COMPANY_DETAILS')
-      .then(function () { return window.COMPANY_DETAILS || {}; })
-      .catch(function () { return {}; });
-    return companyDetailsPromise;
-  }
-
-  // 把详情附加字段合并回公司对象（addr/biz/desc）
-  function mergeDetails(codes) {
-    const details = getCompanyDetails();
-    const list = Array.isArray(codes) ? codes : [codes];
-    list.forEach(function (code) {
-      const c = byCode[code];
-      const d = details[code];
-      if (!c || !d) return;
-      Object.keys(d).forEach(function (k) {
-        if (!c[k]) c[k] = d[k];
-      });
-    });
-  }
+  // 服务端搜索结果（code 集合），用于地址匹配
+  // 2026-11-01：addr 在 company_details.json（3.9MB）里，
+  // 前端拉全量才能搜，公网要 50 秒；改为调 /workbench/api/search。
+  let serverMatchedCodes = null;
+  // 公司详情（addr/biz/desc）—— 性能改造（2026-11-01）：
+  // 1) companies.json 瘦身：长文本字段拆到 company_details.json
+  // 2) 又因公网带宽窄（~80KB/s），3.9MB 全量下载要 50 秒，
+  //    改为服务端按 code 单条查询：/workbench/api/company/<code>（约 0.3KB）
+  //    搜索走 /workbench/api/search?q=（返回匹配 code 列表）
+  // 前端入口：window.fetchCompanyDetail(code) / window.searchCompaniesByServer(q)
 
   // 兼容旧写法：保留同名常量别名，但它们是「快照」，仅用于首屏已就绪的数据
   // ⚠️ 性能改造 (2026-11-01): COMPANIES / TOP50 / TOP500 / V9_REVIEW / TECH_V2 /
@@ -555,14 +536,14 @@
   // 改为 V9_REVIEW 加载完成后由 renderV9BannerIfPending() 补上。
   var ROUTE_DEPS = {
     '/':            [],
-    '/companies':   ['COMPANIES'],
+    '/companies':   [],          // 服务端分页，不需要全量
     '/overlap':     [],
-    '/links':       ['COMPANIES'],
+    '/links':       [],          // 只用 ChainLinks（首屏已加载）
     '/research':    [],
-    '/visits':      ['COMPANIES'],
+    '/visits':      [],          // 按 code 单条查询（见 renderVisits）
     '/v9-review':   ['V9_REVIEW'],
     '/tech-v2':     ['TECH_V2'],
-    '/one-pager':   ['COMPANIES']
+    '/one-pager':   []           // 按 code 单条查询
   };
 
   function ensureDatasets(names) {
@@ -840,7 +821,7 @@
 
     $('#app').innerHTML = `
       <h1 class="page-title">🏢 公司库</h1>
-      <p class="page-sub">${fmt(getCompanies().length)} 家公司 · 筛选 → 点击看画像卡</p>
+      <p class="page-sub">${fmt((Aggregates && Aggregates.total) || 0)} 家公司 · 筛选 → 点击看画像卡</p>
 
       <div class="companies-layout">
         <aside class="filter-panel">
@@ -883,7 +864,7 @@
             <div class="filter-group-title">链主角色</div>
             <div class="filter-chips">
               <span class="filter-chip ${!state.filter.chain ? 'active' : ''}" data-filter="chain" data-val="">全部</span>
-              <span class="filter-chip ${state.filter.chain === 'yes' ? 'active' : ''}" data-filter="chain" data-val="yes">�️ 有 (${getCompanies().filter(c => (c.chain_role || []).length > 0).length})</span>
+              <span class="filter-chip ${state.filter.chain === 'yes' ? 'active' : ''}" data-filter="chain" data-val="yes">�️ 有 (${(Aggregates && Aggregates.chain_role_company_count) || 0})</span>
               <span class="filter-chip ${state.filter.chain === 'no' ? 'active' : ''}" data-filter="chain" data-val="no">无</span>
             </div>
           </div>
@@ -1245,10 +1226,15 @@
   function applyFilter() {
     const f = state.filter;
     // addr 已拆到 company_details.json（2026-11-01 瘦身）。
-    // 若用户正在搜索且详情尚未加载，先拉取再重筛，否则地址匹配会静默失效。
-    if (f.q && !window.COMPANY_DETAILS && window.loadDataset) {
-      loadCompanyDetails().then(function () {
-        if (state.filter.q) { state.page = 1; renderCompanies(); }
+    // 本地匹配 name/legal/ind/trk/code（立即生效）；
+    // 地址匹配交给服务端 /workbench/api/search（避免拉 3.9MB 全量详情），
+    // 结果到达后自动重筛。
+    if (f.q && window.searchCompaniesByServer) {
+      const q = f.q;
+      window.searchCompaniesByServer(q).then(function (codes) {
+        if (state.filter.q !== q) return;   // 用户又改了关键词
+        serverMatchedCodes = codes;
+        if (state.currentRoute === '/companies') { state.page = 1; renderCompanies(); }
       });
     }
     return getCompanies().filter(c => {
@@ -1283,15 +1269,64 @@
       if (f.chain === 'no' && c.chain_role && c.chain_role.length > 0) return false;
       if (f.q) {
         const q = f.q.toLowerCase();
-        if (!c.name.toLowerCase().includes(q) &&
-            !(c.legal || '').toLowerCase().includes(q) &&
-            !(c.addr || '').toLowerCase().includes(q)) return false;
+        // 本地字段匹配（即时）
+        const localHit =
+          (c.name || '').toLowerCase().includes(q) ||
+          (c.legal || '').toLowerCase().includes(q) ||
+          (c.ind || '').toLowerCase().includes(q) ||
+          (c.trk || '').toLowerCase().includes(q) ||
+          (c.sub_track || '').toLowerCase().includes(q) ||
+          (c.code || '').toLowerCase().includes(q);
+        // 地址匹配靠服务端（serverMatchedCodes），服务端结果还没回来时先放行
+        const serverHit = serverMatchedCodes ? serverMatchedCodes.has(c.code) : true;
+        if (!localHit && !serverHit) return false;
       }
       return true;
     });
   }
 
+  // 公司库表格渲染
+  //
+  // 性能改造（2026-11-01 晚）：原实现在前端全量过滤 22,765 条，
+  // 需要先下载 companies.json（gzip 2.19MB，公网 ~30 秒）。
+  // 改为服务端分页：/workbench/api/companies?...&page=N
+  // 每页只回 50 条（gzip ~6KB），公网 2-3 秒进页面。
+  //
+  // 降级：服务端不可用时回退到本地全量模式（window.COMPANIES）。
+  const useServerPaging = () => !!window.fetchCompaniesPage;
+
   function renderTable() {
+    if (useServerPaging()) {
+      renderTableServer();
+      return;
+    }
+    renderTableLocal();
+  }
+
+  function renderTableServer() {
+    const f = state.filter;
+    const params = new URLSearchParams();
+    ['track', 'sub', 'ind', 'custInd', 'supInd', 'dist', 'city', 'emp',
+      'scale', 'status', 'confidence', 'chain', 'q'].forEach(k => {
+        if (f[k]) params.set(k, f[k]);
+      });
+    params.set('page', String(state.page));
+    params.set('perPage', String(state.perPage));
+
+    const body = $('#companiesBody');
+    if (body && !body.querySelector('.wb-page-loading')) {
+      body.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--text-3);padding:28px">加载中…</td></tr>`;
+    }
+
+    window.fetchCompaniesPage(params.toString()).then(function (data) {
+      if (!data) { renderTableLocal(); return; }
+      state.companiesTotal = data.total;
+      state.companiesTotalPages = data.totalPages;
+      renderTableRows(data.items || []);
+    });
+  }
+
+  function renderTableLocal() {
     const list = applyFilter();
     const totalPages = Math.max(1, Math.ceil(list.length / state.perPage));
     if (state.page > totalPages) state.page = totalPages;
@@ -1299,6 +1334,19 @@
     const pageItems = list.slice(start, start + state.perPage);
 
     $('#tableCount').textContent = `共 ${list.length.toLocaleString()} 家 · 第 ${state.page}/${totalPages} 页`;
+    $('#pageInfo').textContent = `${state.page}/${totalPages}`;
+    $('#prevPage').disabled = state.page <= 1;
+    $('#nextPage').disabled = state.page >= totalPages;
+
+    renderTableRows(pageItems);
+  }
+
+  function renderTableRows(pageItems) {
+    const totalPages = state.companiesTotalPages ||
+      Math.max(1, Math.ceil((state.companiesTotal || pageItems.length) / state.perPage));
+    const total = state.companiesTotal != null ? state.companiesTotal : pageItems.length;
+    if (state.page > totalPages) state.page = totalPages;
+    $('#tableCount').textContent = `共 ${total.toLocaleString()} 家 · 第 ${state.page}/${totalPages} 页`;
     $('#pageInfo').textContent = `${state.page}/${totalPages}`;
     $('#prevPage').disabled = state.page <= 1;
     $('#nextPage').disabled = state.page >= totalPages;
@@ -1980,7 +2028,7 @@
         </div>
         <div id="relSuggestions" style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--text-3);margin-bottom:12px">
           💡 <strong>试一试</strong>:
-          ${[...ChainLinks.slice(0, 8).map(c => c.name), ...getCompanies().slice(0, 3).filter(c => c.name && (c.chain_role || []).length === 0).map(c => c.name)].filter((v, i, a) => a.indexOf(v) === i).slice(0, 12).map(n => `<span class="filter-chip" data-rel-suggest="${esc(n)}">${esc(n)}</span>`).join('')}
+          ${[...ChainLinks.slice(0, 12).map(c => c.name)].filter((v, i, a) => a.indexOf(v) === i && v).slice(0, 12).map(n => `<span class="filter-chip" data-rel-suggest="${esc(n)}">${esc(n)}</span>`).join('')}
         </div>
         <div id="relResult"></div>
       </div>
@@ -2147,11 +2195,17 @@
   function applyVisitsFilter(allItems) {
     const f = state.visitsFilter;
     // addr 已拆到 company_details.json（2026-11-01 瘦身）：
-    // 搜索前先确保详情已加载，否则地址匹配会静默失效
-    if (f.q && !window.COMPANY_DETAILS && window.loadDataset) {
-      loadCompanyDetails().then(function () {
-        mergeDetails(allItems.map(c => c.code));
-        renderVisits();
+    // 拜访清单条数少（用户自己加的），逐条查服务端详情即可，不必拉 3.9MB 全量
+    if (f.q && window.fetchCompanyDetail && allItems.length) {
+      const q = f.q.toLowerCase();
+      Promise.all(allItems.map(function (c) {
+        if (c.addr !== undefined) return Promise.resolve(c);
+        return window.fetchCompanyDetail(c.code).then(function (d) {
+          if (d && d.addr) c.addr = d.addr;
+          return c;
+        });
+      })).then(function () {
+        if (state.visitsFilter.q) { state.visitsPage = 1; renderVisits(); }
       });
     }
     return allItems.filter(c => {
@@ -2344,15 +2398,13 @@
     const c = byCode[code];
     if (!c) return;
     // addr 已拆到 company_details.json（2026-11-01 瘦身），
-    // 导出前先确保详情已加载并合并
-    if (!window.COMPANY_DETAILS && window.loadDataset) {
-      loadCompanyDetails().then(function () {
-        mergeDetails([code]);
+    // 导出前先查单条详情（服务端接口，约 0.3KB）
+    if (c.addr === undefined && window.fetchCompanyDetail) {
+      window.fetchCompanyDetail(code).then(function () {
         exportOnePagerMD(code);
       });
       return;
     }
-    mergeDetails([code]);
     const insight = TRACK_INSIGHTS[c.trk] || TRACK_INSIGHTS['其他'];
     const vnote = getVisitNote(code);
     const suggestions = buildMarketingSuggestions(c, insight);
@@ -2440,11 +2492,23 @@
   function renderOnePager(code) {
     $('#app').innerHTML = buildOnePager(code);
     $('#opExportMD')?.addEventListener('click', function () { exportOnePagerMD(code); });
+    // 性能改造（2026-11-01）：一页通只针对一家公司，按 code 单条查询即可，
+    // 不需要全量 companies.json（2.19MB）
+    if (window.fetchCompanyByCode && !byCode[code]) {
+      $('#app').innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--text-3);font-size:13px">⏳ 正在加载企业画像…</div>';
+      window.fetchCompanyByCode(code).then(function (c) {
+        if (c) byCode[code] = c;
+        if (state.currentRoute === '/one-pager') renderOnePager(code);
+      });
+      return;
+    }
     // addr 已拆到 company_details.json（2026-11-01 瘦身）：
-    // 详情到达后补渲染一次，把地址等字段补上
-    if (!window.COMPANY_DETAILS && window.loadDataset) {
-      loadCompanyDetails().then(function () {
-        mergeDetails([code]);
+    // 详情到达后补渲染一次，把地址等字段补上（服务端单条查询，约 0.3KB）
+    if (window.fetchCompanyDetail) {
+      window.fetchCompanyDetail(code).then(function (d) {
+        if (!d) return;
+        const cc = byCode[code];
+        if (cc) Object.keys(d).forEach(function (k) { if (!cc[k]) cc[k] = d[k]; });
         if (state.currentRoute === '/one-pager') renderOnePager(code);
       });
     }
@@ -2458,7 +2522,26 @@
   function renderVisits() {
     pruneStaleSelection();
 
-    const allItems = state.visits.map(code => byCode[code]).filter(Boolean);
+    // 性能改造（2026-11-01）：不再为了清单下载全量 companies.json（2.19MB）。
+    // 按 code 逐个查服务器（每条约 0.3KB），查到后再渲染。
+    const cached = state.visits.map(code => byCode[code]).filter(Boolean);
+    if (window.fetchCompanyByCode) {
+      const missing = state.visits.filter(code => !byCode[code]);
+      if (missing.length) {
+        Promise.all(missing.map(code => window.fetchCompanyByCode(code).then(c => {
+          if (c) byCode[code] = c;
+        }))).then(function () {
+          if (state.currentRoute === '/visits') renderVisits();
+        });
+        // 期间先用已有数据渲染（可能为空 → 显示加载中）
+        if (cached.length === 0) {
+          $('#app').innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--text-3);font-size:13px">⏳ 正在加载清单…</div>';
+          return;
+        }
+      }
+    }
+
+    const allItems = cached;
     const total = allItems.length;
 
     // 清单为空
@@ -2906,15 +2989,17 @@
   function exportVisitsCSV(items, scope = 'all') {
     if (!items || items.length === 0) { alert('拜访清单为空,先加企业'); return; }
     // addr 已拆到 company_details.json（2026-11-01 瘦身），
-    // 导出前先确保详情已加载并合并，否则地址列会是空的
-    if (!window.COMPANY_DETAILS && window.loadDataset) {
-      loadCompanyDetails().then(function () {
-        mergeDetails(items.map(c => c.code));
-        exportVisitsCSV(items, scope);
-      });
+    // 导出前逐条查服务端详情，否则地址列会是空的
+    if (window.fetchCompanyDetail && items.some(c => c.addr === undefined)) {
+      Promise.all(items.map(function (c) {
+        if (c.addr !== undefined) return Promise.resolve(c);
+        return window.fetchCompanyDetail(c.code).then(function (d) {
+          if (d && d.addr) c.addr = d.addr;
+          return c;
+        });
+      })).then(function () { exportVisitsCSV(items, scope); });
       return;
     }
-    mergeDetails(items.map(c => c.code));
     // 加 UTF-8 BOM 让 Excel 中文不乱码
     const csv = '\ufeff' + buildCSV(items);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -2997,9 +3082,11 @@
     // addr/biz/desc 已从 companies.json 拆到 company_details.json。
     // 打开详情时按需拉取；拉到后合并进 byCode[code] 并重绘。
     // 轻量部分先渲染，不阻塞弹窗打开。
-    if (!c._detailLoaded && window.loadDataset) {
-      loadCompanyDetails().then(function (details) {
-        const d = details[code];
+    //
+    // 2026-11-01 晚：整包 company_details.json 有 3.9MB，公网要 50 秒。
+    // 改为调服务器的单条查询接口 /workbench/api/company/<code>（约 0.3KB）。
+    if (!c._detailLoaded && window.fetchCompanyDetail) {
+      window.fetchCompanyDetail(code).then(function (d) {
         if (!d) { c._detailLoaded = true; return; }
         Object.keys(d).forEach(function (k) {
           if (c[k] === undefined || c[k] === null || c[k] === '') c[k] = d[k];
