@@ -53,4 +53,50 @@
 
 ### 当前公网地址
 `https://sanyo-concluded-opponent-heating.trycloudflare.com/research/workbench/`
-（Basic Auth: admin / oSty45kTwKhRgYVZYMnr；Quick Tunnel 重启后会变）
+**Basic Auth: admin / wen123456**（pm2 进程 crm-auth 的参数：
+`3001 3100 admin wen123456 8000`；Quick Tunnel 重启后域名会变）
+
+---
+
+## 第二轮：服务端 API（19:40 补）
+
+### 问题
+首屏瘦身到 209KB 后仍不可用 —— 进公司库要等 30 秒。
+根因：companies.json 22,765 家瘦身后 gzip 仍有 2.19MB，公网 ~80KB/s。
+
+### 关键实验：分片并行无效
+把 companies 切成 6 片并行下载：**36 秒**（比单文件 27 秒还慢）。
+6 个并发拉同一个文件：**149 秒**。带宽被瓜分，总吞吐固定。
+→ 只有「减少用户实际需要的数据量」才有效，不能靠并发/分片。
+
+### 解法：服务端 API（static-server 加了内存索引）
+| 接口 | 用途 | 大小 | 公网耗时 |
+|---|---|---|---|
+| `/workbench/api/companies?...&page=N` | 筛选+分页，每页 50 条 | 6 KB | **0.96 s** |
+| `/workbench/api/companies?code=X` | 单条（含详情） | ~1 KB | 0.8 s |
+| `/workbench/api/company/<code>` | 仅 addr/biz/desc | 1 KB | 0.8 s |
+| `/workbench/api/search?q=` | 服务端搜索（含地址） | ~6 KB | 3.3 s |
+
+配套前端改造：
+- 公司库 → 服务端分页（renderTableServer），本地全量作降级
+- 拜访清单 / 一页通 → 按 code 单条查询
+- COMPANIES 数据集彻底不再下载，所有路由依赖清空
+
+### 缓存陷阱（重要）
+1. `fetch(..., {cache:'force-cache'})` 会**跳过协商**，手机上一直跑旧版数据
+   → 改 `cache:'default'`
+2. 数据文件 URL 固定 + `max-age=300` → 改完数据 5 分钟内不生效
+   → 加内容哈希版本戳 `?v=<md5前8位>`，由 `scripts/_stamp_versions.py` 生成
+3. app.js / data-loader.js / styles.css 的 `?v=` 版本号必须手动升，
+   否则浏览器直接用缓存的旧 JS（我第一轮忘了升，手机上仍是旧版）
+
+### 最终实测（公网，正确凭证）
+- 页面 1.0 s · 首屏 JSON 并行 2.3 s
+- 公司库第 1 页 **0.96 s**（原 12.8 s / 2.19 MB）
+- 详情 API 0.8 s（原 50 s）· 搜索 API 3.3 s
+- 8 个路由渲染全部正常，零 JS 错误
+
+### 教训
+**凭证一开始就是错的**：我用了早期的 `oSty45kTwKhRgYVZYMnr`，
+而 auth-proxy 实际用的是 `wen123456`。所有「公网 401」的结果都是
+这个原因，不是服务挂了。**测公网前先确认凭证来源**（pm2 describe 看参数）。
