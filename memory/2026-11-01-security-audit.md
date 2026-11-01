@@ -121,3 +121,167 @@ GET https://sanyo-...trycloudflare.com/research/workbench/data/companies.js
 7. 然后：给 14 个业务路由加 auth 中间件
 8. 然后：启用 security/validation 中间件
 9. 然后：清理 crm-system 里的 db 副本和 html bak 文件
+
+---
+
+# 修复执行记录（2026-11-01 16:00-16:50）
+
+按用户「你先按顺序处理吧」的指示，按原优先级 0-9 逐项落实。
+除 GitHub 转 private 需用户 GitHub 凭据外，其余全部已完成并通过验证。
+
+## P0 项修复结果
+
+### 0. static-server 目录白名单 ✅
+`scripts/static-server.js` 新增 `ALLOWED_PREFIXES = ['web/', 'workbench/']`，
+并屏蔽 `workbench/data/*.js`（旧版 `window.X = {...}` 全量副本，约 69MB）。
+ROOT 保持 `/home/admin/industry-research` 不变，避免破坏 `/research/web/index.html`
+与 `/research/workbench/` 两个入口的相对路径解析。
+
+验证（公网）：
+```
+/research/web/index.html                     200
+/research/workbench/index.html               200
+/research/workbench/data/companies.js        403   ← 原 200 / 35,731,220 字节
+/research/workbench/data/companies.json      200   ← 工作台实际读取的
+/research/%E5%90%8D%E5%8D%95/...csv         403   ← 原 200 / 4,005,897 字节
+```
+
+### 1. 后端绑定收口到 127.0.0.1 ✅
+`HOST=127.0.0.1` 注入 pm2 环境。`ss -ltnp` 确认监听 `127.0.0.1:3001`。
+公网 `http://47.96.177.153:3001/api/leads` 已不可达（curl 返回 000）。
+公网入口统一为 tunnel → auth-proxy(3100) → backend(3001)。
+
+### 2. 关闭公开注册 ✅
+`crm-system/backend/routes/users.js`：
+- `/register` 前置 `requireAdmin`（需管理员 Bearer token）
+- 新用户角色**强制** `'user'`，body 传 `role:"admin"` 不再生效
+- 密码长度下限 8 位
+
+验证：
+```
+匿名注册                    → 401 {"error":"未授权"}
+管理员注册 role=admin       → 200，但库中 role='user'
+短密码                      → 400 {"error":"密码至少 8 位"}
+```
+
+### 3. 强 JWT_SECRET ✅
+- `users.js` 移除 fallback `crm-secret-key-change-in-production`，改为缺失即 `process.exit(1)`
+- `middleware/auth.js` 同样缺失即退出
+- pm2 注入：`JWT_SECRET=ySPKSLR4dkvRSmFkA5pQMK8HLShQVLa2d3DPA557RxXaCj1dPlDvwy4LASJVYL/J`
+- `backend/.env.example` 同步改为空值 + 生成说明
+
+### 4. SSH key 与口令轮换 ✅
+- 新 key 指纹：`SHA256:/leXyRaY3fOnJr/5uDsB9B723wbLkrW7x0LCo3C/fak`（crm-upload-2026-11-01-rotated）
+- admin 与 root 两边 authorized_keys 均已替换，旧泄漏公钥 `IO7HDKcFeSCLPy5...` 计数为 0
+- Basic Auth 口令由 `wen123456` 轮换为 `oSty45kTwKhRgYVZYMnr`
+- 因口令是明文命令行参数，必须 `pm2 delete` + `pm2 start` 才生效（restart 不会更新）
+- 旧口令验证：代理返回 401 ✅
+- `/tmp/crm_upload_key`、`/tmp/crm_upload_key.pub`（已泄漏旧 key）已删除
+
+### 5. Git 历史清理 ✅
+`git-filter-repo --invert-paths` 重写两个仓库：
+- workspace：184 → 28 commits
+- crm-system：347 commits，移除 `backend/data/backups/*.db`、`backups/`、`crm_backup_latest.db`
+
+清除内容：SSH 私钥/公钥、`.crm-pass`、明文 SQL 导出、`crm.db`、`crm_backup.sql`。
+`git filter-repo` 会移除 remote，已重新添加 `origin` 并 `--force` 推送。
+
+远端复查（GitHub contents API）：
+```
+keys/crm_upload_key      gone
+keys/crm_upload_key.pub  gone
+scripts/.crm-pass        gone
+crm-db-backup.sql        gone
+backend/crm.db           gone
+backend/crm_backup.sql   gone
+```
+
+**备份流程同步改造**（否则下次备份会重新提交明文）：
+`scripts/backup-all.sh` 改为
+1. `sqlite3 .backup` 取一致性快照 → dump → `openssl aes-256-cbc -pbkdf2 -iter 200000` 加密
+2. 只提交 `crm-db-backup.sql.enc`，明文 dump 随即删除
+3. 加密密钥存仓库外 `/home/admin/.openclaw/keys/backup-enc.key`（600）
+4. 推送前 `check_sensitive()` 拦截敏感文件，命中即 abort
+
+端到端验证：加密包入库 → 远端下载 → 解密 → 恢复 DB →
+`integrity_check=ok`、`companies=57`、`leads=46`、`users=1` ✅
+
+### 7. 14 个业务路由统一鉴权 ✅
+新增 `crm-system/backend/middleware/auth.js`。关键设计取舍：
+
+> 前端（`frontend-simple/index.html`）是单文件 SPA，**无登录态**，全部 API 调用用相对路径
+> `/api`，直接挂强制 JWT 会导致前端全白屏。
+
+因此采用**双通道**：
+1. **内部共享密钥头** `X-Internal-Auth` —— auth-proxy 转发时注入（密钥从文件读取，
+   不出现在 `ps` 输出里）。前端零改动照常工作，绕过代理直连 3001 则被拒。
+2. **Bearer JWT** —— 给脚本 / 外部集成用，行为与之前一致。
+
+白名单仅 3 条：`/api/health`（健康检查）、`/api/log-error`（错误上报）、`/api/users/login`（登录入口本身靠密码校验）。
+
+验证：直连 3001 时 14 个路由全部 401；经代理全部 200。
+
+### 8. 启用 security 中间件 ✅
+`server.js` 改用 `middleware/security.js`（安全头 + CSP，`script-src 'unsafe-inline'` 兼容内联脚本）。
+e2e 验证 CSP 违规 0 条、控制台错误 0 条。
+
+### 9. 清理 db 副本与备份文件 ✅
+- crm-system 历史中 200+ 个 `backend/data/backups/*.db` 全部移除
+- `.gitignore` 新增 `*.db` / `*.db-wal` / `*.db-shm` / `*.sql` / `keys/` 等规则
+
+### 附加处理
+- `auth-proxy.js` 的 `/__upload_key`（HTTP 返回 SSH 私钥）默认关闭，
+  需 `ALLOW_KEY_DOWNLOAD=1` 显式开启 —— 这是持续泄漏通道
+- `memory/` 中明文旧口令已脱敏为 `<旧口令>` / `<口令已轮换>`
+- workspace `.gitignore` 保留，`.gzcache/` 55MB 仍在忽略列表内
+
+## 数据库事故与恢复（重要记录）
+`git filter-repo` 处理 crm-system 时误删了生产数据库 `backend/crm.db`。
+恢复过程：
+1. 从运行中进程 `/proc/<pid>/fd/` 抢救出 db + wal + shm
+2. 发现进程 fd 仍指向**已删除的旧 inode**，恢复副本 inode 不同
+3. 重新从 fd 抓取最新状态（含期间写入），停服，`PRAGMA wal_checkpoint(TRUNCATE)` 合并 WAL
+4. 删除测试记录 `id=125 RECOVER_CHECK_DELETE_ME`
+5. 校验 `integrity_check=ok`、`companies=57`、`leads=46`、`referrals=102`、`users=1`
+6. 重启服务，health 与 6 个 API 全部正常
+
+**教训**：`git filter-repo` 之前必须先备份数据库文件，不能依赖 `git checkout` 恢复未跟踪的运行时文件。
+
+## 回归验证结果
+`/tmp/regress.sh`（30 项）：**30 通过 / 0 失败**
+- A 14 个业务路由直连全部 401
+- B 3001 绑定 127.0.0.1
+- C 公网 3001 不可达
+- D 代理鉴权（无口令/旧口令 401，新口令 200）
+- E 匿名注册 401
+- F 静态白名单 4 项
+- G 私钥下载通道 404
+- H 数据库完整性 ok
+- I Git 远端泄漏复查 4 项 gone
+
+e2e（headless Chrome + CDP）：本地与公网各跑一次，均为
+`title=客户管理系统 CRM v20260322`、6 个 API 全 200、CSP 违规 0、控制台错误 0。
+
+## 仍需用户手动完成
+### GitHub 仓库 `xiaoyuan-7/CRMxitongs` 改为 private
+历史已重写、敏感文件已从远端移除，但**仓库可见性仍是 public**。
+服务器无 `gh` CLI、无 GitHub token，需要用户在 GitHub 网页操作：
+`Settings → General → Danger Zone → Change visibility → Private`
+
+（若私有化前被他人 clone 或 fork，仅靠历史重写无法撤回，建议同时在 GitHub
+Security → Secret scanning 中确认无残留告警。）
+
+### 已泄漏客户数据的处置评估
+历史清理只解决「今后不再公开」，不能撤回已发生的下载。
+`crm-db-backup.sql`（86KB）与 `backend/crm.db`（200KB）在公开仓库存续约 1 个月，
+涉及 57 家客户的企业名、联系人、电话、邮箱与部分生日/家庭状况字段。
+建议评估通知义务，或至少准备统一话术。
+
+## 新增凭据（请妥善保管，勿再入库）
+| 用途 | 位置 |
+|---|---|
+| Basic Auth 口令 | `scripts/.crm-pass`（600） |
+| 备份加密密钥 | `/home/admin/.openclaw/keys/backup-enc.key`（600） |
+| 代理内部密钥 | `/home/admin/.openclaw/keys/internal-api.key`（600） |
+| SSH 上传私钥 | `keys/crm_upload_key`（600） |
+| JWT 密钥 | pm2 环境变量 `JWT_SECRET` |
