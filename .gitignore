@@ -1,0 +1,63 @@
+# ===== 敏感凭据：绝不入库 =====
+# SSH 私钥（2026-10-31 曾泄漏到公开仓库，已轮换 + 清历史）
+keys/
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+!keys/*.pub
+
+# Basic Auth 明文口令
+scripts/.crm-pass
+*.pass
+*.password
+
+# 环境变量与密钥
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ===== 客户数据 =====
+# 数据库导出含个人隐私（生日/家庭状况/联系方式），不入库
+crm-db-backup.sql
+*.dump
+*.sql.gz
+# 加密后的备份包可以入库（备份能力不丢，数据不泄漏）
+!*.sql.enc
+
+# ===== 数据库文件 =====
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# ===== 构建/缓存产物 =====
+node_modules/
+.gzcache/
+*.log
+npm-debug.log*
+dist/
+build/
+.cache/
+
+# ===== 备份副本 =====
+*.bak
+*.bak.*
+*.orig
+*.broken_*
+*.tmp
+*.swp
+*~
+
+# ===== 编辑器/系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+
+# ===== 测试脚本产物 =====
+test_script.js
