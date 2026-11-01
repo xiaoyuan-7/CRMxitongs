@@ -23,6 +23,15 @@ function acceptsGzip(req) {
   return /\bgzip\b/i.test(ae) && !/\bgzip\s*;\s*q=0(?:\.0+)?\b/i.test(ae);
 }
 
+// brotli：公网带宽窄（Cloudflare 隧道到国内手机端 ~80KB/s），
+// 预压缩的 .br 比 .gz 小约 25%，手机端首屏能省十几秒。
+// 只在缓存命中时使用，避免实时 brotli 抢 2 核 CPU（那是 2026-11-01 踩过的坑）。
+function acceptsBrotli(req) {
+  const ae = req.headers['accept-encoding'];
+  if (!ae) return false;
+  return /\bbr\b/i.test(ae) && !/\bbr\s*;\s*q=0(?:\.0+)?\b/i.test(ae);
+}
+
 // ===== 目录白名单 =====
 // 审计发现（2026-11-01）：ROOT 被指向整个项目根 /home/admin/industry-research，
 // 导致 .gitignore 排除的数据目录（workbench/data/ 168M、名单/ 131M）也一起被公网暴露，
@@ -119,7 +128,20 @@ function serveFile(filePath, res, req) {
     }
     const ext = path.extname(filePath).toLowerCase();
 
-    // --- gzip：优先用预压缩缓存，避免实时压缩抢 CPU ---
+    // --- brotli / gzip：优先用预压缩缓存，避免实时压缩抢 CPU ---
+    // 优先 gz，其次 br。
+    // 注意：Cloudflare 边缘会把上游的 br 解开再重新压成 gzip 发给客户端，
+    // 实测公网拿到的仍是 2.19MB（= gz 大小），所以对同时支持 br/gzip 的浏览器
+    // 优先给 gz，让边缘直接透传，少一次解压+重压。
+    let brPath = null;
+    if (COMPRESSIBLE.has(ext) && acceptsBrotli(req) && !acceptsGzip(req)) {
+      const rel = path.relative(ROOT, filePath);
+      const cand = path.join(GZ_CACHE, rel + '.br');
+      try {
+        const brStat = fs.statSync(cand);
+        if (brStat.isFile() && brStat.mtimeMs >= stat.mtimeMs) brPath = cand;
+      } catch (e) { /* 没预压缩 → 走 gzip */ }
+    }
     let gzPath = null;
     if (COMPRESSIBLE.has(ext) && acceptsGzip(req)) {
       const rel = path.relative(ROOT, filePath);
@@ -131,6 +153,34 @@ function serveFile(filePath, res, req) {
           gzPath = cand;
         }
       } catch (e) { /* 没预压缩 → 走原文件 */ }
+    }
+
+    if (brPath) {
+      let brStat;
+      try { brStat = fs.statSync(brPath); } catch (e) { brStat = null; }
+      if (brStat) {
+        const etag = '"' + stat.size.toString(16) + '-' + stat.mtimeMs.toString(16) + '-br"';
+        if (req.headers['if-none-match'] === etag) {
+          res.writeHead(304, { 'ETag': etag, 'Vary': 'Accept-Encoding' });
+          res.end();
+          return;
+        }
+        res.writeHead(200, {
+          'Content-Type': MIME[ext] || 'application/octet-stream',
+          'Content-Length': brStat.size,
+          'Content-Encoding': 'br',
+          'Vary': 'Accept-Encoding',
+          'ETag': etag,
+          'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300'
+        });
+        const s = fs.createReadStream(brPath);
+        s.on('end', () => {
+          console.log('[serve] ' + path.relative(ROOT, filePath) +
+            ' br=' + brStat.size + 'B  ' + (Date.now() - t0) + 'ms');
+        });
+        s.pipe(res);
+        return;
+      }
     }
 
     if (gzPath) {

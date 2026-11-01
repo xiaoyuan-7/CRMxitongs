@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-01T11:46:45.076Z",
+  "entries": {
+    "memory:memory/2026-10-31.md:1:24": {
+      "key": "memory:memory/2026-10-31.md:1:24",
+      "path": "memory/2026-10-31.md",
+      "startLine": 1,
+      "endLine": 24,
+      "source": "memory",
+      "snippet": "# 2026-10-31 工作日志 ## 公网访问 CRM（手机端浏览） ### 问题 用户诉求：把系统放到云服务器，手机端能浏览。 服务器上 CRM 早已部署（pm2 `crm-backend`，端口 3001，DB healthy），但 **3001 端口对公网不通**——阿里云安全组未放行。本机 curl 正常，外部探测 522 超时。 ### 方案：Cloudflare 隧道 + Basic Auth 代理 因无阿里云 AK/SK（`~/.aliyun/config.json` 不存在，实例无 RAM 角色），无法用 aliyun CLI 改安全组，改用 Cloudflare Quick Tunnel（免账号、免域名）。 新增： - `/usr/local/bin` 之外的 `/tmp/cloudflared`（2026.10.7，从 GitHub Releases 下载；Docker Hub 拉取超时，registry-1.docker.io 不可达） - `scripts/auth-proxy.js`：轻量 Basic Auth 反代（127.0.0.1:3100 → 3001），因 CRM 前端没接登录，裸暴露会泄露客户数据 - `scripts/crm-url.sh`：打印公网地址 + 账号密码 - `scripts/deploy-from-git.sh`：拉分支 → npm install → pm2 restart → 健康检查 - `scripts/.crm-pass`：Basic Auth 密码（admin / LZdSfrGpMmzLm1）",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1,
+      "maxScore": 1,
+      "firstRecalledAt": "2026-11-01T11:46:45.076Z",
+      "lastRecalledAt": "2026-11-01T11:46:45.076Z",
+      "queryHashes": [
+        "61008b235b0d"
+      ],
+      "recallDays": [
+        "2026-11-01"
+      ],
+      "conceptTags": [
+        "crm-backend",
+        "ak/sk",
+        "aliyun/config.json",
+        "usr/local/bin",
+        "tmp/cloudflared",
+        "2026.10.7",
+        "registry-1.docker.io",
+        "scripts/auth-proxy.js"
+      ]
+    }
+  }
+}

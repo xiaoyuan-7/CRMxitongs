@@ -1,5 +1,11 @@
-// 轻量 Basic Auth 反向代理：挡住未授权访问，再转发到本地业务端口
-// 用法: node auth-proxy.js <targetPort> <listenPort> <user> <pass>
+// 轻量认证反向代理：挡住未授权访问，再转发到本地业务端口
+// 用法: node auth-proxy.js <targetPort> <listenPort> <user> <pass> [staticPort]
+//
+// 支持两种登录方式（2026-11-01 新增表单登录）：
+//   1) Basic Auth —— 兼容 curl / 桌面浏览器
+//   2) 表单登录   —— GET /__login 拿登录页，POST /__login 校验后下发 HttpOnly Cookie
+//      手机端（尤其 QQ/微信 内置浏览器）对 Basic Auth 弹窗经常不响应，
+//      表单 + Cookie 才是手机上真正能用的路径。
 const http = require('http');
 const crypto = require('crypto');
 
@@ -9,6 +15,7 @@ const listenPort = parseInt(process.argv[3] || '3100', 10);
 const staticPort = parseInt(process.argv[6] || '8000', 10);
 const user = process.argv[4] || 'admin';
 const pass = process.argv[5] || '';
+
 // 内部共享密钥：转发到 backend 时注入，后端用它确认请求来自本代理。
 // 作用：后端 3001 只监听 127.0.0.1，但若有人绕过代理直连（隧道改配置、端口被转发等），
 // 没有这个头的请求会被后端拒绝。从文件读取，避免出现在 ps 输出里。
@@ -19,26 +26,185 @@ try {
   console.error('[FATAL] 读不到 internal-api.key，无法向 backend 注入鉴权头');
   process.exit(1);
 }
-const expected = 'Basic ' + Buffer.from(user + ':' + pass).toString('base64');
+
+const COOKIE_NAME = 'crm_auth';
+const SESSION_TTL_MS = 30 * 24 * 3600 * 1000; // 30 天
+
+// 会话 token = HMAC(user, secret)，服务端无状态，改密码即全部失效
+function makeToken(u) {
+  return crypto.createHmac('sha256', internalSecret).update(String(u)).digest('hex');
+}
+function tokenValid(u, t) {
+  if (!t) return false;
+  const a = Buffer.from(String(t));
+  const b = Buffer.from(makeToken(u));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+function parseCookies(header) {
+  const out = {};
+  (header || '').split(';').forEach((part) => {
+    const i = part.indexOf('=');
+    if (i < 0) return;
+    out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  });
+  return out;
+}
+
+function credsEqual(u, p) {
+  const a = Buffer.from(String(u));
+  const b = Buffer.from(String(p));
+  const c = Buffer.from(user);
+  const d = Buffer.from(String(pass));
+  return a.length === c.length && crypto.timingSafeEqual(a, c) &&
+         b.length === d.length && crypto.timingSafeEqual(b, d);
+}
+
+function basicOk(auth) {
+  const m = /^Basic (.+)$/.exec(auth || '');
+  if (!m) return false;
+  const [u, p] = Buffer.from(m[1], 'base64').toString().split(':');
+  return credsEqual(u, p);
+}
+
+function isBrowser(req) {
+  const a = req.headers['accept'] || '';
+  return /text\/html/i.test(a);
+}
+
+const LOGIN_PAGE = `<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>登录 · 行业研究工作台</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:#f2f4f8; color:#111; padding:24px; }
+  .card { width:100%; max-width:360px; background:#fff; border-radius:16px; padding:28px 24px;
+          box-shadow:0 8px 30px rgba(16,24,40,.10); }
+  h1 { font-size:20px; margin:0 0 6px; }
+  p.sub { margin:0 0 20px; font-size:13px; color:#667; }
+  label { display:block; font-size:13px; margin:14px 0 6px; color:#344; }
+  input { width:100%; height:46px; padding:0 14px; font-size:16px; border:1px solid #d0d5dd;
+          border-radius:10px; background:#fff; color:#111; }
+  input:focus { outline:2px solid #2563eb33; border-color:#2563eb; }
+  button { width:100%; margin-top:22px; height:48px; border:0; border-radius:10px;
+           background:#2563eb; color:#fff; font-size:16px; font-weight:600; }
+  button:active { background:#1d4ed8; }
+  .err { display:none; margin:0 0 8px; padding:10px 12px; border-radius:8px;
+         background:#fef2f2; color:#b42318; font-size:13px; }
+  .hint { margin-top:18px; font-size:12px; color:#888; line-height:1.6; }
+</style></head><body>
+<div class="card">
+  <h1>登录</h1>
+  <p class="sub">行业研究工作台 / CRM 客户管理</p>
+  <p class="err" id="err">用户名或密码不正确</p>
+  <form method="POST" action="/__login" autocomplete="on">
+    <label for="u">用户名</label>
+    <input id="u" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" required>
+    <label for="p">密码</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">进入</button>
+  </form>
+  <div class="hint">登录成功后会保存 30 天，无需重复输入。<br>如果点「进入」没反应，请检查网络后重试。</div>
+</div>
+<script>
+  var f = document.querySelector('form');
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var b = f.querySelector('button');
+    b.disabled = true; b.textContent = '登录中…';
+    fetch('/__login', { method:'POST', body:new URLSearchParams(new FormData(f)), redirect:'follow', credentials:'same-origin' })
+      .then(function (r) {
+        if (r.redirected) { location.href = r.url; return; }
+        return r.text();
+      })
+      .then(function () { location.href = '/'; })
+      .catch(function () {
+        document.getElementById('err').style.display = 'block';
+        b.disabled = false; b.textContent = '进入';
+      });
+  });
+</script>
+</body></html>`;
+
+function log(req, status, extra) {
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '-').toString().split(',')[0].trim();
+  console.log(new Date().toISOString(), req.method, req.url, '->', status, 'ip=' + ip, extra || '');
+}
 
 const server = http.createServer((req, res) => {
+  const cookies = parseCookies(req.headers['cookie']);
   const auth = req.headers['authorization'] || '';
-  const ok = auth === expected ||
-    (() => {
-      const m = /^Basic (.+)$/.exec(auth);
-      if (!m) return false;
-      const [u, p] = Buffer.from(m[1], 'base64').toString().split(':');
-      const a = Buffer.from(u + ':' + p);
-      const b = Buffer.from(user + ':' + pass);
-      return a.length === b.length && crypto.timingSafeEqual(a, b);
-    })();
+  const ok = basicOk(auth) || tokenValid(user, cookies[COOKIE_NAME]);
+
+  // ---- 登录相关路由 ----
+  if (req.url === '/__login' || req.url.startsWith('/__login?')) {
+    if (req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      res.end(LOGIN_PAGE);
+      return;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      let tooBig = false;
+      req.on('data', (c) => {
+        body += c;
+        if (body.length > 4096) { tooBig = true; req.destroy(); }
+      });
+      req.on('end', () => {
+        if (tooBig) { res.writeHead(413); res.end('too large'); return; }
+        const params = new URLSearchParams(body);
+        const u = params.get('username') || '';
+        const p = params.get('password') || '';
+        if (!credsEqual(u, p)) {
+          log(req, 401, 'login-fail');
+          res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+          res.end(LOGIN_PAGE.replace('<p class="err" id="err">用户名或密码不正确</p>',
+            '<p class="err" id="err" style="display:block">用户名或密码不正确</p>'));
+          return;
+        }
+        const token = makeToken(user);
+        res.writeHead(302, {
+          'Location': '/',
+          'Set-Cookie': COOKIE_NAME + '=' + token + '; Path=/; Max-Age=' + Math.floor(SESSION_TTL_MS / 1000) + '; HttpOnly; SameSite=Lax',
+          'Cache-Control': 'no-store'
+        });
+        res.end();
+        log(req, 302, 'login-ok');
+      });
+      return;
+    }
+  }
+
+  if (req.url === '/__logout') {
+    res.writeHead(302, {
+      'Location': '/__login',
+      'Set-Cookie': COOKIE_NAME + '=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax'
+    });
+    res.end();
+    return;
+  }
 
   if (!ok) {
-    res.writeHead(401, {
-      'WWW-Authenticate': 'Basic realm="CRM", charset="UTF-8"',
-      'Content-Type': 'text/plain; charset=utf-8'
-    });
-    res.end('需要登录\n');
+    // 浏览器 → 跳登录页（不要弹窗，弹窗在手机内置浏览器经常无反应）
+    if (isBrowser(req)) {
+      res.writeHead(302, { 'Location': '/__login', 'Cache-Control': 'no-store' });
+      res.end();
+      log(req, 302, 'redirect-login');
+    } else {
+      res.writeHead(401, {
+        'WWW-Authenticate': 'Basic realm="CRM", charset="UTF-8"',
+        'Content-Type': 'text/plain; charset=utf-8'
+      });
+      res.end('需要登录\n');
+      log(req, 401, 'basic-challenge');
+    }
     return;
   }
 
