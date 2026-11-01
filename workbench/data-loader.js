@@ -16,22 +16,47 @@
 (function () {
   'use strict';
 
-  // [全局变量名, 文件名, 是否首屏必需]
-  var DATASETS = [
+  // [全局变量名, 文件名, 加载时机]
+  //
+  // 性能改造（2026-11-01）：原设计 11 个数据集全部首屏一次性加载，
+  // 实测首屏传输 67.84MB / 耗时 28 秒（手机端直接打不开）。
+  // 现在拆成两阶段：
+  //   首屏必需（~35MB）：主页与公司库要用的
+  //   按路由懒加载：进入对应页面才拉
+  //
+  // 各路由依赖（由 app.js 渲染函数实际引用反推）：
+  //   renderHome       → Aggregates, Companies, SubTracks, ChainLinks, Overlap28, V9Review
+  //   renderCompanies  → Aggregates, Companies, SubTracks
+  //   renderTechV2     → TechV2
+  //   renderOverlap    → Overlap28
+  //   renderLinks      → ChainLinks, Companies
+  //   renderV9Review   → V9Review
+  //   供应链搜索框     → Relations（24.7MB，仅搜索时需要）
+  var FIRST_PAINT = [
     ['_FIELDS', '_fields'],
     ['AGGREGATES', 'aggregates'],
     ['SUB_TRACKS', 'sub_tracks'],
     ['CHAIN_LINKS', 'chain_links'],
-    ['OVERLAP_28', 'overlap_28'],
+    ['OVERLAP_28', 'overlap_28']
+  ];
+
+  var LAZY = [
+    // companies 是最大的一块（22,765 家，瘦身后 gzip ~2.1MB）。
+    // 首页其实不需要它（链主数量已预计算进 aggregates），
+    // 所以改成进入公司库/相关页面时才加载。
+    ['COMPANIES', 'companies'],
     ['TOP50_CLASSIFIED', 'top50_classified'],
     ['TOP500_UNCLASSIFIED', 'top500_unclassified'],
     ['V9_REVIEW', 'v9_review'],
     ['TECH_V2', 'tech_v2'],
     ['RELATIONS', 'relations'],
-    ['COMPANIES', 'companies']
+    // 公司详情附加字段（addr/biz/desc）—— 2026-11-01 第二轮瘦身
+    // 这三个字段只用于详情弹窗与导出，却占了 companies.json 体积的 ~40%
+    ['COMPANY_DETAILS', 'company_details']
   ];
 
-  var TOTAL = DATASETS.length;
+  var DATASETS = FIRST_PAINT.concat(LAZY);
+  var TOTAL = FIRST_PAINT.length;
   var loaded = 0;
   var failures = [];
 
@@ -80,7 +105,7 @@
     url.password = '';
     return fetch(url.toString(), { cache: 'force-cache' })
       .then(function (res) {
-        if (!res.ok) throw new Error(fileName + '.js HTTP ' + res.status);
+        if (!res.ok) throw new Error(fileName + '.json HTTP ' + res.status);
         // 先读文本拿到字节数用于进度显示，再 JSON.parse
         return res.text().then(function (text) {
           var t0 = performance.now();
@@ -99,6 +124,24 @@
         throw err;
       });
   }
+
+  // ---- 懒加载：供 app.js 在进入对应路由时调用 ----
+  var lazyPromises = {};
+  var lazyLoaded = {};
+
+  window.loadDataset = function (globalName) {
+    if (lazyLoaded[globalName]) return Promise.resolve(window[globalName]);
+    if (lazyPromises[globalName]) return lazyPromises[globalName];
+    var entry = null;
+    for (var i = 0; i < LAZY.length; i++) {
+      if (LAZY[i][0] === globalName) { entry = LAZY[i]; break; }
+    }
+    if (!entry) return Promise.resolve(window[globalName]);
+    lazyPromises[globalName] = loadOne(entry[0], entry[1])
+      .then(function (d) { lazyLoaded[globalName] = true; return d; })
+      .catch(function () { lazyLoaded[globalName] = true; return window[globalName]; });
+    return lazyPromises[globalName];
+  };
 
   function loadApp() {
     return new Promise(function (resolve, reject) {
@@ -125,9 +168,10 @@
 
   function start() {
     ensureLoaderUI();
-    // 并行拉取；逐个 JSON.parse 仍在主线程，但比脚本求值快得多，
-    // 且每完成一个就更新进度，用户有反馈
-    Promise.all(DATASETS.map(function (d) { return loadOne(d[0], d[1]); }))
+    // 只并行拉取首屏必需的数据集；
+    // 其余大数据集（relations/tech_v2/v9_review/top50/top500）由 app.js 在进入对应路由时懒加载。
+    // 性能改造（2026-11-01）：原实现在这里拉全部 11 个，首屏 67.84MB / 28 秒，手机端直接打不开。
+    Promise.all(FIRST_PAINT.map(function (d) { return loadOne(d[0], d[1]); }))
       .then(function () {
         var text = document.getElementById('wbLoadText');
         if (text) text.textContent = '正在启动…';

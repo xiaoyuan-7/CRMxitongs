@@ -42,17 +42,79 @@
   // ============================================================
   // 数据访问
   // ============================================================
+  //
+  // 性能改造（2026-11-01）：大数据集改为按路由懒加载。
+  // 原来这些是模块级 const（求值时机 = app.js 加载时），懒加载后拿不到新数据。
+  // 现在改成 getter，每次读取都从 window 取最新的值。
+  // 首屏必需的数据已由 data-loader 先行加载完，getter 直接命中。
   const FieldMap = window._FIELDS || {};
-  const Aggregates = window.AGGREGATES || {};
-  const Companies = window.COMPANIES || [];
-  const Overlap28 = window.OVERLAP_28 || [];
-  const Top50 = window.TOP50_CLASSIFIED || [];
-  const Top500 = window.TOP500_UNCLASSIFIED || [];
-  const ChainLinks = window.CHAIN_LINKS || [];
-const Relations = window.RELATIONS || {};
-const SubTracks = window.SUB_TRACKS || [];
-const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
-  const TechV2 = window.TECH_V2 || []; // 4097 家科创企业_分类v2 (公私联动池)
+  const getAggregates = () => window.AGGREGATES || {};
+  const getCompanies = () => window.COMPANIES || [];
+  const getOverlap28 = () => window.OVERLAP_28 || [];
+  const getTop50 = () => window.TOP50_CLASSIFIED || [];
+  const getTop500 = () => window.TOP500_UNCLASSIFIED || [];
+  const getChainLinks = () => window.CHAIN_LINKS || [];
+  const getRelations = () => window.RELATIONS || {};
+  const getSubTracks = () => window.SUB_TRACKS || [];
+  const getV9Review = () => window.V9_REVIEW || [];
+  const getTechV2 = () => window.TECH_V2 || [];
+  // 详情附件（biz/desc 等重字段）—— 性能改造（2026-11-01）：
+  // companies.json 瘦身后，长文本字段拆到 company_details.json，
+  // 首屏不再加载，打开详情/搜索/导出时才按需拉取。
+  const getCompanyDetails = () => window.COMPANY_DETAILS || {};
+  let companyDetailsPromise = null;
+
+  function loadCompanyDetails() {
+    if (window.COMPANY_DETAILS) return Promise.resolve(window.COMPANY_DETAILS);
+    if (companyDetailsPromise) return companyDetailsPromise;
+    if (!window.loadDataset) return Promise.resolve({});
+    companyDetailsPromise = window.loadDataset('COMPANY_DETAILS')
+      .then(function () { return window.COMPANY_DETAILS || {}; })
+      .catch(function () { return {}; });
+    return companyDetailsPromise;
+  }
+
+  // 把详情附加字段合并回公司对象（addr/biz/desc）
+  function mergeDetails(codes) {
+    const details = getCompanyDetails();
+    const list = Array.isArray(codes) ? codes : [codes];
+    list.forEach(function (code) {
+      const c = byCode[code];
+      const d = details[code];
+      if (!c || !d) return;
+      Object.keys(d).forEach(function (k) {
+        if (!c[k]) c[k] = d[k];
+      });
+    });
+  }
+
+  // 兼容旧写法：保留同名常量别名，但它们是「快照」，仅用于首屏已就绪的数据
+  // ⚠️ 性能改造 (2026-11-01): COMPANIES / TOP50 / TOP500 / V9_REVIEW / TECH_V2 /
+  //    RELATIONS 已改为懒加载，下面的快照在加载前为空数组。
+  //    使用这些变量的地方请改用 getCompanies() 等函数（实时读取），
+  //    或确保在 ensureDatasets() 完成后再渲染。
+  const Aggregates = getAggregates();
+  let Companies = getCompanies();
+  const Overlap28 = getOverlap28();
+  let Top50 = getTop50();
+  let Top500 = getTop500();
+  const ChainLinks = getChainLinks();
+  let Relations = getRelations();
+  const SubTracks = getSubTracks();
+  let V9Review = getV9Review();
+  let TechV2 = getTechV2();
+
+  // 懒加载数据集到达后，刷新对应的快照
+  function refreshLazySnapshots(names) {
+    (names || []).forEach(function (n) {
+      if (n === 'COMPANIES') Companies = getCompanies();
+      else if (n === 'TOP50_CLASSIFIED') Top50 = getTop50();
+      else if (n === 'TOP500_UNCLASSIFIED') Top500 = getTop500();
+      else if (n === 'V9_REVIEW') V9Review = getV9Review();
+      else if (n === 'TECH_V2') TechV2 = getTechV2();
+      else if (n === 'RELATIONS') Relations = getRelations();
+    });
+  }
 
   // 建立 code → company 索引
   // TECH_V2 优先覆盖: 因为有 rm/emp/政策标签/banking_priority 等扩展字段
@@ -60,15 +122,19 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // ⚠️ Bug 修复 (2026-08-31): tech_v2 的 trk 是老 ab 分类,会覆盖主表的人工修正 (如鸿兴印刷 '消费升级' 覆盖 '印刷包装')
   // 修法: 主表 trk 优先保留,其他字段 tech_v2 覆盖 (rm/emp/sci/pat/has_account/has_credit/政策标签 等)
   const byCode = {};
-  for (const c of Companies) byCode[c.code] = c;
-  for (const c of TechV2) {
-    if (c.code && byCode[c.code]) {
-      // 保留主表 trk, 其他 tech_v2 优先
-      byCode[c.code] = { ...byCode[c.code], ...c, trk: byCode[c.code].trk };
-    } else if (c.code) {
-      byCode[c.code] = c;
+  function rebuildByCode() {
+    for (const k of Object.keys(byCode)) delete byCode[k];
+    for (const c of getCompanies()) byCode[c.code] = c;
+    for (const c of getTechV2()) {
+      if (c.code && byCode[c.code]) {
+        // 保留主表 trk, 其他 tech_v2 优先
+        byCode[c.code] = { ...byCode[c.code], ...c, trk: byCode[c.code].trk };
+      } else if (c.code) {
+        byCode[c.code] = c;
+      }
     }
   }
+  rebuildByCode();
 
   // ============================================================
   // 14 赛道知识库 (一页通 / 营销建议生成用)
@@ -479,6 +545,38 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     const q = hash.split('?')[1] || '';
     return new URLSearchParams(q).get(name) || '';
   }
+  // 路由 → 需要懒加载的数据集
+  //
+  // 性能改造（2026-11-01）：大数据集改为按需加载。
+  // 进对应页面才拉，拉完再渲染，避免首屏等全部数据。
+  //
+  // 注意：'/'（首页）依赖 V9_REVIEW 只是为了那条 v9 复检进度 banner。
+  // 该 banner 是「锦上添花」，不应该拖慢首屏 —— 所以首页不列入依赖，
+  // 改为 V9_REVIEW 加载完成后由 renderV9BannerIfPending() 补上。
+  var ROUTE_DEPS = {
+    '/':            [],
+    '/companies':   ['COMPANIES'],
+    '/overlap':     [],
+    '/links':       ['COMPANIES'],
+    '/research':    [],
+    '/visits':      ['COMPANIES'],
+    '/v9-review':   ['V9_REVIEW'],
+    '/tech-v2':     ['TECH_V2'],
+    '/one-pager':   ['COMPANIES']
+  };
+
+  function ensureDatasets(names) {
+    if (!window.loadDataset) return Promise.resolve();
+    var ps = (names || []).map(function (n) { return window.loadDataset(n); });
+    if (!ps.length) return Promise.resolve();
+    return Promise.all(ps).then(function () {
+      // 懒加载数据集到达后，刷新快照
+      refreshLazySnapshots(names);
+      // TECH_V2 / COMPANIES 都会往 byCode 里补充字段，重建索引
+      if (names.indexOf('TECH_V2') >= 0 || names.indexOf('COMPANIES') >= 0) rebuildByCode();
+    });
+  }
+
   function router() {
     const hash = location.hash.slice(1) || '/';
     const [path] = hash.split('?');
@@ -487,6 +585,28 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
       el.classList.toggle('active', el.dataset.route === path);
     });
 
+    // 先确保本路由需要的数据已就位，再渲染
+    // 懒加载大数据集时（公司库 2.1MB）给个提示，避免白屏
+    var loadingTimer = null;
+    var deps = ROUTE_DEPS[path] || [];
+    if (deps.length) {
+      loadingTimer = setTimeout(function () {
+        var app = $('#app');
+        if (app && !app.querySelector('.wb-route-loading')) {
+          app.innerHTML = '<div class="wb-route-loading" style="padding:60px 20px;text-align:center;color:var(--text-3);font-size:13px">' +
+            '<div style="font-size:28px;margin-bottom:10px">⏳</div>' +
+            '正在加载数据…<br><span style="font-size:11px;color:var(--text-3)">首次加载较慢，耐心等一下</span></div>';
+        }
+      }, 300);
+    }
+
+    ensureDatasets(deps).then(function () {
+      if (loadingTimer) clearTimeout(loadingTimer);
+      renderRoute(path);
+    });
+  }
+
+  function renderRoute(path) {
     if (path === '/' || path === '') renderHome();
     else if (path === '/companies') renderCompanies();
     else if (path === '/overlap') renderOverlap();
@@ -582,32 +702,15 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
         <a class="card" href="#/links">
           <div class="card-emoji">🕸️</div>
           <div class="card-title">链主网络 · ${ChainLinks.length} 家</div>
-          <div class="card-sub">Top 100 + G2B 60 + 产业链 40 + 上下游 · <strong>${fmt(Companies.filter(c => (c.chain_role || []).length > 0).length)}</strong> 家在主表</div>
+          <div class="card-sub">Top 100 + G2B 60 + 产业链 40 + 上下游 · <strong>${fmt(a.chain_role_company_count || 0)}</strong> 家在主表</div>
           <div class="card-stat">${ChainLinks.length}<span class="card-stat-sub">家链主</span></div>
         </a>
       </div>
 
       <!-- v9 复检进度 banner(只在有未处理时显示) -->
-      ${(() => {
-        const remaining = V9Review.filter(r => r.action === 'NEEDS_REVIEW' || r.action === 'INDUSTRY_FALLBACK');
-        const pending = remaining.filter(r => !state.v9ReviewDecisions[r.code]).length;
-        const decided = remaining.length - pending;
-        if (pending === 0 && decided === 0) return '';
-        return `
-          <a href="#/v9-review" class="v9-banner ${pending === 0 ? 'v9-banner-done' : ''}" style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:${pending === 0 ? 'rgba(80,200,120,0.08)' : 'rgba(255,170,50,0.08)'};border:1px solid ${pending === 0 ? 'var(--good)' : 'var(--warn)'};border-radius:8px;margin-bottom:16px;text-decoration:none;color:inherit">
-            <div style="font-size:28px">${pending === 0 ? '🎉' : '🔍'}</div>
-            <div style="flex:1">
-              <div style="font-size:14px;font-weight:600;color:${pending === 0 ? 'var(--good)' : 'var(--warn)'}">
-                v9 复检进度:${decided}/${remaining.length} · ${pending === 0 ? '全部完成' : `还剩 ${pending} 家待处理`}
-              </div>
-              <div style="font-size:11px;color:var(--text-3);margin-top:2px">
-                ${pending === 0 ? '全部 525 家已决 · 可重新导出应用到 companies.json' : '点击进入复检页 · 一键采纳/跳过/自定义'}
-              </div>
-            </div>
-            <div style="font-size:18px;color:var(--text-3)">→</div>
-          </a>
-        `;
-      })()}
+      <!-- 性能改造（2026-11-01）：V9_REVIEW 改为懒加载，此处先留空位，
+           数据到达后由 renderV9Banner() 补渲染，不阻塞首屏。 -->
+      <div id="v9BannerSlot"></div>
 
       <h2 style="font-size:18px;margin:24px 0 12px">📊 14 个赛道 · 60+ 子轨道分布</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px">
@@ -649,6 +752,38 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
         <br><br>
         📅 数据日期:${a.data_date || '2026-08-16'} · v9 ${fmt(a.classified_v9)} + A+B ${fmt(a.classified_ab)} + 专利反查 ${fmt(a.classified_ab_patent)} · high ${fmt(highN)} / medium ${fmt(medN)} / low ${fmt(lowN)}
       </div>
+    `;
+
+    // v9 复检 banner：数据懒加载，到达后补渲染（不阻塞首屏）
+    if (window.loadDataset) {
+      window.loadDataset('V9_REVIEW').then(function () {
+        refreshLazySnapshots(['V9_REVIEW']);
+        if (state.currentRoute === '/' || state.currentRoute === '') renderV9Banner();
+      });
+    }
+  }
+
+  // v9 复检进度 banner（独立渲染，插在标题下方）
+  function renderV9Banner() {
+    const slot = $('#v9BannerSlot');
+    if (!slot) return;
+    const remaining = getV9Review().filter(r => r.action === 'NEEDS_REVIEW' || r.action === 'INDUSTRY_FALLBACK');
+    const pending = remaining.filter(r => !state.v9ReviewDecisions[r.code]).length;
+    const decided = remaining.length - pending;
+    if (pending === 0 && decided === 0) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `
+      <a href="#/v9-review" class="v9-banner ${pending === 0 ? 'v9-banner-done' : ''}" style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:${pending === 0 ? 'rgba(80,200,120,0.08)' : 'rgba(255,170,50,0.08)'};border:1px solid ${pending === 0 ? 'var(--good)' : 'var(--warn)'};border-radius:8px;margin-bottom:16px;text-decoration:none;color:inherit">
+        <div style="font-size:28px">${pending === 0 ? '🎉' : '🔍'}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:${pending === 0 ? 'var(--good)' : 'var(--warn)'}">
+            v9 复检进度:${decided}/${remaining.length} · ${pending === 0 ? '全部完成' : `还剩 ${pending} 家待处理`}
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px">
+            ${pending === 0 ? '全部 525 家已决 · 可重新导出应用到 companies.json' : '点击进入复检页 · 一键采纳/跳过/自定义'}
+          </div>
+        </div>
+        <div style="font-size:18px;color:var(--text-3)">→</div>
+      </a>
     `;
   }
 
@@ -705,7 +840,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
 
     $('#app').innerHTML = `
       <h1 class="page-title">🏢 公司库</h1>
-      <p class="page-sub">${fmt(Companies.length)} 家公司 · 筛选 → 点击看画像卡</p>
+      <p class="page-sub">${fmt(getCompanies().length)} 家公司 · 筛选 → 点击看画像卡</p>
 
       <div class="companies-layout">
         <aside class="filter-panel">
@@ -748,7 +883,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
             <div class="filter-group-title">链主角色</div>
             <div class="filter-chips">
               <span class="filter-chip ${!state.filter.chain ? 'active' : ''}" data-filter="chain" data-val="">全部</span>
-              <span class="filter-chip ${state.filter.chain === 'yes' ? 'active' : ''}" data-filter="chain" data-val="yes">�️ 有 (${Companies.filter(c => (c.chain_role || []).length > 0).length})</span>
+              <span class="filter-chip ${state.filter.chain === 'yes' ? 'active' : ''}" data-filter="chain" data-val="yes">�️ 有 (${getCompanies().filter(c => (c.chain_role || []).length > 0).length})</span>
               <span class="filter-chip ${state.filter.chain === 'no' ? 'active' : ''}" data-filter="chain" data-val="no">无</span>
             </div>
           </div>
@@ -1109,7 +1244,14 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
 
   function applyFilter() {
     const f = state.filter;
-    return Companies.filter(c => {
+    // addr 已拆到 company_details.json（2026-11-01 瘦身）。
+    // 若用户正在搜索且详情尚未加载，先拉取再重筛，否则地址匹配会静默失效。
+    if (f.q && !window.COMPANY_DETAILS && window.loadDataset) {
+      loadCompanyDetails().then(function () {
+        if (state.filter.q) { state.page = 1; renderCompanies(); }
+      });
+    }
+    return getCompanies().filter(c => {
       if (f.track && c.trk !== f.track) return false;
       if (f.sub && c.sub_track !== f.sub) return false;
       if (f.ind && c.ind !== f.ind) return false;
@@ -1368,21 +1510,21 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     const perPage = 30;
 
     // 统计
-    const total = TechV2.length;
-    const linkedRM = TechV2.filter(c => c.rm).length;
-    const hasBranch = TechV2.filter(c => c.rm_branch && !c.rm).length;
-    const linkedAny = TechV2.filter(c => c.rm || c.rm_branch).length;
-    const hightech = TechV2.filter(c => c.is_hightech).length;
-    const specialized = TechV2.filter(c => c.is_specialized).length;
-    const pevc = TechV2.filter(c => c.is_pevc).length;
-    const newkinetic = TechV2.filter(c => c.is_newkinetic).length;
-    const strategicLevel = TechV2.filter(c => c.newkinetic_level === '战略层').length;
-    const noAccount = TechV2.filter(c => !c.has_account).length;
-    const priorityTop = TechV2.filter(c => (c.banking_priority || 0) >= 80).length;
-    const priorityHigh = TechV2.filter(c => (c.banking_priority || 0) >= 60 && (c.banking_priority || 0) < 80).length;
+    const total = getTechV2().length;
+    const linkedRM = getTechV2().filter(c => c.rm).length;
+    const hasBranch = getTechV2().filter(c => c.rm_branch && !c.rm).length;
+    const linkedAny = getTechV2().filter(c => c.rm || c.rm_branch).length;
+    const hightech = getTechV2().filter(c => c.is_hightech).length;
+    const specialized = getTechV2().filter(c => c.is_specialized).length;
+    const pevc = getTechV2().filter(c => c.is_pevc).length;
+    const newkinetic = getTechV2().filter(c => c.is_newkinetic).length;
+    const strategicLevel = getTechV2().filter(c => c.newkinetic_level === '战略层').length;
+    const noAccount = getTechV2().filter(c => !c.has_account).length;
+    const priorityTop = getTechV2().filter(c => (c.banking_priority || 0) >= 80).length;
+    const priorityHigh = getTechV2().filter(c => (c.banking_priority || 0) >= 60 && (c.banking_priority || 0) < 80).length;
 
     // 过滤
-    let filtered = TechV2.slice();
+    let filtered = getTechV2().slice();
     const f = state.techV2Filter;
     if (f.track) filtered = filtered.filter(c => c.trk === f.track);
     if (f.linkage === 'rm') filtered = filtered.filter(c => c.rm);
@@ -1438,8 +1580,8 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     const PRI_COLOR = { S: 'var(--good)', A: 'var(--accent)', B: 'var(--text-2)', C: 'var(--text-3)' };
 
     // 14 赛道唯一值
-    const tracks = Array.from(new Set(TechV2.map(c => c.trk).filter(Boolean))).sort();
-    const dists = Array.from(new Set(TechV2.map(c => c.dist).filter(Boolean))).sort();
+    const tracks = Array.from(new Set(getTechV2().map(c => c.trk).filter(Boolean))).sort();
+    const dists = Array.from(new Set(getTechV2().map(c => c.dist).filter(Boolean))).sort();
 
     $('#app').innerHTML = `
       <h1 class="page-title">🤝 公私联动池 · 科创企业总表_分类v2</h1>
@@ -1621,7 +1763,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // 详情弹窗 (公私联动专用)
   // ============================================================
   function showTechV2Detail(code) {
-    const c = TechV2.find(x => x.code === code);
+    const c = getTechV2().find(x => x.code === code);
     if (!c) return;
 
     const tags = [];
@@ -1838,7 +1980,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
         </div>
         <div id="relSuggestions" style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;color:var(--text-3);margin-bottom:12px">
           💡 <strong>试一试</strong>:
-          ${[...ChainLinks.slice(0, 8).map(c => c.name), ...Companies.slice(0, 3).filter(c => c.name && (c.chain_role || []).length === 0).map(c => c.name)].filter((v, i, a) => a.indexOf(v) === i).slice(0, 12).map(n => `<span class="filter-chip" data-rel-suggest="${esc(n)}">${esc(n)}</span>`).join('')}
+          ${[...ChainLinks.slice(0, 8).map(c => c.name), ...getCompanies().slice(0, 3).filter(c => c.name && (c.chain_role || []).length === 0).map(c => c.name)].filter((v, i, a) => a.indexOf(v) === i).slice(0, 12).map(n => `<span class="filter-chip" data-rel-suggest="${esc(n)}">${esc(n)}</span>`).join('')}
         </div>
         <div id="relResult"></div>
       </div>
@@ -1878,10 +2020,23 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
 
       if (!q) return;
 
+      // Relations 有 24.7MB，只在用户真的搜索时才加载
+      // 性能改造（2026-11-01）：改为异步加载 + 加载中提示
+      if (!window.loadDataset) {
+        result.innerHTML = '<div style="color:var(--text-2);padding:12px">⏳ 正在加载供应链关系数据…</div>';
+        window.loadDataset('RELATIONS').then(function () { lookup(q); });
+        return;
+      }
+      if (!window.RELATIONS) {
+        result.innerHTML = '<div style="color:var(--text-2);padding:12px">⏳ 正在加载供应链关系数据…</div>';
+        window.loadDataset('RELATIONS').then(function () { lookup(q); });
+        return;
+      }
+
       // 找匹配的企业(精确优先,子串备用)
-      let names = Object.keys(Relations).filter(n => n === q);
+      let names = Object.keys(getRelations()).filter(n => n === q);
       if (names.length === 0) {
-        names = Object.keys(Relations).filter(n => n.includes(q));
+        names = Object.keys(getRelations()).filter(n => n.includes(q));
       }
       if (names.length === 0) {
         result.innerHTML = `<div style="color:var(--warn);padding:12px">😔 "${esc(q)}" 在供应链关系里没找到。试试其他名字(全名更准)。</div>`;
@@ -1889,7 +2044,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
       }
 
       const html = names.slice(0, 20).map(name => {
-        const rels = Relations[name];
+        const rels = getRelations()[name];
         const sup = rels.sup || [];
         const cus = rels.cus || [];
         const iss = rels.iss || [];  // 谁把我当供应商(反向)
@@ -1991,6 +2146,14 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // ============================================================
   function applyVisitsFilter(allItems) {
     const f = state.visitsFilter;
+    // addr 已拆到 company_details.json（2026-11-01 瘦身）：
+    // 搜索前先确保详情已加载，否则地址匹配会静默失效
+    if (f.q && !window.COMPANY_DETAILS && window.loadDataset) {
+      loadCompanyDetails().then(function () {
+        mergeDetails(allItems.map(c => c.code));
+        renderVisits();
+      });
+    }
     return allItems.filter(c => {
       if (f.track && c.trk !== f.track) return false;
       if (f.confidence) {
@@ -2180,6 +2343,16 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   function exportOnePagerMD(code) {
     const c = byCode[code];
     if (!c) return;
+    // addr 已拆到 company_details.json（2026-11-01 瘦身），
+    // 导出前先确保详情已加载并合并
+    if (!window.COMPANY_DETAILS && window.loadDataset) {
+      loadCompanyDetails().then(function () {
+        mergeDetails([code]);
+        exportOnePagerMD(code);
+      });
+      return;
+    }
+    mergeDetails([code]);
     const insight = TRACK_INSIGHTS[c.trk] || TRACK_INSIGHTS['其他'];
     const vnote = getVisitNote(code);
     const suggestions = buildMarketingSuggestions(c, insight);
@@ -2267,6 +2440,14 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   function renderOnePager(code) {
     $('#app').innerHTML = buildOnePager(code);
     $('#opExportMD')?.addEventListener('click', function () { exportOnePagerMD(code); });
+    // addr 已拆到 company_details.json（2026-11-01 瘦身）：
+    // 详情到达后补渲染一次，把地址等字段补上
+    if (!window.COMPANY_DETAILS && window.loadDataset) {
+      loadCompanyDetails().then(function () {
+        mergeDetails([code]);
+        if (state.currentRoute === '/one-pager') renderOnePager(code);
+      });
+    }
   }
   function renderOnePagerFromHash() {
     const code = getQueryParam('code');
@@ -2724,6 +2905,16 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
 
   function exportVisitsCSV(items, scope = 'all') {
     if (!items || items.length === 0) { alert('拜访清单为空,先加企业'); return; }
+    // addr 已拆到 company_details.json（2026-11-01 瘦身），
+    // 导出前先确保详情已加载并合并，否则地址列会是空的
+    if (!window.COMPANY_DETAILS && window.loadDataset) {
+      loadCompanyDetails().then(function () {
+        mergeDetails(items.map(c => c.code));
+        exportVisitsCSV(items, scope);
+      });
+      return;
+    }
+    mergeDetails(items.map(c => c.code));
     // 加 UTF-8 BOM 让 Excel 中文不乱码
     const csv = '\ufeff' + buildCSV(items);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -2801,6 +2992,24 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   function showDetail(code) {
     const c = byCode[code];
     if (!c) return;
+
+    // 性能改造（2026-11-01 第二轮瘦身）：
+    // addr/biz/desc 已从 companies.json 拆到 company_details.json。
+    // 打开详情时按需拉取；拉到后合并进 byCode[code] 并重绘。
+    // 轻量部分先渲染，不阻塞弹窗打开。
+    if (!c._detailLoaded && window.loadDataset) {
+      loadCompanyDetails().then(function (details) {
+        const d = details[code];
+        if (!d) { c._detailLoaded = true; return; }
+        Object.keys(d).forEach(function (k) {
+          if (c[k] === undefined || c[k] === null || c[k] === '') c[k] = d[k];
+        });
+        c._detailLoaded = true;
+        // 弹窗还开着才重绘
+        const modal = $('#detailModal');
+        if (modal && !modal.classList.contains('hidden')) showDetail(code);
+      });
+    }
 
     const trackTag = c.trk ? `<span class="detail-tag track">${esc(c.trk)}</span>` : '<span class="detail-tag">未分类</span>';
     const subTag = c.sub && c.sub !== c.trk ? `<span class="detail-tag">副赛道:${esc(c.sub)}</span>` : '';
@@ -2906,7 +3115,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // ============================================================
   // v9 分类复检页面
   // ============================================================
-  // 数据模型: V9Review = [{code, name, ind_dl, biz_head, old_trk, suggested_trk, action, _scores, ...}]
+  // 数据模型: getV9Review() = [{code, name, ind_dl, biz_head, old_trk, suggested_trk, action, _scores, ...}]
   // state.v9ReviewDecisions = {code: {decision: 'adopt'|'skip'|'override', trk?, ts}}
 
   const V9_TRACK_LIST = (Aggregates.tracks || []).map(t => t.name);
@@ -2974,10 +3183,10 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
 
     // 统计(以 action 为单位)
     const totalAction = {
-      NEEDS_REVIEW: V9Review.filter(r => r.action === 'NEEDS_REVIEW').length,
-      INDUSTRY_FALLBACK: V9Review.filter(r => r.action === 'INDUSTRY_FALLBACK').length,
-      KEEP: V9Review.filter(r => r.action === 'KEEP').length,
-      CHANGE: V9Review.filter(r => ['CHANGE', 'OPTIONAL_CHANGE'].includes(r.action)).length,
+      NEEDS_REVIEW: getV9Review().filter(r => r.action === 'NEEDS_REVIEW').length,
+      INDUSTRY_FALLBACK: getV9Review().filter(r => r.action === 'INDUSTRY_FALLBACK').length,
+      KEEP: getV9Review().filter(r => r.action === 'KEEP').length,
+      CHANGE: getV9Review().filter(r => ['CHANGE', 'OPTIONAL_CHANGE'].includes(r.action)).length,
     };
 
     // 决策统计
@@ -2991,10 +3200,10 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     const totalDecided = decStats.adopt + decStats.skip + decStats.override;
 
     // 剩余待处理(以 NEEDS_REVIEW + INDUSTRY_FALLBACK 为准)
-    const remainingBase = V9Review.filter(r => r.action === 'NEEDS_REVIEW' || r.action === 'INDUSTRY_FALLBACK');
+    const remainingBase = getV9Review().filter(r => r.action === 'NEEDS_REVIEW' || r.action === 'INDUSTRY_FALLBACK');
     const remainingPending = remainingBase.filter(r => !decisions[r.code]).length;
 
-    const items = applyV9ReviewFilter(V9Review);
+    const items = applyV9ReviewFilter(getV9Review());
     const perPage = state.v9ReviewPerPage;
     const totalPages = Math.max(1, Math.ceil(items.length / perPage));
     if (state.v9ReviewPage > totalPages) state.v9ReviewPage = totalPages;
@@ -3040,7 +3249,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     // 顶部概览卡
     $('#app').innerHTML = `
       <h1 class="page-title">🔍 v9 分类复检</h1>
-      <p class="page-sub">共 <strong>${fmt(V9Review.length)}</strong> 行 · 复检报告: <code>scripts/_v9_review_report.csv</code></p>
+      <p class="page-sub">共 <strong>${fmt(getV9Review().length)}</strong> 行 · 复检报告: <code>scripts/_v9_review_report.csv</code></p>
 
       <div class="v9-stats">
         <div class="v9-stat v9-stat-needs">
@@ -3177,7 +3386,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
         const act = btn.dataset.v9act;
         const code = btn.dataset.code;
         if (!act || !code) return;
-        const rec = V9Review.find(r => r.code === code);
+        const rec = getV9Review().find(r => r.code === code);
         if (!rec) return;
 
         if (act === 'adopt') {
@@ -3259,7 +3468,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   function batchAdoptV9Review() {
     const f = state.v9ReviewFilter;
     const start = (state.v9ReviewPage - 1) * state.v9ReviewPerPage;
-    const pageItems = applyV9ReviewFilter(V9Review).slice(start, start + state.v9ReviewPerPage);
+    const pageItems = applyV9ReviewFilter(getV9Review()).slice(start, start + state.v9ReviewPerPage);
     const adoptable = pageItems.filter(r => r.suggested_trk && !state.v9ReviewDecisions[r.code]);
     if (adoptable.length === 0) {
       alert('本页没有可采纳的公司(要么没 AI 建议,要么都已处理)');
@@ -3275,7 +3484,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // ⚡⚡ 批量采纳全部 (跨页,所有待处理 + 有 AI 建议)
   function batchAdoptAllV9Review() {
     // 拿全量未处理
-    const remaining = V9Review.filter(r =>
+    const remaining = getV9Review().filter(r =>
       (r.action === 'NEEDS_REVIEW' || r.action === 'INDUSTRY_FALLBACK') &&
       !state.v9ReviewDecisions[r.code]
     );
@@ -3314,7 +3523,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
   // ⭐ 批量加拜访清单 (当前页)
   function batchAddVisitV9Review() {
     const start = (state.v9ReviewPage - 1) * state.v9ReviewPerPage;
-    const pageItems = applyV9ReviewFilter(V9Review).slice(start, start + state.v9ReviewPerPage);
+    const pageItems = applyV9ReviewFilter(getV9Review()).slice(start, start + state.v9ReviewPerPage);
     const notInList = pageItems.filter(r => !state.visits.includes(r.code));
     if (notInList.length === 0) {
       alert('本页所有公司都已在拜访清单中');
@@ -3346,7 +3555,7 @@ const V9Review = window.V9_REVIEW || []; // 4156 行 v9 review report
     const adopts = [];
     for (const code in decisions) {
       const d = decisions[code];
-      const rec = V9Review.find(r => r.code === code);
+      const rec = getV9Review().find(r => r.code === code);
       if (!rec) continue;
       if (d.decision === 'override') {
         overrides.push({
