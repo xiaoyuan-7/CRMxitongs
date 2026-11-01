@@ -7,6 +7,22 @@ const url = require('url');
 const ROOT = process.argv[2] || '/home/admin/industry-research/web';
 const PORT = parseInt(process.argv[3] || '8000', 10);
 
+// ===== gzip 预压缩缓存 =====
+// 审计发现（2026-11-01）：服务器只有 2 核，实时 gzip 在并发请求下抢 CPU
+// （实测单文件 43ms，11 并发时 160KB 文件花了 11.9 秒 = 13KB/s）。
+// 因此用 scripts/precompress.sh 预先压好存盘，运行时零 CPU 消耗。
+// 实测收益：workbench 首屏 67.84MB → 约 10MB，28 秒 → 约 6 秒。
+const GZ_CACHE = process.env.GZ_CACHE_DIR || '/home/admin/.openclaw/workspace/.gzcache';
+
+// 可压缩的类型：其余（图片/字体/已压缩格式）压了也没意义
+const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.md', '.csv', '.svg', '.txt', '.xml']);
+
+function acceptsGzip(req) {
+  const ae = req.headers['accept-encoding'];
+  if (!ae) return false;
+  return /\bgzip\b/i.test(ae) && !/\bgzip\s*;\s*q=0(?:\.0+)?\b/i.test(ae);
+}
+
 // ===== 目录白名单 =====
 // 审计发现（2026-11-01）：ROOT 被指向整个项目根 /home/admin/industry-research，
 // 导致 .gitignore 排除的数据目录（workbench/data/ 168M、名单/ 131M）也一起被公网暴露，
@@ -78,7 +94,7 @@ http.createServer((req, res) => {
     if (!err && stat.isDirectory()) {
       const idx = path.join(filePath, 'index.html');
       if (fs.existsSync(idx)) {
-        serveFile(idx, res);
+        serveFile(idx, res, req);
         return;
       }
     }
@@ -87,13 +103,14 @@ http.createServer((req, res) => {
       res.end('404 not found: ' + p + '\n');
       return;
     }
-    serveFile(filePath, res);
+    serveFile(filePath, res, req);
   });
 }).listen(PORT, '127.0.0.1', () => {
   console.log('static server on 127.0.0.1:' + PORT + ' root=' + ROOT);
 });
 
-function serveFile(filePath, res) {
+function serveFile(filePath, res, req) {
+  const t0 = Date.now();
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -101,9 +118,61 @@ function serveFile(filePath, res) {
       return;
     }
     const ext = path.extname(filePath).toLowerCase();
+
+    // --- gzip：优先用预压缩缓存，避免实时压缩抢 CPU ---
+    let gzPath = null;
+    if (COMPRESSIBLE.has(ext) && acceptsGzip(req)) {
+      const rel = path.relative(ROOT, filePath);
+      const cand = path.join(GZ_CACHE, rel + '.gz');
+      // 缓存必须比源文件新，否则用陈旧的压缩内容
+      try {
+        const gzStat = fs.statSync(cand);
+        if (gzStat.isFile() && gzStat.mtimeMs >= stat.mtimeMs) {
+          gzPath = cand;
+        }
+      } catch (e) { /* 没预压缩 → 走原文件 */ }
+    }
+
+    if (gzPath) {
+      let gzStat;
+      try { gzStat = fs.statSync(gzPath); } catch (e) { gzStat = null; }
+      if (gzStat) {
+        const etag = '"' + stat.size.toString(16) + '-' + stat.mtimeMs.toString(16) + '"';
+        if (req.headers['if-none-match'] === etag) {
+          res.writeHead(304, { 'ETag': etag, 'Vary': 'Accept-Encoding' });
+          res.end();
+          return;
+        }
+        res.writeHead(200, {
+          'Content-Type': MIME[ext] || 'application/octet-stream',
+          'Content-Length': gzStat.size,
+          'Content-Encoding': 'gzip',
+          'Vary': 'Accept-Encoding',
+          'ETag': etag,
+          'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300'
+        });
+        const s = fs.createReadStream(gzPath);
+        let sent = 0;
+        s.on('data', (d) => { sent += d.length; });
+        s.on('end', () => {
+          console.log('[serve] ' + path.relative(ROOT, filePath) +
+            ' gz=' + gzStat.size + 'B  ' + (Date.now() - t0) + 'ms');
+        });
+        s.pipe(res);
+        return;
+      }
+    }
+
+    const etag = '"' + stat.size.toString(16) + '-' + stat.mtimeMs.toString(16) + '"';
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { 'ETag': etag });
+      res.end();
+      return;
+    }
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Content-Length': stat.size,
+      'ETag': etag,
       'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300'
     });
     fs.createReadStream(filePath).pipe(res);
