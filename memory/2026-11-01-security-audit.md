@@ -42,6 +42,32 @@
 - `workspace-crm-backup` 分支的 `backend/crm.db`（200KB）与 `backend/crm_backup.sql` 同样公开，含真实客户名 + 内部经营备注
 - 已验证可直接下载并 sqlite3 打开读取
 
+### 7. 公网隧道可下载全部客户手机号数据库（比 GitHub 泄漏更严重）
+
+`scripts/static-server.js` 的 ROOT 是 `/home/admin/industry-research`（**整个项目根**，不是 `web/` 子目录）。
+所以所有 `.gitignore` 排除的数据目录也一并被 web 暴露：
+
+| 路径 | 大小 | 唯一手机号 | 状态 |
+|---|---|---|---|
+| `workbench/data/companies.js` | 35.7MB | **27,746** | git untracked，但 web 可下载 |
+| `名单/_xlsx_parsed_6455家.csv` | 4.0MB | 4,483 | git untracked，但 web 可下载 |
+| `名单/` 其余 CSV | 131MB | 合计 ~11,551 | 同上 |
+| `已分类_v3/` | 312KB | 0 | 只含公司名 |
+
+实测（走公网 tunnel + 弱口令 Basic Auth）：
+```
+GET https://sanyo-...trycloudflare.com/research/workbench/data/companies.js
+→ http:200 size:35731220
+→ 22561 家公司名 / 27746 个真实手机号 / 20945 个邮箱
+```
+字段形态：`{"name":"...","phone":"0755-82561819 ; 13684906180","email":"..."}`
+
+**关键链路**：口令 `wen123456` 存在公开仓库的 `scripts/.crm-pass` → 拿到口令 → 拿到 tunnel 地址（随机 trycloudflare 域名，但记在 `~/.pm2/logs/crm-tunnel-error.log`，且 Quick Tunnel 地址会在本地/日志/截图里流转）→ 下载全部客户数据。
+
+**修正一处早先误判**：早先报的"58,367 个手机号"是误报——那是统一社会信用代码（如 `91440300583790955B`）里的数字片段。用严格边界正则 `(?<![0-9A-Za-z])1[3-9][0-9]{9}(?![0-9A-Za-z])` 复测，追踪文件命中为 **0**。真实手机号只存在于上面那些 untracked 但 web 暴露的数据文件里。
+
+**修复**：把 static-server 的 ROOT 改回 `/home/admin/industry-research/web`（或加白名单目录映射），让 `workbench/data`、`名单` 只在本地文件协议下可读。
+
 ## P1 严重
 
 ### 7. 备份脚本本身没有做脱敏/排除
@@ -61,12 +87,19 @@
 - workspace 主仓库**完全没有 .gitignore**，导致 `.gzcache/`（55MB 预压缩缓存）处于 untracked 状态
 - `crm-system` 当前 checkout 在 `workspace-crm-backup` 分支，deploy-from-git.sh 依赖这个分支
 
+### 11. static-server ROOT 配置错误（见 P0-7）
+`pm2` args 为 `/home/admin/industry-research 8000`，而脚本默认值是 `.../web`。ROOT 指向项目根导致整个数据集暴露。需改成 `/home/admin/industry-research/web`。
+注意：改完后 `research/workbench/` 这类子路径会 404，需要另行映射（记忆里记的公网入口正是 `/research/workbench/`）。
+
+### 12. research 仓库 .gitignore 覆盖不到 web 暴露
+`industry-research/.gitignore` 已排除 `名单/`、`workbench/data/`，git 层面是对的——但 static-server 绕过了 gitignore，所以「不入库」并不等于「不外泄」。
+
 ## P2 中等
 - `crm.db-wal` 3.1MB 而主库仅 200KB：WAL 未 checkpoint，dump 出的 SQL 正常（46 leads 一致）但 `.db` 文件直接入库不可靠
 - 内存吃紧：1870MB 总内存，available 仅 411MB；测试需 `pkill -9 -f /opt/google/chrome`
 - 端口 22 在公网可达（ssh-public 探测超时=端口开），SSH 仅密钥登录（PasswordAuthentication no）
 - `crm-tunnel` 用 Quick Tunnel，地址每次重启会变：`https://sanyo-concluded-opponent-heating.trycloudflare.com`（当前）
-- research 站 `58,367` 个手机号在 industry-research 目录里，但**未**被 git 跟踪（仅 `web/customers.js` 等被跟踪），公开仓库暂未泄漏这批数据
+- research 站真实手机号在 industry-research 目录里（`workbench/data/` + `名单/`），**未**被 git 跟踪，公开仓库暂未泄漏这批数据——但通过公网 tunnel 可下载（见 P0-7），等价于泄漏
 
 ## 已验证正常的部分
 - DB integrity_check = ok，dump 恢复后行数与线上一致（leads 46 / companies 57 / referrals 102）
@@ -78,6 +111,7 @@
 - 磁盘 37% 使用，充足
 
 ## 修复优先级
+0. 立刻：改 static-server ROOT 为 `.../web`（或加目录白名单），堵住 27,746 个手机号的外泄通道
 1. 立刻：把 3001 改成 127.0.0.1（`pm2 restart crm-backend` + env HOST）
 2. 立刻：关掉 `/api/users/register` 或强制 role='user'
 3. 立刻：生成强 JWT_SECRET 注入 pm2
