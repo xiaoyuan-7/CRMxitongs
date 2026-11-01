@@ -4,22 +4,50 @@ const db = require('../database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'crm-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET 未设置，拒绝启动。');
+  process.exit(1);
+}
 
-// 用户注册
-router.post('/register', async (req, res) => {
-  const { username, password, role = 'user' } = req.body;
-  
+// 注册要求：必须由已登录的管理员发起
+// 审计发现（2026-11-01）：POST /api/users/register 此前完全公开，
+// 任何人可自行注册账号并指定 role='admin'，实测注册响应 {"id":2,"message":"用户注册成功"}。
+function requireAdmin(req, res, next) {
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '未授权' });
+  }
+  try {
+    const decoded = jwt.verify(h.slice(7), JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ error: '需要管理员权限' });
+    }
+    req.user = decoded;
+    next();
+  } catch (e) {
+    return res.status(401).json({ error: '未授权' });
+  }
+}
+
+// 用户注册（仅管理员可创建账号）
+router.post('/register', requireAdmin, async (req, res) => {
+  const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).json({ error: '用户名和密码不能为空' });
+  }
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: '密码至少 8 位' });
   }
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    
+
+    // 角色强制为 'user'：即使管理员在 body 里传 role='admin' 也不生效
     const query = 'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)';
-    
-    db.run(query, [username, passwordHash, role], function(err) {
+
+    db.run(query, [username, passwordHash, 'user'], function(err) {
       if (err) {
         if (err.message.includes('UNIQUE constraint failed')) {
           return res.status(400).json({ error: '用户名已存在' });

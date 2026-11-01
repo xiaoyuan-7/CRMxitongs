@@ -13,13 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // 安全头中间件
-app.use((req, res, next) => {
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
+const securityMiddleware = require('./middleware/security');
+app.use(securityMiddleware);
 
 // 请求日志中间件
 app.use((req, res, next) => {
@@ -27,6 +22,11 @@ app.use((req, res, next) => {
   console.log(`[${timestamp}] ${req.method} ${req.url} - ${req.ip}`);
   next();
 });
+
+// API 鉴权：必须经 auth-proxy（共享密钥头）或携带有效 JWT
+// 历史上 14 个业务路由完全无鉴权，且后端曾直接绑定 0.0.0.0 暴露公网
+const requireAuth = require('./middleware/auth');
+app.use('/api', requireAuth);
 
 // 静态文件服务（简化版前端）
 app.use(express.static(path.join(__dirname, '../frontend-simple')));
