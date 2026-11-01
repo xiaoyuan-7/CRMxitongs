@@ -9,6 +9,16 @@ const listenPort = parseInt(process.argv[3] || '3100', 10);
 const staticPort = parseInt(process.argv[6] || '8000', 10);
 const user = process.argv[4] || 'admin';
 const pass = process.argv[5] || '';
+// 内部共享密钥：转发到 backend 时注入，后端用它确认请求来自本代理。
+// 作用：后端 3001 只监听 127.0.0.1，但若有人绕过代理直连（隧道改配置、端口被转发等），
+// 没有这个头的请求会被后端拒绝。从文件读取，避免出现在 ps 输出里。
+let internalSecret = '';
+try {
+  internalSecret = require('fs').readFileSync('/home/admin/.openclaw/keys/internal-api.key', 'utf8').trim();
+} catch (e) {
+  console.error('[FATAL] 读不到 internal-api.key，无法向 backend 注入鉴权头');
+  process.exit(1);
+}
 const expected = 'Basic ' + Buffer.from(user + ':' + pass).toString('base64');
 
 const server = http.createServer((req, res) => {
@@ -33,7 +43,16 @@ const server = http.createServer((req, res) => {
   }
 
   // 一次性通道：认证通过后允许下载上传密钥，避免手工抄写
+  // 安全审计（2026-11-01）：该接口会把 SSH 私钥通过 HTTP 返回，
+  // 历史上配合弱 Basic Auth 口令被利用（GitHub 公开仓库里就有同一把私钥）。
+  // 现在默认关闭；确实需要临时取钥匙时用环境变量显式开启：
+  //   ALLOW_KEY_DOWNLOAD=1 pm2 restart crm-auth --update-env
   if (req.url === '/__upload_key') {
+    if (process.env.ALLOW_KEY_DOWNLOAD !== '1') {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('not found\n');
+      return;
+    }
     const fs = require('fs');
     try {
       const key = fs.readFileSync('/home/admin/.openclaw/workspace/keys/crm_upload_key');
@@ -67,7 +86,11 @@ const server = http.createServer((req, res) => {
     port: upPort,
     path: upPath,
     method: req.method,
-    headers: Object.assign({}, req.headers, { host: '127.0.0.1:' + upPort })
+    headers: Object.assign({}, req.headers, {
+      host: '127.0.0.1:' + upPort,
+      // 注入内部鉴权头（仅转发到 backend 时）
+      ...(upPort === targetPort ? { 'x-internal-auth': internalSecret } : {})
+    })
   }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res);

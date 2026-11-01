@@ -31,7 +31,7 @@
 - 任何人克隆该公开仓库即可拿到服务器 shell
 
 ### 5. Basic Auth 弱口令 + 密码文件入库
-- `scripts/.crm-pass`（内容 `wen123456`）被 git 跟踪并推到 workspace-backup
+- `scripts/.crm-pass`（内容 `<弱口令，已轮换>`）被 git 跟踪并推到 workspace-backup
 - 密码文件同时存在于 git 历史 commit `7ff7d7a`
 - 公网入口（tunnel → auth-proxy 3100）用的就是这个口令
 
@@ -62,7 +62,7 @@ GET https://sanyo-...trycloudflare.com/research/workbench/data/companies.js
 ```
 字段形态：`{"name":"...","phone":"0755-82561819 ; 13684906180","email":"..."}`
 
-**关键链路**：口令 `wen123456` 存在公开仓库的 `scripts/.crm-pass` → 拿到口令 → 拿到 tunnel 地址（随机 trycloudflare 域名，但记在 `~/.pm2/logs/crm-tunnel-error.log`，且 Quick Tunnel 地址会在本地/日志/截图里流转）→ 下载全部客户数据。
+**关键链路**：口令 `<弱口令，已轮换>` 存在公开仓库的 `scripts/.crm-pass` → 拿到口令 → 拿到 tunnel 地址（随机 trycloudflare 域名，但记在 `~/.pm2/logs/crm-tunnel-error.log`，且 Quick Tunnel 地址会在本地/日志/截图里流转）→ 下载全部客户数据。
 
 **修正一处早先误判**：早先报的"58,367 个手机号"是误报——那是统一社会信用代码（如 `91440300583790955B`）里的数字片段。用严格边界正则 `(?<![0-9A-Za-z])1[3-9][0-9]{9}(?![0-9A-Za-z])` 复测，追踪文件命中为 **0**。真实手机号只存在于上面那些 untracked 但 web 暴露的数据文件里。
 
