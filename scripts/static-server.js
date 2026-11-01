@@ -72,9 +72,284 @@ const MIME = {
   '.zip': 'application/zip'
 };
 
+// ===== 公司详情查询 API =====
+//
+// 背景（2026-11-01）：company_details.json 有 3.9MB（gzip）。
+// 之前点开任意一家企业都要整包下载，公网 tunnel 带宽 ~80KB/s → 要等 50 秒。
+// 分片并行没用（实测 6 并发拉同一文件共 149 秒，带宽被瓜分，总吞吐固定）。
+//
+// 方案：服务器侧常驻内存索引，按 code 精确返回一条（约 0.3KB）。
+// 前端 loadCompanyDetails() 改为调这个接口；全量 JSON 保留作为离线兜底。
+const DETAILS_FILE = path.join(ROOT, 'workbench/data/company_details.json');
+let detailsIndex = null; // Map<code, {biz, desc, addr}>
+let detailsIndexLoading = null;
+
+function loadDetailsIndex() {
+  if (detailsIndex) return Promise.resolve(detailsIndex);
+  if (detailsIndexLoading) return detailsIndexLoading;
+  detailsIndexLoading = new Promise((resolve, reject) => {
+    fs.readFile(DETAILS_FILE, 'utf8', (err, txt) => {
+      if (err) return reject(err);
+      try {
+        const obj = JSON.parse(txt);
+        detailsIndex = new Map();
+        for (const code of Object.keys(obj)) detailsIndex.set(code, obj[code]);
+        console.log('[details] indexed ' + detailsIndex.size + ' companies');
+        resolve(detailsIndex);
+      } catch (e) { reject(e); }
+    });
+  });
+  return detailsIndexLoading;
+}
+
+function serveCompanyDetail(code, res) {
+  loadDetailsIndex().then((idx) => {
+    const d = idx.get(code);
+    if (!d) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end('{"error":"not found"}');
+      return;
+    }
+    const body = Buffer.from(JSON.stringify(d), 'utf8');
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Length': body.length,
+      'Cache-Control': 'public, max-age=3600'
+    });
+    res.end(body);
+  }).catch((e) => {
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: String(e.message || e) }));
+  });
+}
+
+// ===== 公司搜索 API =====
+//
+// 背景：搜索需要匹配 name/legal/addr，其中 addr 在单独的 company_details.json 里。
+// 前端拉全量详情（3.9MB）才能搜，公网要 50 秒。
+// 改为服务端搜：索引已经在内存里，直接返回匹配的 code 列表（几十 KB）。
+const SEARCH_LIMIT = 300;
+
+function serveCompanySearch(q, res) {
+  loadDetailsIndex().then((idx) => {
+    const needle = q.toLowerCase();
+    const codes = [];
+    // 先在主表数据里搜 name/legal/ind
+    for (const c of getCompaniesForSearch()) {
+      if (matchesCompany(c, needle)) { codes.push(c.code); if (codes.length >= SEARCH_LIMIT) break; }
+      if (codes.length >= SEARCH_LIMIT) break;
+    }
+    // 再补上只有 details 里才命中的（地址匹配）
+    if (codes.length < SEARCH_LIMIT) {
+      for (const [code, d] of idx) {
+        if (codes.length >= SEARCH_LIMIT) break;
+        if (codes.indexOf(code) >= 0) continue;
+        const addr = String(d.addr || '').toLowerCase();
+        if (addr && addr.indexOf(needle) >= 0) codes.push(code);
+      }
+    }
+    const body = Buffer.from(JSON.stringify({ codes: codes, total: codes.length }), 'utf8');
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Length': body.length,
+      'Cache-Control': 'no-store'
+    });
+    res.end(body);
+  }).catch((e) => {
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: String(e.message || e) }));
+  });
+}
+
+function matchesCompany(c, needle) {
+  const fields = [c.name, c.legal, c.ind, c.trk, c.sub_track, c.code];
+  for (const f of fields) {
+    if (f && String(f).toLowerCase().indexOf(needle) >= 0) return true;
+  }
+  return false;
+}
+
+// ===== 公司库分页 API =====
+//
+// 背景（2026-11-01）：companies.json 22,765 家瘦身后 gzip 仍有 2.19MB，
+// 公网 tunnel 带宽 ~80KB/s → 进公司库要等 30 秒。
+// 但表格一页只显示 50 条（gzip 5.7KB）。
+//
+// 方案：服务端做筛选 + 排序 + 分页，只回传当前页。
+// 前端筛选维度（track/sub/ind/custInd/supInd/dist/city/emp/scale/status/
+// confidence/chain/q）全部搬到服务端，与前端 applyFilter 逻辑保持一致。
+const PAGE_DEFAULT = 50;
+
+function matchCompanyFilter(c, f, addrMap) {
+  if (f.track && c.trk !== f.track) return false;
+  if (f.sub && c.sub_track !== f.sub) return false;
+  if (f.ind && c.ind !== f.ind) return false;
+  if (f.custInd && !(c.customer_ind || []).some(i => i.name === f.custInd)) return false;
+  if (f.supInd && !(c.supplier_ind || []).some(i => i.name === f.supInd)) return false;
+  if (f.emp) {
+    const e = c.emp;
+    const range = f.emp;
+    if (range === 'unknown' && e != null) return false;
+    if (range !== 'unknown' && e == null) return false;
+    if (range === '0' && e !== 0) return false;
+    if (range === '1-10' && (e == null || e < 1 || e > 10)) return false;
+    if (range === '11-50' && (e == null || e < 11 || e > 50)) return false;
+    if (range === '51-200' && (e == null || e < 51 || e > 200)) return false;
+    if (range === '201-500' && (e == null || e < 201 || e > 500)) return false;
+    if (range === '501-1000' && (e == null || e < 501 || e > 1000)) return false;
+    if (range === '1001+' && (e == null || e <= 1000)) return false;
+  }
+  if (f.dist && c.dist !== f.dist) return false;
+  if (f.city && c.city !== f.city) return false;
+  if (f.scale && c.scale !== f.scale) return false;
+  if (f.status && c.status !== f.status) return false;
+  if (f.confidence) {
+    const conf = c.confidence || '';
+    if (f.confidence === 'none' && c.trk) return false;
+    if (f.confidence !== 'none' && conf !== f.confidence) return false;
+  }
+  if (f.chain === 'yes' && (!c.chain_role || c.chain_role.length === 0)) return false;
+  if (f.chain === 'no' && c.chain_role && c.chain_role.length > 0) return false;
+  if (f.q) {
+    const q = f.q.toLowerCase();
+    const localHit =
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.legal || '').toLowerCase().includes(q) ||
+      (c.ind || '').toLowerCase().includes(q) ||
+      (c.trk || '').toLowerCase().includes(q) ||
+      (c.sub_track || '').toLowerCase().includes(q) ||
+      (c.code || '').toLowerCase().includes(q);
+    if (!localHit) {
+      const d = addrMap ? addrMap.get(c.code) : null;
+      const addr = d ? String(d.addr || '').toLowerCase() : '';
+      if (!addr || addr.indexOf(q) < 0) return false;
+    }
+  }
+  return true;
+}
+
+// 公司库表格/筛选用到的列（去掉 addr/biz/desc 等长文本，详情走 API）
+const COMPANY_LIST_FIELDS = [
+  'code', 'name', 'trk', 'sub', 'sub_track', 'ind', 'ind_zl', 'ind_xl',
+  'city', 'dist', 'emp', 'confidence', 'status', 'scale', 'chain_role',
+  'customer_ind', 'supplier_ind', 'rc', 'pc', 'legal', 'est',
+  'phone', 'email', 'sci', 'pat', 'method', 'src', 'risk'
+];
+
+function serveCompanyPage(query, res) {
+  const all = getCompaniesForSearch();
+
+  // 按 code 精确查一条（拜访清单/一页通用）
+  if (query.code) {
+    const c = all.find(x => x.code === query.code);
+    if (!c) {
+      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end('{"error":"not found"}');
+      return;
+    }
+    const item = {};
+    for (const k of COMPANY_LIST_FIELDS) if (c[k] !== undefined) item[k] = c[k];
+    loadDetailsIndex().then((idx) => {
+      const d = idx.get(c.code);
+      if (d) {
+        for (const k of Object.keys(d)) if (item[k] === undefined) item[k] = d[k];
+      }
+      const body = Buffer.from(JSON.stringify({ item: item }), 'utf8');
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': body.length,
+        'Cache-Control': 'public, max-age=600'
+      });
+      res.end(body);
+    }).catch(() => {
+      const body = Buffer.from(JSON.stringify({ item: item }), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': body.length });
+      res.end(body);
+    });
+    return;
+  }
+
+  const f = {
+    track: query.track || '', sub: query.sub || '', ind: query.ind || '',
+    custInd: query.custInd || '', supInd: query.supInd || '',
+    dist: query.dist || '', city: query.city || '', emp: query.emp || '',
+    scale: query.scale || '', status: query.status || '',
+    confidence: query.confidence || '', chain: query.chain || '',
+    q: query.q || ''
+  };
+  const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
+  const perPage = Math.min(200, Math.max(10, parseInt(query.perPage || String(PAGE_DEFAULT), 10) || PAGE_DEFAULT));
+
+  let list = all;
+  if (f.q) {
+    loadDetailsIndex().then((idx) => {
+      const filtered = all.filter(c => matchCompanyFilter(c, f, idx));
+      respondPage(filtered, page, perPage, res);
+    }).catch(() => {
+      const filtered = all.filter(c => matchCompanyFilter(c, f, null));
+      respondPage(filtered, page, perPage, res);
+    });
+    return;
+  }
+  const filtered = all.filter(c => matchCompanyFilter(c, f, null));
+  respondPage(filtered, page, perPage, res);
+}
+
+function respondPage(filtered, page, perPage, res) {
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const start = (page - 1) * perPage;
+  const items = filtered.slice(start, start + perPage).map(c => {
+    const o = {};
+    for (const k of COMPANY_LIST_FIELDS) if (c[k] !== undefined) o[k] = c[k];
+    return o;
+  });
+  const body = Buffer.from(JSON.stringify({ items: items, total: total, page: page, totalPages: totalPages }), 'utf8');
+  res.writeHead(200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': body.length,
+    'Cache-Control': 'no-store'
+  });
+  res.end(body);
+}
+
+let companiesForSearch = null;
+function getCompaniesForSearch() {
+  if (companiesForSearch) return companiesForSearch;
+  const f = path.join(ROOT, 'workbench/data/companies.json');
+  try {
+    companiesForSearch = JSON.parse(fs.readFileSync(f, 'utf8'));
+    console.log('[search] indexed ' + companiesForSearch.length + ' companies');
+  } catch (e) {
+    companiesForSearch = [];
+  }
+  return companiesForSearch;
+}
+
 http.createServer((req, res) => {
   let p = decodeURIComponent(url.parse(req.url).pathname);
   if (p === '/') p = '/index.html';
+
+  // 公司搜索 API：/workbench/api/search?q=xxx
+  if (p === '/workbench/api/search') {
+    const parsed = url.parse(req.url, true);
+    serveCompanySearch(String(parsed.query.q || ''), res);
+    return;
+  }
+
+  // 公司库分页 API：/workbench/api/companies?track=...&page=1
+  if (p === '/workbench/api/companies') {
+    const parsed = url.parse(req.url, true);
+    serveCompanyPage(parsed.query || {}, res);
+    return;
+  }
+
+  // 公司详情 API：/workbench/api/company/<code>
+  const detailMatch = p.match(/^\/workbench\/api\/company\/([A-Za-z0-9_-]{4,40})$/);
+  if (detailMatch) {
+    serveCompanyDetail(detailMatch[1], res);
+    return;
+  }
 
   // 相对 ROOT 的路径（用于白名单判定）
   let rel = path.normalize(p).replace(/^(\.\.[/\\])+/, '').replace(/^[/\\]+/, '');

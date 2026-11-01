@@ -30,9 +30,10 @@ try {
 const COOKIE_NAME = 'crm_auth';
 const SESSION_TTL_MS = 30 * 24 * 3600 * 1000; // 30 天
 
-// 会话 token = HMAC(user, secret)，服务端无状态，改密码即全部失效
+// 会话 token = HMAC(secret, user+':'+pass)，服务端无状态，
+// 改密码即所有旧会话立刻失效（token 随之变化）
 function makeToken(u) {
-  return crypto.createHmac('sha256', internalSecret).update(String(u)).digest('hex');
+  return crypto.createHmac('sha256', internalSecret).update(String(u) + ':' + pass).digest('hex');
 }
 function tokenValid(u, t) {
   if (!t) return false;
