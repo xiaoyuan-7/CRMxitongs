@@ -108,7 +108,7 @@ cd /root/.openclaw/workspace/crm-system/backend
 npm start
 ```
 
-后端服务将在 http://localhost:3001 启动
+后端服务将在 http://localhost:3011 启动
 
 #### 4. 启动前端开发服务器
 
@@ -135,7 +135,7 @@ cd /root/.openclaw/workspace/crm-system/backend
 npm start
 ```
 
-访问 http://localhost:3001 即可使用系统
+访问 http://localhost:3011 即可使用系统
 
 ## 📊 数据库 Schema
 
