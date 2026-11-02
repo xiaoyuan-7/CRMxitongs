@@ -25,5 +25,5 @@ pm2 save
 
 echo "==> 健康检查"
 sleep 3
-curl -s --max-time 10 http://127.0.0.1:3001/api/health && echo
+curl -s --max-time 10 http://127.0.0.1:3011/api/health && echo
 echo "==> 完成"

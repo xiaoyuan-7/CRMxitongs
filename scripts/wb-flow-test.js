@@ -27,7 +27,7 @@ const chrome = spawn('/usr/bin/google-chrome', [
   await new Promise(r => ws.onopen = r);
   ws.onmessage = e => { const m = JSON.parse(e.data); if (m.id && p.has(m.id)) { p.get(m.id)(m.result); p.delete(m.id); } };
   await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
-  await send('Network.setExtraHTTPHeaders', { headers: { Authorization: 'Basic ' + Buffer.from('admin:oSty45kTwKhRgYVZYMnr').toString('base64') } });
+  await send('Network.setExtraHTTPHeaders', { headers: { Authorization: 'Basic ' + Buffer.from((process.env.CRM_USER || 'admin') + ':' + (process.env.CRM_PASS || '')).toString('base64') } });
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
 
   const ev = async (expr, waitMs) => {

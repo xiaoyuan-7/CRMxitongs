@@ -12,9 +12,24 @@ const crypto = require('crypto');
 const targetPort = parseInt(process.argv[2] || '3001', 10);
 const listenPort = parseInt(process.argv[3] || '3100', 10);
 // 额外静态站点路由: /research/*  ->  staticPort
+// staticPort=0 表示不提供静态站点（只做 CRM 反代）
 const staticPort = parseInt(process.argv[6] || '8000', 10);
 const user = process.argv[4] || 'admin';
-const pass = process.argv[5] || '';
+// 密码优先从环境变量 PROXY_PASS 读取，避免明文出现在 ps 输出里；
+// argv[5] 仅作为兼容老启动方式的兜底。
+const pass = process.env.PROXY_PASS || process.argv[5] || '';
+
+// 监听地址：默认只听本机（配合 cloudflared 隧道 / 内网）；
+// 需要对公网开放时用 LISTEN_HOST=0.0.0.0
+const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1';
+// 代理模式：
+//   crm    (默认) '/' -> targetPort(CRM)，/research/* -> staticPort
+//   static 全部 -> staticPort，'/' 重定向到 /workbench/index.html
+//            （工作台页面内部全是相对引用，必须让 URL 与真实目录一致，
+//              否则 styles.css/app.js/data/*.json 全 404）
+const PROXY_MODE = process.env.PROXY_MODE || 'crm';
+// 静态模式下工作台入口路径
+const STATIC_INDEX = process.env.STATIC_INDEX || '/workbench/index.html';
 
 // 内部共享密钥：转发到 backend 时注入，后端用它确认请求来自本代理。
 // 作用：后端 3001 只监听 127.0.0.1，但若有人绕过代理直连（隧道改配置、端口被转发等），
@@ -72,7 +87,15 @@ function isBrowser(req) {
   return /text\/html/i.test(a);
 }
 
-const LOGIN_PAGE = `<!doctype html>
+function buildLoginPage(rt) {
+  const safeRt = (typeof rt === 'string' && rt.startsWith('/') && !rt.startsWith('//')) ? rt : '/';
+  const rtField = `<input type="hidden" name="rt" value="${safeRt.replace(/"/g, '&quot;')}">`;
+  return LOGIN_PAGE_TEMPLATE
+    .replace('<!--RT_FIELD-->', rtField)
+    .replace('<!--RT_JS-->', JSON.stringify(safeRt));
+}
+
+const LOGIN_PAGE_TEMPLATE = `<!doctype html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -103,6 +126,7 @@ const LOGIN_PAGE = `<!doctype html>
   <p class="sub">行业研究工作台 / CRM 客户管理</p>
   <p class="err" id="err">用户名或密码不正确</p>
   <form method="POST" action="/__login" autocomplete="on">
+    <!--RT_FIELD-->
     <label for="u">用户名</label>
     <input id="u" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" required>
     <label for="p">密码</label>
@@ -122,7 +146,7 @@ const LOGIN_PAGE = `<!doctype html>
         if (r.redirected) { location.href = r.url; return; }
         return r.text();
       })
-      .then(function () { location.href = '/'; })
+      .then(function () { location.href = <!--RT_JS-->; })
       .catch(function () {
         document.getElementById('err').style.display = 'block';
         b.disabled = false; b.textContent = '进入';
@@ -143,12 +167,17 @@ const server = http.createServer((req, res) => {
 
   // ---- 登录相关路由 ----
   if (req.url === '/__login' || req.url.startsWith('/__login?')) {
+    let rt = '/';
+    try {
+      const q = new URL(req.url, 'http://x').searchParams.get('rt');
+      if (q && q.startsWith('/') && !q.startsWith('//')) rt = q;
+    } catch (e) { /* ignore */ }
     if (req.method === 'GET') {
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store'
       });
-      res.end(LOGIN_PAGE);
+      res.end(buildLoginPage(rt));
       return;
     }
     if (req.method === 'POST') {
@@ -163,16 +192,18 @@ const server = http.createServer((req, res) => {
         const params = new URLSearchParams(body);
         const u = params.get('username') || '';
         const p = params.get('password') || '';
+        let target = params.get('rt') || rt;
+        if (!target.startsWith('/') || target.startsWith('//')) target = '/';
         if (!credsEqual(u, p)) {
           log(req, 401, 'login-fail');
           res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-          res.end(LOGIN_PAGE.replace('<p class="err" id="err">用户名或密码不正确</p>',
+          res.end(buildLoginPage(target).replace('<p class="err" id="err">用户名或密码不正确</p>',
             '<p class="err" id="err" style="display:block">用户名或密码不正确</p>'));
           return;
         }
         const token = makeToken(user);
         res.writeHead(302, {
-          'Location': '/',
+          'Location': target,
           'Set-Cookie': COOKIE_NAME + '=' + token + '; Path=/; Max-Age=' + Math.floor(SESSION_TTL_MS / 1000) + '; HttpOnly; SameSite=Lax',
           'Cache-Control': 'no-store'
         });
@@ -193,9 +224,16 @@ const server = http.createServer((req, res) => {
   }
 
   if (!ok) {
+    // favicon：未登录时浏览器也会自动请求，不该弹 401 干扰（也免得控制台一堆红字）
+    if (req.url === '/favicon.ico') {
+      res.writeHead(204, { 'Cache-Control': 'public, max-age=86400' });
+      res.end();
+      return;
+    }
     // 浏览器 → 跳登录页（不要弹窗，弹窗在手机内置浏览器经常无反应）
     if (isBrowser(req)) {
-      res.writeHead(302, { 'Location': '/__login', 'Cache-Control': 'no-store' });
+      const rt = encodeURIComponent(req.url);
+      res.writeHead(302, { 'Location': '/__login?rt=' + rt, 'Cache-Control': 'no-store' });
       res.end();
       log(req, 302, 'redirect-login');
     } else {
@@ -235,7 +273,25 @@ const server = http.createServer((req, res) => {
   // 静态研究站点走 /research/ 前缀；静态根 = 项目根，故页面里的 ../已分类 等相对路径仍可解析
   let upPort = targetPort;
   let upPath = req.url;
-  if (req.url === '/research' || req.url.startsWith('/research/')) {
+
+  // 模式二：纯静态（工作台专用入口）
+  // '/' 重定向到真实目录 /workbench/index.html，让页面内相对引用（styles.css、data/*.json）
+  // 解析到 /workbench/ 下；若直接以 '/' 提供 index.html，这些相对路径会全部 404。
+  if (PROXY_MODE === 'static') {
+    if (staticPort <= 0) {
+      res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('静态服务未配置\n');
+      return;
+    }
+    if (req.url === '/' || req.url === '/index.html') {
+      res.writeHead(302, { 'Location': STATIC_INDEX, 'Cache-Control': 'no-store' });
+      res.end();
+      log(req, 302, 'static-index');
+      return;
+    }
+    upPort = staticPort;
+  } else if (staticPort > 0 && (req.url === '/research' || req.url.startsWith('/research/') ||
+                                req.url === '/workbench' || req.url.startsWith('/workbench/'))) {
     // 页面内部全是相对引用(app.js / data.js / dashboard.html)。
     // 若以 /research/ 为基准提供 index.html，这些会解析成 /research/app.js → 404，JS 全挂、只剩静态标题。
     // 因此重定向到真实目录 /research/web/index.html，让 URL 与文件目录一致。
@@ -245,7 +301,10 @@ const server = http.createServer((req, res) => {
       return;
     }
     upPort = staticPort;
-    upPath = req.url.replace(/^\/research/, '');
+    // /research/* 去掉前缀（静态根 = 项目根）；/workbench/* 保留原路径
+    if (req.url.startsWith('/research/')) {
+      upPath = req.url.replace(/^\/research/, '');
+    }
   }
 
   const proxyReq = http.request({
@@ -269,6 +328,7 @@ const server = http.createServer((req, res) => {
   req.pipe(proxyReq);
 });
 
-server.listen(listenPort, '127.0.0.1', () => {
-  console.log('auth-proxy listening on 127.0.0.1:' + listenPort + ' -> ' + targetPort);
+server.listen(listenPort, LISTEN_HOST, () => {
+  console.log('auth-proxy listening on ' + LISTEN_HOST + ':' + listenPort +
+    ' -> mode=' + PROXY_MODE + ' target=' + targetPort + ' static=' + staticPort);
 });
